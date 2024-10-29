@@ -1,0 +1,65 @@
+# docker-compose.yml
+
+version: '3'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: maghrebIt_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: django_db
+      MYSQL_USER: django_user
+      MYSQL_PASSWORD: django_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - traefik
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: maghibit_phpmyadmin
+    environment:
+      PMA_HOST: mysql  # The MySQL hostname
+      MYSQL_ROOT_PASSWORD: rootpassword
+      PMA_PORT: 3307
+    ports:
+      - "8080:80"
+  
+    depends_on:
+      - db
+    networks:
+      - traefik
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    container_name: maghrebIt_backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./src:/src
+    ports:
+      - "4001:8000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_HOST: db
+      DATABASE_NAME: django_db
+      DATABASE_USER: django_user
+      DATABASE_PASSWORD: django_password
+      MYSQLCLIENT_CFLAGS: "-I/usr/include/mysql"
+      MYSQLCLIENT_LDFLAGS: "-L/usr/lib/x86_64-linux-gnu"
+
+    networks:
+      - traefik
+
+volumes:
+  mysql_data:
+
+networks:
+  traefik:
+    external: true
+
