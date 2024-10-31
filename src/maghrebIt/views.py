@@ -28,6 +28,40 @@ def checkAuth(request):
         print(e)
         return False
 
+# Login view
+@csrf_exempt
+def login(request):
+    if request.method == "POST":
+
+        data = JSONParser().parse(request)
+        username = data["username"]
+        mdp = data["mdp"]
+
+        users = Admin.objects.filter(Mail=username)
+
+        if users.exists():
+            user = users.first()
+            pwd_utf = mdp.encode()
+            pwd_sh = hashlib.sha1(pwd_utf)
+            password_crp = pwd_sh.hexdigest()
+            if user.mdp == password_crp:
+                client_serializer = AdminSerializer(users, many=True)
+                payload = {
+                    'id': user.ID_Admin,
+                    'email': user.Mail,
+                   
+                }
+                token = jwt.encode(payload, 'secret', algorithm='HS256')
+
+                response = JsonResponse( {"success": True,  "token": token, "data": client_serializer.data}, safe=False)
+
+                response.set_cookie(key='jwt', value = token, max_age=86400) # 24h (86.400s)
+
+                return response
+                #return JsonResponse({"success": True, "data": client_serializer.data}, safe=False)
+            return JsonResponse({"success": False, "msg": "Password not valid for this user"}, safe=False)
+        else:
+            return JsonResponse({"success": False, "msg": "user not found"}, safe=False)
 # Create your views here.
 @csrf_exempt
 def client_view(request, id=0):

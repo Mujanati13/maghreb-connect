@@ -14,6 +14,8 @@ urlpatterns = [
     re_path(r'^docEsn/([0-9]+)$', views.docEsn_view),
     path('admin/', views.admin_view),
     re_path(r'^admin/([0-9]+)$', views.admin_view),
+    path('login/', views.login),
+    re_path(r'^login/([0-9]+)$', views.login),
     path('collaborateur/', views.collaborateur_view),
     re_path(r'^collaborateur/([0-9]+)$', views.collaborateur_view),
     ]
