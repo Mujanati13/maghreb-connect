@@ -328,7 +328,7 @@ def collaborateur_view(request, id=0):
         return JsonResponse("Deleted Succeffuly!!", safe=False)
     
 
-# collaborateur_view
+# Admin views .
 @csrf_exempt
 def admin_view(request, id=0):
     if checkAuth(request) == False:
