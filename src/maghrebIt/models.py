@@ -72,3 +72,53 @@ class ESN(models.Model):
         db_table = 'esn'  # Nom de la table dans la base de données
        
 
+class DocumentESN(models.Model):
+    ID_DOC_ESN = models.AutoField(primary_key=True)  # Identifiant unique pour chaque document
+    ID_ESN = models.IntegerField()   # Lien vers le modèle ESN
+    Doc_URL = models.URLField(max_length=255, verbose_name="URL du Document")  # URL du document
+    Titre = models.CharField(max_length=255, verbose_name="Titre")  # Titre du document
+    Date_Valid = models.DateField(null=True, blank=True, verbose_name="Date de Validation")  # Date de validation
+    Statut = models.CharField(max_length=50, verbose_name="Statut")  # Statut du document
+    Description = models.TextField(blank=True, null=True, verbose_name="Description")  # Description du document
+
+
+
+    class Meta:
+      
+        db_table = 'doc_esn'  # Nom de la table dans la base de données
+
+
+
+class Collaborateur(models.Model):
+    ID_collab = models.AutoField(primary_key=True)  # Identifiant unique pour chaque collaborateur
+    ID_ESN = models.IntegerField() # Lien vers le modèle ESN
+    Admin = models.BooleanField(default=False, verbose_name="Administrateur")  # Rôle administrateur
+    Commercial = models.BooleanField(default=False, verbose_name="Commercial")  # Rôle commercial
+    Consultant = models.BooleanField(default=False, verbose_name="Consultant")  # Rôle consultant
+    Actif = models.BooleanField(default=True, verbose_name="Actif")  # Statut d'activité
+    Nom = models.CharField(max_length=100, verbose_name="Nom")  # Nom du collaborateur
+    Prenom = models.CharField(max_length=100, verbose_name="Prénom")  # Prénom du collaborateur
+    Date_naissance = models.DateField(null=True, blank=True, verbose_name="Date de Naissance")  # Date de naissance
+    Poste = models.CharField(max_length=100, null=True, blank=True, verbose_name="Poste")  # Poste occupé
+    date_debut_activ = models.DateField(null=True, blank=True, verbose_name="Date de Début d'Activité")  # Date de début d'activité
+    date_dé = models.DateField(null=True, blank=True, verbose_name="Date de Démission")  # Date de démission
+    CV = models.URLField(max_length=255, null=True, blank=True, verbose_name="Lien CV")  # Lien vers le CV
+    LinkedIN = models.URLField(max_length=255, null=True, blank=True, verbose_name="Lien LinkedIn")  # Lien LinkedIn
+    Mobilité = models.CharField(max_length=20, choices=[('National', 'National'), ('International', 'International'), ('Autres', 'Autres')], default='National', verbose_name="Mobilité")  # Mobilité
+    Disponibilité = models.DateField(null=True, blank=True, verbose_name="Disponibilité")  # Date de disponibilité
+
+     
+    class Meta:
+        db_table = 'collaboration' 
+        
+
+
+class Admin(models.Model):
+    ID_Admin = models.AutoField(primary_key=True)  # Identifiant unique pour chaque administrateur
+    Mail = models.EmailField(max_length=255, unique=True, verbose_name="Email de l'Administrateur")  # Adresse email, unique
+    mdp = models.CharField(max_length=255, verbose_name="Mot de Passe")  # Mot de passe
+
+
+    class Meta:
+        db_table = 'admin'  # Nom de la table dans la base de données
+

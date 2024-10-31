@@ -63,4 +63,45 @@ class ESNSerializer(serializers.ModelSerializer):
             'BIC', 
             'Banque'
         ]
+# serializer DocumentESN      
+class DocumentESNSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentESN
+        fields = [
+            'ID_DOC_ESN',
+            'ID_ESN',
+            'Doc_URL',
+            'Titre',
+            'Date_Valid',
+            'Statut',
+            'Description'
+        ]
         
+# serializer Collaborateur      
+class CollaborateurSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Collaborateur
+        fields = [
+            'ID_collab',
+            'ID_ESN',
+            'Admin',
+            'Commercial',
+            'Consultant',
+            'Actif',
+            'Nom',
+            'Prenom',
+            'Date_naissance',
+            'Poste',
+            'date_debut_activ',
+            'date_dé',
+            'CV',
+            'LinkedIN',
+            'Mobilité',
+            'Disponibilité'
+        ]
+        
+class AdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Admin
+        fields = ['ID_Admin', 'Mail', 'mdp']
+       
