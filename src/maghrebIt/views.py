@@ -25,7 +25,7 @@ def checkAuth(request):
         return False
     try:
         token = token.replace('Bearer ', "")
-        payload = jwt.decode(token, 'secret', algorithms=["HS256"])
+        payload = jwt.decode(token, 'maghrebIt', algorithms=["HS256"])
         return True
     except Exception as e:
         print("Non authentifié 2")
