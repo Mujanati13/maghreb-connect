@@ -18,4 +18,5 @@ urlpatterns = [
     re_path(r'^login/([0-9]+)$', views.login),
     path('collaborateur/', views.collaborateur_view),
     re_path(r'^collaborateur/([0-9]+)$', views.collaborateur_view),
+    path('saveDoc/', views.save_doc),
     ]

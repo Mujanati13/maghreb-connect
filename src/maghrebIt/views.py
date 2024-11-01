@@ -4,6 +4,10 @@ from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 from django.shortcuts import get_object_or_404             
 
+from django.core.files.storage import default_storage
+import random
+import string
+import os
 
 from .models import *
 from .serializers import *
@@ -27,6 +31,43 @@ def checkAuth(request):
         print("Non authentifié 2")
         print(e)
         return False
+
+@csrf_exempt
+def save_doc(request):
+    # Vérification de la méthode HTTP
+    if request.method != 'POST':
+        return JsonResponse({"status": False, "msg": "Méthode non autorisée"}, status=405)
+
+    # Vérification de l'authentification (décommenter si nécessaire)
+    # if checkAuth(request) == False:
+    #     return JsonResponse({
+    #             "status": False,
+    #             "msg": "Non authentifié"
+    #             }, safe=False, status=401)
+
+    # Récupérer le fichier et le chemin spécifié
+    file = request.FILES.get('uploadedFile')
+    path = request.POST.get('path')
+
+    # Vérifier les données fournies
+    if not file:
+        return JsonResponse({"status": False, "msg": "Aucun fichier fourni"}, status=400)
+    if not path:
+        return JsonResponse({"status": False, "msg": "Chemin de sauvegarde non fourni"}, status=400)
+
+    # Générer un nom de fichier unique avec l'extension d'origine
+    file_extension = os.path.splitext(file.name)[1]  # Récupérer l'extension du fichier
+    char_set = string.ascii_uppercase + string.digits
+    file_name_gen = ''.join(random.sample(char_set * 6, 6))
+    file_name_base = ''.join(random.sample(char_set * 6, 6))
+    file_name = f"{path}{file_name_base}-{file_name_gen}{file_extension}"
+
+    # Sauvegarder le fichier
+    try:
+        saved_path = default_storage.save(file_name, file)
+        return JsonResponse({"status": True, "path": saved_path}, safe=False)
+    except Exception as e:
+        return JsonResponse({"status": False, "msg": str(e)}, status=500)
 
 # Login view
 @csrf_exempt
