@@ -92,7 +92,7 @@ def login(request):
                     'email': user.Mail,
                    
                 }
-                token = jwt.encode(payload, 'secret', algorithm='HS256')
+                token = jwt.encode(payload, 'maghrebIt', algorithm='HS256')
 
                 response = JsonResponse( {"success": True,  "token": token, "data": client_serializer.data}, safe=False)
 
