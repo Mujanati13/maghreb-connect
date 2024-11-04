@@ -38,13 +38,6 @@ def save_doc(request):
     if request.method != 'POST':
         return JsonResponse({"status": False, "msg": "Méthode non autorisée"}, status=405)
 
-    # Vérification de l'authentification (décommenter si nécessaire)
-    # if checkAuth(request) == False:
-    #     return JsonResponse({
-    #             "status": False,
-    #             "msg": "Non authentifié"
-    #             }, safe=False, status=401)
-
     # Récupérer le fichier et le chemin spécifié
     file = request.FILES.get('uploadedFile')
     path = request.POST.get('path')
@@ -171,9 +164,14 @@ def client_view(request, id=0):
                         "errors": client_serializer.errors
                         }, safe=False)
     if request.method == 'DELETE':
-        client = Client.objects.get(ID_clt=id)
-        client.delete()
-        return JsonResponse("Deleted Succeffuly!!", safe=False)
+        try:
+            client = Client.objects.get(ID_clt=id)
+            client.delete()
+            return JsonResponse("Deleted Succeffuly!!", safe=False)
+        except Exception as e:
+             return JsonResponse({"status": 404,
+                    "msg": "client n'existe pas"
+                    }, safe=False)
     
 # Document view
 @csrf_exempt
@@ -223,9 +221,15 @@ def Document_view(request, id=0):
                         "errors": doc_serializer.errors
                         }, safe=False)
     if request.method == 'DELETE':
-        doc = Doc_clt.objects.get(ID_DOC_CLT=id)
-        doc.delete()
-        return JsonResponse("Deleted Succeffuly!!", safe=False)
+        try:
+            doc = Doc_clt.objects.get(ID_DOC_CLT=id)
+            doc.delete()
+            return JsonResponse("Deleted Succeffuly!!", safe=False)
+        except Exception as e:
+             return JsonResponse({"status": 404,
+                    "msg": "col n'existe pas"
+                    }, safe=False)
+        
     
 # Create your views here.
 @csrf_exempt
@@ -295,9 +299,14 @@ def esn_view(request, id=0):
                         "errors": esn_serializer.errors
                         }, safe=False)
     if request.method == 'DELETE':
-        esn = ESN.objects.get(ID_ESN=id)
-        esn.delete()
-        return JsonResponse("Deleted Succeffuly!!", safe=False)
+        try:
+            esn = ESN.objects.get(ID_ESN=id)
+            esn.delete()
+            return JsonResponse("Deleted Succeffuly!!", safe=False)
+        except Exception as e:
+             return JsonResponse({"status": 404,
+                    "msg": "esn n'existe pas"
+                    }, safe=False)
 
 # Document view
 @csrf_exempt
@@ -347,9 +356,14 @@ def docEsn_view(request, id=0):
                         "errors": doc_serializer.errors
                         }, safe=False)
     if request.method == 'DELETE':
-        doc = DocumentESN.objects.get(ID_DOC_ESN=id)
-        doc.delete()
-        return JsonResponse("Deleted Succeffuly!!", safe=False)
+        try:
+            doc = DocumentESN.objects.get(ID_DOC_ESN=id)
+            doc.delete()
+            return JsonResponse("Deleted Succeffuly!!", safe=False)
+        except Exception as e:
+             return JsonResponse({"status": 404,
+                    "msg": "docESN n'existe pas"
+                    }, safe=False)
     
 
 # collaborateur_view
@@ -398,9 +412,14 @@ def collaborateur_view(request, id=0):
                         "errors": col_serializer.errors
                         }, safe=False)
     if request.method == 'DELETE':
-        col = Collaborateur.objects.get(ID_collab=id)
-        col.delete()
-        return JsonResponse("Deleted Succeffuly!!", safe=False)
+        try:
+            col = Collaborateur.objects.get(ID_collab=id)
+            col.delete()
+            return JsonResponse("Deleted Succeffuly!!", safe=False)
+        except Exception as e:
+             return JsonResponse({"status": 404,
+                    "msg": "col n'existe pas"
+                    }, safe=False)
     
 
 # Admin views .
