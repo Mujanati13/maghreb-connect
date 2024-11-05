@@ -13,7 +13,8 @@ import {
     Card,
     Avatar,
     Radio,
-    Form
+    Form,
+    Select
 } from 'antd';
 import {
     AppstoreOutlined,
@@ -23,77 +24,193 @@ import {
     EyeOutlined,
     DownloadOutlined,
     FileOutlined,
-    EditOutlined
+    EditOutlined,
+    InboxOutlined
 } from '@ant-design/icons';
 import { token } from '../../helper/enpoint';
 
 const { Title } = Typography;
 const { Search } = Input;
+const { Option } = Select;
+const { Dragger } = Upload;
 
-const ClientDocument = () => {
-    const [isTableView, setIsTableView] = useState(false);
+const ClientDocumentManagement = () => {
+    const [isTableView, setIsTableView] = useState(true);
     const [documents, setDocuments] = useState([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [searchText, setSearchText] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [uploadedFileUrl, setUploadedFileUrl] = useState('');
     const [editForm] = Form.useForm();
 
-    // Fetch documents from API
+    // Fetch documents
     const fetchDocuments = async () => {
-        setIsLoading(true);
         try {
+            setLoading(true);
             const response = await axios.get('http://51.38.99.75:4001/api/documentClient/', {
                 headers: {
                     Authorization: `${token()}`
                 }
             });
-            if (response.data && response.data.data) {
-                // Transform API data to match existing component structure
-                const transformedDocs = response.data.data.map(doc => ({
-                    key: doc.ID_DOC_CLT.toString(),
-                    id_doc_clt: doc.ID_DOC_CLT,
-                    id_clt: doc.ID_CLT,
-                    nom: doc.Titre,
-                    type: doc.Doc_URL.split('.').pop().toUpperCase(),
-                    taille: 'N/A', // API doesn't provide file size
-                    dateUpload: doc.Date_Valid,
-                    status: doc.Statut,
-                    client: doc.client,
-                    description: doc.Description,
-                    url: doc.Doc_URL
-                }));
-                setDocuments(transformedDocs);
-            }
+            setDocuments(response.data.data.map(doc => ({
+                ...doc,
+                key: doc.ID_DOC_CLT
+            })));
         } catch (error) {
-            message.error('Erreur lors de la récupération des documents');
+            message.error('Erreur lors du chargement des documents');
             console.error('Fetch error:', error);
+        } finally {
+            setLoading(false);
         }
-        setIsLoading(false);
     };
 
-    // Initial document fetch
     useEffect(() => {
         fetchDocuments();
     }, []);
 
-    // File upload handler with new saveDoc API
+    // Add Document Handler
+    const handleAddDocument = async (values) => {
+        try {
+            const response = await axios.post('http://51.38.99.75:4001/api/documentClient/', values, {
+                headers: {
+                    Authorization: `${token()}`
+                }
+            });
+            message.success('Document ajouté avec succès');
+            fetchDocuments();
+            setIsEditModalVisible(false);
+        } catch (error) {
+            message.error('Erreur lors de l\'ajout du document');
+            console.error('Add error:', error);
+        }
+    };
+
+    // Edit Document Handler
+    const handleEditDocument = async (values) => {
+        try {
+            await axios.put(`http://51.38.99.75:4001/api/documentClient/${selectedDocument.ID_DOC_CLT}`, values, {
+                headers: {
+                    Authorization: `${token()}`
+                }
+            });
+            message.success('Document modifié avec succès');
+            fetchDocuments();
+            setIsEditModalVisible(false);
+        } catch (error) {
+            message.error('Erreur lors de la modification du document');
+            console.error('Edit error:', error);
+        }
+    };
+
+    // Delete Document Handler
+    const handleDelete = async (record) => {
+        Modal.confirm({
+            title: 'Êtes-vous sûr de vouloir supprimer ce document ?',
+            content: `Cette action supprimera définitivement ${record.Titre}`,
+            okText: 'Oui',
+            okType: 'danger',
+            cancelText: 'Non',
+            async onOk() {
+                try {
+                    await axios.delete(`http://51.38.99.75:4001/api/documentClient/${record.ID_DOC_CLT}`, {
+                        headers: {
+                            Authorization: `${token()}`
+                        }
+                    });
+                    message.success('Document supprimé avec succès');
+                    fetchDocuments();
+                } catch (error) {
+                    message.error('Erreur lors de la suppression du document');
+                    console.error('Delete error:', error);
+                }
+            },
+        });
+    };
+
+    // Open Edit Modal
+    const openEditModal = (record, isNewDocument = false) => {
+        setSelectedDocument(record);
+        setIsEditModalVisible(true);
+
+        if (isNewDocument) {
+            editForm.resetFields();
+        } else {
+            editForm.setFieldsValue({
+                Titre: record.Titre,
+                Description: record.Description,
+                Doc_URL: record.Doc_URL,
+                Date_Valid: record.Date_Valid,
+                Statut: record.Statut,
+                client: record.client
+            });
+        }
+    };
+
+    // Table columns configuration
+    const columns = [
+        {
+            title: 'Titre',
+            dataIndex: 'Titre',
+            key: 'Titre',
+            sorter: (a, b) => a.Titre.localeCompare(b.Titre)
+        },
+        {
+            title: 'Client',
+            dataIndex: 'client',
+            key: 'client'
+        },
+        {
+            title: 'URL',
+            dataIndex: 'Doc_URL',
+            key: 'Doc_URL',
+            render: (url) => <a href={url} target="_blank" rel="noopener noreferrer">Voir le document</a>
+        },
+        {
+            title: 'Date Validité',
+            dataIndex: 'Date_Valid',
+            key: 'Date_Valid'
+        },
+        {
+            title: 'Statut',
+            dataIndex: 'Statut',
+            key: 'Statut',
+            render: (status) => <Tag color={status === 'Validé' ? 'green' : 'orange'}>{status}</Tag>
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            render: (_, record) => (
+                <Space size="middle">
+                    <Button icon={<EditOutlined />} onClick={() => openEditModal(record)} />
+                    <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record)} />
+                </Space>
+            ),
+        },
+    ];
+
+    // Search Filter
+    const filteredDocuments = documents.filter(doc =>
+        doc.Titre.toLowerCase().includes(searchText.toLowerCase()) ||
+        doc.client.toLowerCase().includes(searchText.toLowerCase()) ||
+        doc.Statut.toLowerCase().includes(searchText.toLowerCase())
+    );
+
+    // Upload configuration
     const uploadProps = {
         name: 'uploadedFile',
         customRequest: async ({ file, onSuccess, onError, onProgress }) => {
             const formData = new FormData();
-            formData.append('uploadFile', file);
+            formData.append('uploadedFile', file);
+            formData.append('path', 'C:/Users/helka/OneDrive/Bureau/MaghrebIT-Connect/media/doc_cl/'); // Update path for client documents
 
             try {
                 // First API call - Save the document file
                 const saveDocResponse = await axios.post(
-                    'http://51.38.99.75:4001/api/saveDoc',
+                    'http://51.38.99.75:4001/api/saveDoc/', // Remove path from URL
                     formData,
                     {
-                        params: {
-                            path: 'C:/Users/helka/OneDrive/Bureau/MaghrebIT-Connect/media/doc_client/'
-                        },
                         headers: {
                             'Content-Type': 'multipart/form-data',
                             Authorization: `${token()}`,
@@ -107,6 +224,7 @@ const ClientDocument = () => {
 
                 // If first API call is successful, proceed with second API call
                 if (saveDocResponse.data && saveDocResponse.data.path) {
+                    setUploadedFileUrl(saveDocResponse.data.path)
                     // Second API call - Save document metadata
                     const metadataResponse = await axios.post(
                         'http://51.38.99.75:4001/api/documentClient/',
@@ -115,7 +233,8 @@ const ClientDocument = () => {
                             Titre: file.name,
                             Description: 'Document ajouté via upload',
                             Statut: 'En Attente',
-                            Doc_URL: saveDocResponse.data.path
+                            Doc_URL: saveDocResponse.data.path,
+                            client: 'Entreprise XYZ' // Update client name
                         },
                         {
                             headers: {
@@ -163,180 +282,62 @@ const ClientDocument = () => {
         },
     };
 
-
-    // Table columns configuration
-    const columns = [
-        { title: 'Nom du Document', dataIndex: 'nom', key: 'nom', sorter: (a, b) => a.nom.localeCompare(b.nom) },
-        {
-            title: 'Type',
-            dataIndex: 'type',
-            key: 'type',
-            render: (type) => <Tag color={type === 'PDF' ? 'blue' : 'green'}>{type}</Tag>
-        },
-        { title: 'Taille', dataIndex: 'taille', key: 'taille' },
-        {
-            title: 'Date Upload',
-            dataIndex: 'dateUpload',
-            key: 'dateUpload',
-            sorter: (a, b) => new Date(a.dateUpload) - new Date(b.dateUpload)
-        },
-        {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status) => <Tag color={status === 'Validé' ? 'green' : 'orange'}>{status}</Tag>
-        },
-        {
-            title: 'Actions',
-            key: 'actions',
-            render: (_, record) => (
-                <Space size="middle">
-                    <Button icon={<EyeOutlined />} onClick={() => handleView(record)} />
-                    <Button
-                        icon={<DownloadOutlined />}
-                        onClick={() => window.open(record.url, '_blank')}
-                    />
-                    <Button
-                        icon={<EditOutlined />}
-                        onClick={() => handleEdit(record)}
-                    />
-                    <Button
-                        icon={<DeleteOutlined />}
-                        danger
-                        onClick={() => handleDelete(record)}
-                    />
-                </Space>
-            ),
-        },
-    ];
-
-    // Action handlers
-    const handleView = (record) => {
-        setSelectedDocument(record);
-        setIsModalVisible(true);
-    };
-
-    const handleEdit = (record) => {
-        setSelectedDocument(record);
-        editForm.setFieldsValue({
-            Titre: record.nom,
-            Description: record.description,
-            Statut: record.status,
-            client: record.client
-        });
-        setIsEditModalVisible(true);
-    };
-
-    const handleEditSubmit = async (values) => {
-        try {
-            const response = await axios.put(`http://51.38.99.75:4001/api/documentClient/${selectedDocument.id_doc_clt}`, {
-                ID_CLT: selectedDocument.id_clt,
-                Titre: values.Titre,
-                Description: values.Description,
-                Statut: values.Statut,
-                client: values.client
-            });
-
-            if (response.data) {
-                message.success('Document mis à jour avec succès');
-                setIsEditModalVisible(false);
-                fetchDocuments();
-            }
-        } catch (error) {
-            message.error('Erreur lors de la mise à jour du document');
-            console.error('Edit error:', error);
-        }
-    };
-
-    const handleDelete = async (record) => {
-        Modal.confirm({
-            title: 'Êtes-vous sûr de vouloir supprimer ce document ?',
-            content: `Cette action supprimera définitivement ${record.nom}`,
-            okText: 'Oui',
-            okType: 'danger',
-            cancelText: 'Non',
-            async onOk() {
-                try {
-                    await axios.delete(`http://51.38.99.75:4001/api/documentClient/${record.key}`);
-                    message.success('Document supprimé avec succès');
-                    // Refetch documents to get updated list
-                    fetchDocuments();
-                } catch (error) {
-                    message.error('Erreur lors de la suppression du document');
-                    console.error('Delete error:', error);
-                }
-            },
-        });
-    };
-
-    const handleSearch = (value) => {
-        setSearchText(value);
-    };
-
-    // Filter documents based on search
-    const filteredDocuments = documents.filter(doc =>
-        doc.nom.toLowerCase().includes(searchText.toLowerCase()) ||
-        doc.type.toLowerCase().includes(searchText.toLowerCase()) ||
-        doc.status.toLowerCase().includes(searchText.toLowerCase())
-    );
-
     return (
-        <div className="p-4">
-            <div className="mb-4 flex flex-row justify-between items-center">
-                <div>
-                    <Radio.Group
-                        value={isTableView}
-                        onChange={(e) => setIsTableView(!isTableView)}
-                        buttonStyle="solid"
-                    >
-                        <Radio.Button value="table">Tableau</Radio.Button>
-                        <Radio.Button value="card">Cartes</Radio.Button>
-                    </Radio.Group>
-                </div>
-                <div className="flex justify-between space-x-5 items-center">
-                    <Search
-                        placeholder="Rechercher un document..."
-                        allowClear
-                        onChange={(e) => handleSearch(e.target.value)}
-                        style={{ width: 300 }}
-                    />
-                    <Upload {...uploadProps}>
-                        <Button icon={<UploadOutlined />} type="primary">Ajouter un Document</Button>
-                    </Upload>
-                </div>
+        <div className="p-1">
+            <div className="mb-5">
+                <Radio.Group
+                    value={isTableView}
+                    onChange={(e) => setIsTableView(!isTableView)}
+                    buttonStyle="solid"
+                >
+                    <Radio.Button value={true}>Tableau</Radio.Button>
+                    <Radio.Button value={false}>Cartes</Radio.Button>
+                </Radio.Group>
+            </div>
+            <div className="flex justify-between mb-5">
+                <Search
+                    placeholder="Rechercher un document..."
+                    allowClear
+                    onChange={(e) => setSearchText(e.target.value)}
+                    style={{ width: 300 }}
+                />
+                <Button
+                    icon={<UploadOutlined />}
+                    type="primary"
+                    onClick={() => openEditModal({}, true)}
+                >
+                    Ajouter un Document
+                </Button>
             </div>
 
-            {isLoading ? (
-                <div className="text-center">Chargement des documents...</div>
-            ) : isTableView ? (
+            {isTableView ? (
                 <Table
                     columns={columns}
                     dataSource={filteredDocuments}
                     pagination={{ pageSize: 10 }}
                     bordered
+                    loading={loading}
                 />
             ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
                     {filteredDocuments.map((doc) => (
                         <Card
-                            key={doc.key}
+                            key={doc.ID_DOC_CLT}
                             style={{ width: 300 }}
                             actions={[
-                                <EyeOutlined key="view" onClick={() => handleView(doc)} />,
-                                <DownloadOutlined key="download" onClick={() => window.open(doc.url, '_blank')} />,
-                                <EditOutlined key="edit" onClick={() => handleEdit(doc)} />,
+                                <EditOutlined key="edit" onClick={() => openEditModal(doc)} />,
                                 <DeleteOutlined key="delete" onClick={() => handleDelete(doc)} />
                             ]}
                         >
                             <Card.Meta
                                 avatar={<Avatar icon={<FileOutlined />} />}
-                                title={doc.nom}
+                                title={doc.Titre}
                                 description={
                                     <>
-                                        <p>Type: <Tag color={doc.type === 'PDF' ? 'blue' : 'green'}>{doc.type}</Tag></p>
-                                        <p>Taille: {doc.taille}</p>
-                                        <p>Date Upload: {doc.dateUpload}</p>
-                                        <p>Status: <Tag color={doc.status === 'Validé' ? 'green' : 'orange'}>{doc.status}</Tag></p>
+                                        <p>Client: {doc.client}</p>
+                                        <p>Date Validité: {doc.Date_Valid}</p>
+                                        <p>Statut: <Tag color={doc.Statut === 'Validé' ? 'green' : 'orange'}>{doc.Statut}</Tag></p>
+                                        <a href={doc.Doc_URL} target="_blank" rel="noopener noreferrer">Voir le document</a>
                                     </>
                                 }
                             />
@@ -345,76 +346,93 @@ const ClientDocument = () => {
                 </div>
             )}
 
+            {/* Edit/Add Document Modal */}
             <Modal
-                title="Aperçu du Document"
-                visible={isModalVisible}
-                onCancel={() => setIsModalVisible(false)}
+                title={selectedDocument?.ID_DOC_CLT ? "Modifier le Document" : "Ajouter un Document"}
+                visible={isEditModalVisible}
+                onCancel={() => {
+                    setIsEditModalVisible(false);
+                    setUploadedFileUrl('');
+                }}
                 footer={null}
                 width={800}
-            >
-                {selectedDocument && (
-                    <div>
-                        <p><strong>Titre:</strong> {selectedDocument.nom}</p>
-                        <p><strong>Client:</strong> {selectedDocument.client}</p>
-                        <p><strong>Description:</strong> {selectedDocument.description}</p>
-                        <p><strong>Date de Validation:</strong> {selectedDocument.dateUpload}</p>
-                        <p><strong>Statut:</strong> {selectedDocument.status}</p>
-                        <Button
-                            type="primary"
-                            onClick={() => window.open(selectedDocument.url, '_blank')}
-                        >
-                            Ouvrir le Document
-                        </Button>
-                    </div>
-                )}
-            </Modal>
-
-            <Modal
-                title="Modifier le Document"
-                visible={isEditModalVisible}
-                onCancel={() => setIsEditModalVisible(false)}
-                footer={null}
-                width={600}
             >
                 <Form
                     form={editForm}
                     layout="vertical"
-                    onFinish={handleEditSubmit}
+                    onFinish={selectedDocument?.ID_DOC_CLT ? handleEditDocument : handleAddDocument}
                 >
                     <Form.Item
                         name="Titre"
-                        label="Titre du Document"
-                        rules={[{ required: true, message: 'Veuillez saisir le titre' }]}
+                        label="Titre"
+                        rules={[{ required: true, message: 'Veuillez saisir un titre' }]}
                     >
                         <Input />
                     </Form.Item>
+
                     <Form.Item
                         name="Description"
                         label="Description"
                     >
-                        <Input.TextArea rows={4} />
+                        <Input.TextArea rows={3} />
                     </Form.Item>
+
+                    <Form.Item label="Document">
+                        <Dragger {...uploadProps}>
+                            <p className="ant-upload-drag-icon">
+                                <InboxOutlined />
+                            </p>
+                            <p className="ant-upload-text">Cliquez ou déposez un fichier ici</p>
+                            <p className="ant-upload-hint">
+                                Taille maximale: 10MB
+                            </p>
+                        </Dragger>
+                    </Form.Item>
+
+                    <Form.Item
+                        name="Doc_URL"
+                        label="URL du Document"
+                        rules={[{
+                            required: !uploadedFileUrl,
+                            message: 'Veuillez télécharger un document ou fournir une URL'
+                        }]}
+                    >
+                        <Input disabled={!!uploadedFileUrl} />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="Date_Valid"
+                        label="Date de Validité"
+                        rules={[{ required: true, message: 'Veuillez saisir la date de validité' }]}
+                    >
+                        <Input type="date" />
+                    </Form.Item>
+
                     <Form.Item
                         name="Statut"
                         label="Statut"
                         rules={[{ required: true, message: 'Veuillez sélectionner un statut' }]}
                     >
-                        <Radio.Group>
-                            <Radio value="Validé">Validé</Radio>
-                            <Radio value="En Attente">En Attente</Radio>
-                            <Radio value="Rejeté">Rejeté</Radio>
-                        </Radio.Group>
+                        <Select>
+                            <Option value="Validé">Validé</Option>
+                            <Option value="En attente">En attente</Option>
+                            <Option value="Expiré">Expiré</Option>
+                        </Select>
                     </Form.Item>
+
                     <Form.Item
                         name="client"
                         label="Client"
+                        rules={[{ required: true, message: 'Veuillez saisir le nom du client' }]}
                     >
                         <Input />
                     </Form.Item>
+
                     <Form.Item>
                         <Button type="primary" htmlType="submit">
-                            Mettre à jour
+                            {selectedDocument?.ID_DOC_CLT ? "Modifier" : "Ajouter"}
                         </Button>
+
                     </Form.Item>
                 </Form>
             </Modal>
@@ -422,4 +440,4 @@ const ClientDocument = () => {
     );
 };
 
-export default ClientDocument;
+export default ClientDocumentManagement;

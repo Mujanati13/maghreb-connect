@@ -24,13 +24,15 @@ import {
     EyeOutlined,
     DownloadOutlined,
     FileOutlined,
-    EditOutlined
+    EditOutlined,
+    InboxOutlined
 } from '@ant-design/icons';
 import { token } from '../../helper/enpoint';
 
 const { Title } = Typography;
 const { Search } = Input;
 const { Option } = Select;
+const { Dragger } = Upload;
 
 const ClientDocumentManagement = () => {
     const [isTableView, setIsTableView] = useState(true);
@@ -40,6 +42,7 @@ const ClientDocumentManagement = () => {
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [uploadedFileUrl, setUploadedFileUrl] = useState('');
     const [editForm] = Form.useForm();
 
     // Fetch documents
@@ -194,6 +197,90 @@ const ClientDocumentManagement = () => {
         doc.Statut.toLowerCase().includes(searchText.toLowerCase())
     );
 
+    // Upload configuration
+    const uploadProps = {
+        name: 'uploadedFile',
+        customRequest: async ({ file, onSuccess, onError, onProgress }) => {
+            const formData = new FormData();
+            formData.append('uploadedFile', file);
+            formData.append('path', 'C:/Users/helka/OneDrive/Bureau/MaghrebIT-Connect/media/doc_en/'); // Add path in form-data
+    
+            try {
+                // First API call - Save the document file
+                const saveDocResponse = await axios.post(
+                    'http://51.38.99.75:4001/api/saveDoc/', // Remove path from URL
+                    formData,
+                    {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                            Authorization: `${token()}`,
+                        },
+                        onUploadProgress: (progressEvent) => {
+                            const percent = Math.floor((progressEvent.loaded / progressEvent.total) * 100);
+                            onProgress({ percent });
+                        }
+                    }
+                );
+    
+                // If first API call is successful, proceed with second API call
+                if (saveDocResponse.data && saveDocResponse.data.path) {
+                    setUploadedFileUrl(saveDocResponse.data.path)
+                    // Second API call - Save document metadata
+                    const metadataResponse = await axios.post(
+                        'http://51.38.99.75:4001/api/documentClient/',
+                        {
+                            ID_CLT: '1', // Consider making this dynamic
+                            Titre: file.name,
+                            Description: 'Document ajouté via upload',
+                            Statut: 'En Attente',
+                            Doc_URL: saveDocResponse.data.path
+                        },
+                        {
+                            headers: {
+                                Authorization: `${token()}`
+                            }
+                        }
+                    );
+    
+                    if (metadataResponse.data) {
+                        onSuccess(saveDocResponse.data);
+                        message.success(`${file.name} fichier téléchargé avec succès`);
+                        fetchDocuments(); // Refetch documents list
+                    }
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                onError(error);
+                message.error(`${file.name} échec du téléchargement.`);
+            }
+        },
+        beforeUpload: (file) => {
+            // File type validation
+            const isPDForDOC = file.type === 'application/pdf' ||
+                file.type === 'application/msword' ||
+                file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    
+            if (!isPDForDOC) {
+                message.error(`${file.name} n'est pas un fichier PDF ou DOC`);
+                return false;
+            }
+    
+            // File size validation
+            const isLt10M = file.size / 1024 / 1024 < 10;
+            if (!isLt10M) {
+                message.error('Le fichier doit être inférieur à 10MB!');
+                return false;
+            }
+    
+            return isPDForDOC && isLt10M;
+        },
+        onChange: (info) => {
+            if (info.file.status === 'error') {
+                message.error(`${info.file.name} échec du téléchargement.`);
+            }
+        },
+    };
+
     return (
         <div className="p-1">
             <div className="mb-5">
@@ -262,8 +349,12 @@ const ClientDocumentManagement = () => {
             <Modal
                 title={selectedDocument?.ID_DOC_ESN ? "Modifier le Document" : "Ajouter un Document"}
                 visible={isEditModalVisible}
-                onCancel={() => setIsEditModalVisible(false)}
+                onCancel={() => {
+                    setIsEditModalVisible(false);
+                    setUploadedFileUrl('');
+                }}
                 footer={null}
+                width={800}
             >
                 <Form
                     form={editForm}
@@ -285,12 +376,27 @@ const ClientDocumentManagement = () => {
                         <Input.TextArea rows={3} />
                     </Form.Item>
 
+                    <Form.Item label="Document">
+                        <Dragger {...uploadProps}>
+                            <p className="ant-upload-drag-icon">
+                                <InboxOutlined />
+                            </p>
+                            <p className="ant-upload-text">Cliquez ou déposez un fichier ici</p>
+                            <p className="ant-upload-hint">
+                                Taille maximale: 10MB
+                            </p>
+                        </Dragger>
+                    </Form.Item>
+
                     <Form.Item
                         name="Doc_URL"
                         label="URL du Document"
-                        rules={[{ required: true, message: 'Veuillez saisir l\'URL du document' }]}
+                        rules={[{
+                            required: !uploadedFileUrl,
+                            message: 'Veuillez télécharger un document ou fournir une URL'
+                        }]}
                     >
-                        <Input />
+                        <Input disabled={!!uploadedFileUrl} />
                     </Form.Item>
 
                     <Form.Item

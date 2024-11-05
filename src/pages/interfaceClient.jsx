@@ -5,6 +5,7 @@ import ClientPlusInfo from '../components/cl-interface/plus-info';
 import EntrepriseServices from '../components/cl-interface/en-list';
 import ClientDocument from '../components/cl-interface/document';
 import Listconsultant from '../components/en-interface/list-consultant';
+import ClientDocumentManagement from '../components/cl-interface/document';
 
 const ClientProfile = () => {
     const [current, setCurrent] = useState('dashboard');
@@ -50,7 +51,7 @@ const ClientProfile = () => {
             case 'messages':
                 return <EntrepriseServices />;
             case 'documents':
-                return <ClientDocument />;
+                return <ClientDocumentManagement />;
             case 'consultant':
                 return <Listconsultant />;
             default:
