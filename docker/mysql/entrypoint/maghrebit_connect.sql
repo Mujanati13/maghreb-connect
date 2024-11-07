@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : mar. 29 oct. 2024 à 22:30
+-- Généré le : jeu. 07 nov. 2024 à 15:09
 -- Version du serveur : 8.2.0
 -- Version de PHP : 8.2.13
 
@@ -42,6 +42,36 @@ CREATE TABLE IF NOT EXISTS `admin` (
 
 INSERT INTO `admin` (`ID_Admin`, `Mail`, `mdp`) VALUES
 (1, 'admin@example.com', '0a3dbb07cffe7b84adbff2b66c1208ad09099e4f');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `appeloffre`
+--
+
+DROP TABLE IF EXISTS `appeloffre`;
+CREATE TABLE IF NOT EXISTS `appeloffre` (
+  `id` int NOT NULL,
+  `client_id` int NOT NULL,
+  `titre` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `profil` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `tjm_min` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `tjm_max` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `date_publication` date DEFAULT NULL,
+  `date_limite` date DEFAULT NULL,
+  `date_debut` date DEFAULT NULL,
+  `statut` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `client_id` (`client_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `appeloffre`
+--
+
+INSERT INTO `appeloffre` (`id`, `client_id`, `titre`, `description`, `profil`, `tjm_min`, `tjm_max`, `date_publication`, `date_limite`, `date_debut`, `statut`) VALUES
+(1, 1, 'testtt', 'testtt', 'testtt', '100', '1000', '2024-11-08', '2018-11-13', '2024-11-08', '1');
 
 -- --------------------------------------------------------
 
@@ -181,6 +211,57 @@ CREATE TABLE IF NOT EXISTS `auth_user_user_permissions` (
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `bondecommande`
+--
+
+DROP TABLE IF EXISTS `bondecommande`;
+CREATE TABLE IF NOT EXISTS `bondecommande` (
+  `id_bdc` int NOT NULL AUTO_INCREMENT,
+  `candidature_id` int NOT NULL,
+  `numero_bdc` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `date_creation` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `montant_total` float NOT NULL,
+  `statut` varchar(20) COLLATE utf8mb4_general_ci DEFAULT 'En attente',
+  `description` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id_bdc`),
+  UNIQUE KEY `numero_bdc` (`numero_bdc`),
+  KEY `candidature_id` (`candidature_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `candidature`
+--
+
+DROP TABLE IF EXISTS `candidature`;
+CREATE TABLE IF NOT EXISTS `candidature` (
+  `id_cd` int NOT NULL AUTO_INCREMENT,
+  `AO_id` int NOT NULL,
+  `esn_id` int NOT NULL,
+  `responsable_compte` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `id_consultant` int DEFAULT NULL,
+  `date_candidature` date NOT NULL,
+  `statut` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
+  `tjm` decimal(10,2) NOT NULL,
+  `date_disponibilite` date NOT NULL,
+  `commentaire` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id_cd`),
+  KEY `AO_id` (`AO_id`),
+  KEY `esn_id` (`esn_id`),
+  KEY `id_consultant` (`id_consultant`)
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `candidature`
+--
+
+INSERT INTO `candidature` (`id_cd`, `AO_id`, `esn_id`, `responsable_compte`, `id_consultant`, `date_candidature`, `statut`, `tjm`, `date_disponibilite`, `commentaire`) VALUES
+(1, 1, 1, 'Jean Dupont', 1, '2024-11-10', 'En cours', 450.00, '2024-11-20', 'Expérience solide dans des projets similaires.');
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `client`
 --
 
@@ -250,6 +331,28 @@ CREATE TABLE IF NOT EXISTS `collaboration` (
 
 INSERT INTO `collaboration` (`ID_collab`, `ID_ESN`, `Admin`, `Commercial`, `Consultant`, `Actif`, `Nom`, `Prenom`, `Date_naissance`, `Poste`, `date_dé`, `date_debut_activ`, `CV`, `LinkedIN`, `Mobilité`, `Disponibilité`) VALUES
 (1, 1, 0, 1, 0, 1, 'Dupont', 'Jean', '1990-05-14', 'Commercial', NULL, '2023-01-01', 'https://example.com/cv.pdf', 'https://www.linkedin.com/in/jeandupont', 'National', '2023-12-31');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `contrat`
+--
+
+DROP TABLE IF EXISTS `contrat`;
+CREATE TABLE IF NOT EXISTS `contrat` (
+  `id_contrat` int NOT NULL AUTO_INCREMENT,
+  `candidature_id` int NOT NULL,
+  `numero_contrat` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `date_signature` date NOT NULL,
+  `date_debut` date NOT NULL,
+  `date_fin` date DEFAULT NULL,
+  `montant` float NOT NULL,
+  `statut` varchar(20) COLLATE utf8mb4_general_ci DEFAULT 'En cours',
+  `conditions` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id_contrat`),
+  UNIQUE KEY `numero_contrat` (`numero_contrat`),
+  KEY `candidature_id` (`candidature_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -442,6 +545,23 @@ CREATE TABLE IF NOT EXISTS `esn` (
 
 INSERT INTO `esn` (`ID_ESN`, `Raison_sociale`, `SIRET`, `RCE`, `Pays`, `Adresse`, `CP`, `Ville`, `Province`, `mail_Contact`, `Password`, `Tel_Contact`, `Statut`, `Date_validation`, `N_TVA`, `IBAN`, `BIC`, `Banque`) VALUES
 (1, 'Tech Solutions', '12345678901234', 'RC123456', 'France', '10 Rue de l\'Innovation', '75001', 'Paris', 'Île-de-France', 'contact@techsolutions.com', '0a3dbb07cffe7b84adbff2b66c1208ad09099e4f', '0123456789', 'Validé', '2024-10-30', 'FR123456789', 'FR7630006000011234567890189', 'AGRIFRPP', 'Crédit Agricole');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `notifications`
+--
+
+DROP TABLE IF EXISTS `notifications`;
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `message` text COLLATE utf8mb4_general_ci NOT NULL,
+  `status` varchar(20) COLLATE utf8mb4_general_ci DEFAULT 'Unread',
+  `categorie` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Contraintes pour les tables déchargées

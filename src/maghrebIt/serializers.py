@@ -104,4 +104,27 @@ class AdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Admin
         fields = ['ID_Admin', 'Mail', 'mdp']
+        
+class AppelOffreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppelOffre
+        fields = ['id', 'client_id', 'titre','description', 'profil', 'tjm_min','tjm_max', 'date_publication', 'date_limite','date_debut', 'statut']
+       
+
+
+class CandidatureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Candidature
+        fields = ['id_cd', 'AO_id', 'esn_id','responsable_compte', 'id_consultant', 'date_candidature','statut', 'tjm', 'date_disponibilite','commentaire']
+       
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'user_id', 'message','status', 'categorie', 'created_at']
+        
+      
+class BondecommandeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bondecommande
+        fields = ['id_bdc', 'candidature_id', 'numero_bdc','date_creation', 'montant_total', 'statut', 'description']
        

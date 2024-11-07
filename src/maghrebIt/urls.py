@@ -22,5 +22,13 @@ urlpatterns = [
     re_path(r'^login_client/([0-9]+)$', views.login_client),
     path('collaborateur/', views.collaborateur_view),
     re_path(r'^collaborateur/([0-9]+)$', views.collaborateur_view),
+    path('appelOffre/', views.appelOffre_view),
+    re_path(r'^appelOffre/([0-9]+)$', views.appelOffre_view),
+    path('notification/', views.notification_view),
+    re_path(r'^notification/([0-9]+)$', views.notification_view),
+    path('Bondecommande/', views.Bondecommande_view),
+    re_path(r'^Bondecommande/([0-9]+)$', views.Bondecommande_view),
+    path('candidature/', views.candidature_view),
+    re_path(r'^candidature/([0-9]+)$', views.candidature_view),
     path('saveDoc/', views.save_doc),
     ]

@@ -121,4 +121,63 @@ class Admin(models.Model):
 
     class Meta:
         db_table = 'admin'  # Nom de la table dans la base de données
+        
+class AppelOffre(models.Model):
+    id = models.AutoField(primary_key=True)  # Identifiant unique pour chaque document
+    client_id = models.IntegerField()   # Lien vers le modèle ESN
+    titre = models.CharField(max_length=255)  # URL du document
+    description = models.TextField(blank=True, null=True)   # Titre du document
+    profil = models.CharField(max_length=50)  # Date de validation
+    tjm_min = models.CharField(max_length=50) # Statut du document
+    tjm_max = models.CharField(max_length=50)  # Description du document
+    date_publication = models.DateField(max_length=255)  # Titre du document
+    date_limite = models.DateField(null=True, blank=True)  # Date de validation
+    date_debut = models.DateField(null=True, blank=True)  # Statut du document
+    statut = models.CharField(max_length=20)
+
+
+
+    class Meta:
+      
+        db_table = 'appeloffre'  # Nom de la table dans la base de données
+        
+
+
+class Candidature(models.Model):
+    id_cd = models.AutoField(primary_key=True)  # Identifiant unique pour chaque candidature
+    AO_id = models.IntegerField()   # Référence à l'appel d'offre
+    esn_id = models.IntegerField()  # Référence à l'ESN qui postule
+    responsable_compte = models.CharField(max_length=255, blank=True, null=True)  # Responsable du compte
+    id_consultant = models.IntegerField()  # Consultant référencé (optionnel)
+    date_candidature = models.DateField()  # Date de soumission de la candidature
+    statut = models.CharField(max_length=20, choices=[('En cours', 'En cours'), ('Sélectionnée', 'Sélectionnée'), ('Rejetée', 'Rejetée')])  # Statut de la candidature
+    tjm = models.DecimalField(max_digits=10, decimal_places=2)  # Tarif journalier proposé par l'ESN
+    date_disponibilite = models.DateField()  # Date de disponibilité pour commencer le projet
+    commentaire = models.TextField(blank=True, null=True)  # Commentaire supplémentaire
+
+    class Meta:
+        db_table = 'candidature'  # Nom de la table dans la base de données
+        
+class Notification(models.Model):
+    id = models.AutoField(primary_key=True)  # Identifiant unique pour chaque candidature
+    user_id = models.IntegerField()   # Référence à l'appel d'offre
+    message = models.TextField(blank=True, null=True) # Référence à l'ESN qui postule
+    status = models.CharField(max_length=20, blank=True, null=True)  # Responsable du compte
+    categorie = models.CharField(max_length=50, blank=True, null=True) 
+    created_at = models.DateTimeField(auto_now=True)
+   
+    class Meta:
+        db_table = 'notifications'  # Nom de la table dans la base de données
+
+class Bondecommande(models.Model):
+    id_bdc = models.AutoField(primary_key=True)  # Identifiant unique pour chaque candidature
+    candidature_id = models.IntegerField()   # Référence à l'appel d'offre
+    numero_bdc = models.CharField(max_length=50, blank=True, null=True) # Référence à l'ESN qui postule
+    date_creation = models.DateTimeField(auto_now=True)  # Responsable du compte
+    montant_total = models.FloatField()
+    statut = models.CharField(max_length=20, blank=True, null=True) 
+    description = models.TextField(blank=True, null=True)
+   
+    class Meta:
+        db_table = 'bondecommande'  # Nom de la table dans la base de données
 

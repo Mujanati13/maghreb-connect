@@ -558,3 +558,184 @@ def admin_view(request, id=0):
         admin = Admin.objects.get(ID_Admin=id)
         admin.delete()
         return JsonResponse("Deleted Succeffuly!!", safe=False)
+    
+   
+@csrf_exempt
+def appelOffre_view(request, id=0):
+    if request.method == 'GET':
+        colls = AppelOffre.objects.filter()
+        Collaborateur_serializer = AppelOffreSerializer(colls, many=True)
+        data = []
+        for col in Collaborateur_serializer.data:
+            data.append(col)
+        return JsonResponse({"total": len(data),"data": data}, safe=False)
+    if request.method == 'POST':
+        Collaborateur_data = JSONParser().parse(request)
+        col_serializer = AppelOffreSerializer(data=Collaborateur_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({
+                    "status": True,
+                    "msg": "Added Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to Add",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+    if request.method == 'PUT':
+        col_data = JSONParser().parse(request)
+        col = AppelOffre.objects.get(id=col_data["id"])
+        col_serializer = AppelOffreSerializer(col, data=col_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({"status": True,
+                    "msg": "updated Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to update",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+    if request.method == 'DELETE':
+        col = AppelOffre.objects.get(id=id)
+        col.delete()
+        return JsonResponse("Deleted Succeffuly!!", safe=False)
+
+    
+@csrf_exempt
+def candidature_view(request, id=0):
+    if request.method == 'GET':
+        colls = Candidature.objects.filter()
+        Collaborateur_serializer = CandidatureSerializer(colls, many=True)
+        data = []
+        for col in Collaborateur_serializer.data:
+            data.append(col)
+        return JsonResponse({"total": len(data),"data": data}, safe=False)
+    if request.method == 'POST':
+        Collaborateur_data = JSONParser().parse(request)
+        col_serializer = CandidatureSerializer(data=Collaborateur_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({
+                    "status": True,
+                    "msg": "Added Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to Add",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+    if request.method == 'PUT':
+        col_data = JSONParser().parse(request)
+        col = Candidature.objects.get(id_cd=col_data["id_cd"])
+        col_serializer = CandidatureSerializer(col, data=col_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({"status": True,
+                    "msg": "updated Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to update",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+    if request.method == 'DELETE':
+        col = Candidature.objects.get(id_cd=id)
+        col.delete()
+        return JsonResponse("Deleted Succeffuly!!", safe=False)
+
+    
+@csrf_exempt
+def notification_view(request, id=0):
+    if request.method == 'GET':
+        colls = Notification.objects.filter()
+        Collaborateur_serializer = NotificationSerializer(colls, many=True)
+        data = []
+        for col in Collaborateur_serializer.data:
+            data.append(col)
+        return JsonResponse({"total": len(data),"data": data}, safe=False)
+    if request.method == 'POST':
+        Collaborateur_data = JSONParser().parse(request)
+        col_serializer = NotificationSerializer(data=Collaborateur_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({
+                    "status": True,
+                    "msg": "Added Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to Add",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+    if request.method == 'PUT':
+        col_data = JSONParser().parse(request)
+        col = Notification.objects.get(id=col_data["id"])
+        col_serializer = NotificationSerializer(col, data=col_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({"status": True,
+                    "msg": "updated Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to update",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+    if request.method == 'DELETE':
+        col = Notification.objects.get(id=id)
+        col.delete()
+        return JsonResponse("Deleted Succeffuly!!", safe=False)
+    
+    
+@csrf_exempt
+def Bondecommande_view(request, id=0):
+    if request.method == 'GET':
+        colls = Bondecommande.objects.filter()
+        Collaborateur_serializer = BondecommandeSerializer(colls, many=True)
+        data = []
+        for col in Collaborateur_serializer.data:
+            data.append(col)
+        return JsonResponse({"total": len(data),"data": data}, safe=False)
+    if request.method == 'POST':
+        Collaborateur_data = JSONParser().parse(request)
+        col_serializer = BondecommandeSerializer(data=Collaborateur_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({
+                    "status": True,
+                    "msg": "Added Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to Add",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+    if request.method == 'PUT':
+        col_data = JSONParser().parse(request)
+        col = Bondecommande.objects.get(id_bdc=col_data["id_bdc"])
+        col_serializer = BondecommandeSerializer(col, data=col_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({"status": True,
+                    "msg": "updated Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to update",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+    if request.method == 'DELETE':
+        col = Bondecommande.objects.get(id_bdc=id)
+        col.delete()
+        return JsonResponse("Deleted Succeffuly!!", safe=False)
+    
