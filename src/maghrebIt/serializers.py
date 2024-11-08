@@ -127,4 +127,11 @@ class BondecommandeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bondecommande
         fields = ['id_bdc', 'candidature_id', 'numero_bdc','date_creation', 'montant_total', 'statut', 'description']
+        
+class ContratSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contrat
+        fields = ['id_contrat', 'candidature_id', 'numero_contrat','date_signature', 'date_debut', 'date_fin', 'montant','statut', 'conditions']
+        
+
        

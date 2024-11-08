@@ -739,3 +739,48 @@ def Bondecommande_view(request, id=0):
         col.delete()
         return JsonResponse("Deleted Succeffuly!!", safe=False)
     
+   
+@csrf_exempt
+def Contrat_view(request, id=0):
+    if request.method == 'GET':
+        colls = Contrat.objects.filter()
+        Collaborateur_serializer = ContratSerializer(colls, many=True)
+        data = []
+        for col in Collaborateur_serializer.data:
+            data.append(col)
+        return JsonResponse({"total": len(data),"data": data}, safe=False)
+    if request.method == 'POST':
+        Collaborateur_data = JSONParser().parse(request)
+        col_serializer = ContratSerializer(data=Collaborateur_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({
+                    "status": True,
+                    "msg": "Added Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to Add",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+    if request.method == 'PUT':
+        col_data = JSONParser().parse(request)
+        col = Contrat.objects.get(id_contrat=col_data["id_contrat"])
+        col_serializer = ContratSerializer(col, data=col_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({"status": True,
+                    "msg": "updated Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to update",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+    if request.method == 'DELETE':
+        col = Contrat.objects.get(id_contrat=id)
+        col.delete()
+        return JsonResponse("Deleted Succeffuly!!", safe=False)
+    
