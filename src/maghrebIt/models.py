@@ -195,3 +195,20 @@ class Contrat(models.Model):
     
     class Meta:
         db_table = 'contrat'  # Nom de la table dans la base de données
+        
+class Partenariat(models.Model):
+    CATEGORY_CHOICES = [
+        ('Diamond', 'Diamond'),
+        ('Golden', 'Golden'),
+        ('Silver', 'Silver'),
+    ]
+    id = models.AutoField(primary_key=True)
+    id_client = models.IntegerField()   # Référence à la table Client
+    id_esn = models.IntegerField()         # Référence à la table ESN
+    statut = models.CharField(max_length=50)                           # Statut du partenariat (ex: Actif, Inactif)
+    description = models.TextField(blank=True, null=True)              # Description du partenariat
+    categorie = models.CharField(max_length=10, choices=CATEGORY_CHOICES)  # Catégorie de partenariat
+
+    class Meta:
+        db_table = 'partenariat'
+        

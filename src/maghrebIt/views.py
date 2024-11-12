@@ -784,3 +784,31 @@ def Contrat_view(request, id=0):
         col.delete()
         return JsonResponse("Deleted Succeffuly!!", safe=False)
     
+   
+@csrf_exempt
+def partenariats_view(request, id=0):
+    if request.method == 'GET':
+        colls = Partenariat.objects.filter()
+        Collaborateur_serializer = PartenariatSerializer(colls, many=True)
+        data = []
+        for col in Collaborateur_serializer.data:
+            data.append(col)
+        return JsonResponse({"total": len(data),"data": data}, safe=False)
+    if request.method == 'POST':
+        Collaborateur_data = JSONParser().parse(request)
+        col_serializer = PartenariatSerializer(data=Collaborateur_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({
+                    "status": True,
+                    "msg": "Added Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to Add",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+  
+    
+    

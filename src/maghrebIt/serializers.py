@@ -134,4 +134,7 @@ class ContratSerializer(serializers.ModelSerializer):
         fields = ['id_contrat', 'candidature_id', 'numero_contrat','date_signature', 'date_debut', 'date_fin', 'montant','statut', 'conditions']
         
 
-       
+class PartenariatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Partenariat
+        fields = ['id','id_client', 'id_esn', 'statut', 'description', 'categorie']

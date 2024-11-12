@@ -32,5 +32,7 @@ urlpatterns = [
     re_path(r'^Contrat/([0-9]+)$', views.Contrat_view),
     path('candidature/', views.candidature_view),
     re_path(r'^candidature/([0-9]+)$', views.candidature_view),
+    path('partenariats/', views.partenariats_view),
+    re_path(r'^partenariats/([0-9]+)$', views.partenariats_view),
     path('saveDoc/', views.save_doc),
     ]
