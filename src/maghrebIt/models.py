@@ -185,9 +185,9 @@ class Contrat(models.Model):
     id_contrat = models.AutoField(primary_key=True)  # Identifiant unique pour chaque candidature
     candidature_id = models.IntegerField()   # Référence à l'appel d'offre
     numero_contrat = models.CharField(max_length=50, blank=True, null=True) # Référence à l'ESN qui postule
-    date_signature = models.DateTimeField(auto_now=True)  # Responsable du compte
+    date_signature = models.DateField()  # Responsable du compte
     date_debut = models.DateField()
-    date_fin = models.DateField 
+    date_fin = models.DateField()
     montant = models.FloatField()
     statut = models.CharField(max_length=20, blank=True, null=True) 
     conditions = models.TextField( blank=True, null=True) 
