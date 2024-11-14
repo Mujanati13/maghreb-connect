@@ -788,15 +788,15 @@ def Contrat_view(request, id=0):
 @csrf_exempt
 def partenariats_view(request, id=0):
     if request.method == 'GET':
-        colls = Partenariat.objects.filter()
-        Collaborateur_serializer = PartenariatSerializer(colls, many=True)
+        colls = Partenariat1.objects.filter()
+        Collaborateur_serializer = Partenariat1Serializer(colls, many=True)
         data = []
         for col in Collaborateur_serializer.data:
             data.append(col)
         return JsonResponse({"total": len(data),"data": data}, safe=False)
     if request.method == 'POST':
         Collaborateur_data = JSONParser().parse(request)
-        col_serializer = PartenariatSerializer(data=Collaborateur_data)
+        col_serializer = Partenariat1Serializer(data=Collaborateur_data)
         if col_serializer.is_valid():
             col_serializer.save()
             return JsonResponse({
@@ -809,6 +809,25 @@ def partenariats_view(request, id=0):
                         "msg": "Failed to Add",
                         "errors": col_serializer.errors
                         }, safe=False)
-  
+    if request.method == 'PUT':
+        col_data = JSONParser().parse(request)
+        col = Partenariat1.objects.get(id_part=col_data["id_part"])
+        col_serializer = Partenariat1Serializer(col, data=col_data)
+        if col_serializer.is_valid():
+            col_serializer.save()
+            return JsonResponse({"status": True,
+                    "msg": "updated Successfully!!",
+                    "errors": col_serializer.errors
+                    }, safe=False)
+        return JsonResponse({
+                        "status": False,
+                        "msg": "Failed to update",
+                        "errors": col_serializer.errors
+                        }, safe=False)
+    if request.method == 'DELETE':
+        col = Partenariat1.objects.get(id_part=id)
+        col.delete()
+        return JsonResponse("Deleted Succeffuly!!", safe=False)
     
+
     

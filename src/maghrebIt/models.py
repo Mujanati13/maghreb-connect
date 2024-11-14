@@ -212,3 +212,20 @@ class Partenariat(models.Model):
     class Meta:
         db_table = 'partenariat'
         
+        
+
+
+class Partenariat1(models.Model):
+    id_part = models.AutoField(primary_key=True)
+    id_client = models.IntegerField()  # Clé étrangère vers le modèle Client
+    id_esn = models.IntegerField()        # Clé étrangère vers le modèle ESN
+    date_debut = models.DateField()                                    # Date de début du partenariat
+    date_fin = models.DateField(blank=True, null=True)                 # Date de fin du partenariat, peut être NULL
+    statut = models.CharField(max_length=50)                           # Statut du partenariat (ex. : Actif, Inactif)
+    description = models.TextField(blank=True, null=True)              # Description du partenariat
+    categorie = models.CharField(max_length=50)                        # Catégorie du partenariat (ex. : Diamond, Golden, Silver)
+
+    class Meta:
+        db_table = 'partenariat1'  # Nom de la table dans la base de données
+
+
