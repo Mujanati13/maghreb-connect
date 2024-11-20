@@ -110,7 +110,7 @@ urlpatterns = [
     path('clients_par_esn/', views.clients_par_esn),
     re_path(r'^clients_par_esn/([0-9]+)$', views.clients_par_esn),
     
-    path('getDocumentESN/', views.clients_par_esn),
-    re_path(r'^getDocumentESN/([0-9]+)$', views.clients_par_esn),
+    path('getDocumentESN/', views.DocumentESNs),
+    re_path(r'^getDocumentESN/([0-9]+)$', views.DocumentESNs),
 
 ]
