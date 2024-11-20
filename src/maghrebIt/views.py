@@ -1718,4 +1718,39 @@ def clients_par_esn(request):
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
 
+@csrf_exempt
+def consultants_par_client(request):
+    if request.method == 'GET':
+        try:
+            # Récupération de l'identifiant du client
+            client_id = request.GET.get("client_id")
+            if not client_id:
+                return JsonResponse({"status": False, "message": "client_id manquant"}, safe=False)
+
+            # Filtrer les appels d'offres associés au client
+            appels_offres = AppelOffre.objects.filter(client_id=client_id)
+            if not appels_offres.exists():
+                return JsonResponse({"status": False, "message": "Aucun appel d'offre trouvé pour ce client"}, safe=False)
+
+            # Extraire les IDs des appels d'offres
+            appels_offres_ids = appels_offres.values_list('id', flat=True)
+
+            # Filtrer les candidatures liées à ces appels d'offres
+            candidatures = Candidature.objects.filter(AO_id__in=appels_offres_ids)
+            if not candidatures.exists():
+                return JsonResponse({"status": False, "message": "Aucune candidature trouvée"}, safe=False)
+
+            # Extraire les IDs des consultants associés
+            consultants_ids = candidatures.values_list('id_consultant', flat=True).distinct()
+
+            # Filtrer les consultants associés
+            consultants = Collaborateur.objects.filter(ID_collab__in=consultants_ids)
+
+            # Sérialiser les données des consultants
+            consultant_serializer = CollaborateurSerializer(consultants, many=True)
+            return JsonResponse({"total": len(consultant_serializer.data), "data": consultant_serializer.data}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
     
