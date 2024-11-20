@@ -1687,8 +1687,9 @@ def DocumentESNs(request):
 def clients_par_esn(request):
     if request.method == 'GET':
         esn_id = request.GET["esn_id"]
-        partenariats = Partenariat1.objects.filter(id_esn=esn_id)
-        clt = Client.objects.get(ID_clt=partenariats.id_client)
+        cand = Candidature.objects.filter(esn_id=esn_id)
+        app = AppelOffre.objects.filter(id=cand.AO_id)
+        clt = Client.objects.get(ID_clt=app.client_id)
         
         client_serializer = ClientSerializer(clt, many=True)
         data = []
