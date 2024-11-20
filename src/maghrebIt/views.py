@@ -1683,3 +1683,20 @@ def DocumentESNs(request):
             data.append(S)
         return JsonResponse({"total": len(data),"data": data}, safe=False)
     
+@csrf_exempt
+def clients_par_esn(request, esn_id):
+    try:
+        partenariats = Partenariat1.objects.filter(id_esn=esn_id)
+        clients = [
+            {
+                "id_client": partenariat.id_client.id,  # ID du client
+                "raison_sociale": partenariat.id_client.raison_sociale,  # Nom du client
+                "categorie": partenariat.categorie,
+                "statut": partenariat.statut,
+            }
+            for partenariat in partenariats
+        ]
+        return JsonResponse({"total": len(clients), "data": clients}, safe=False)
+    except Exception as e:
+        return JsonResponse({"status": False, "message": str(e)}, safe=False)
+    
