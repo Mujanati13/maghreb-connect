@@ -107,8 +107,8 @@ urlpatterns = [
     
     path('getDocumentClient/', views.DocumentClient),
     re_path(r'^getDocumentClient/([0-9]+)$', views.DocumentClient),
-    path('clients_par_esn/', views.DocumentClient),
-    re_path(r'^clients_par_esn/([0-9]+)$', views.DocumentClient),
+    path('clients_par_esn/', views.clients_par_esn),
+    re_path(r'^clients_par_esn/([0-9]+)$', views.clients_par_esn),
     
     path('getDocumentESN/', views.clients_par_esn),
     re_path(r'^getDocumentESN/([0-9]+)$', views.clients_par_esn),
