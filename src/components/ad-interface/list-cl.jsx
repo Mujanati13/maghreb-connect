@@ -85,7 +85,7 @@ export const ClientList = () => {
 
     // Add new client
     const handleClientAction = async (values) => {
-        console.log(editingClient.id);
+        // console.log(editingClient.id);
 
         const payload = editingClient ? values : { ...values, password: values.password || undefined };
 
@@ -266,7 +266,7 @@ export const ClientList = () => {
 
                     </Form.Item>
                     <Form.Item>
-                        <Button type="primary" htmlType="submit" block>
+                        <Button onCanPlay={handleClientAction()} type="primary" htmlType="submit" block>
                             {editingClient ? "Mettre à jour" : "Ajouter Client"}
                         </Button>
                     </Form.Item>

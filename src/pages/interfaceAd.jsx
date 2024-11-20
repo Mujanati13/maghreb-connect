@@ -1,102 +1,112 @@
-import React, { useState } from 'react';
-import { AppstoreOutlined, RiseOutlined, SettingOutlined, UserOutlined, FileOutlined, CalendarOutlined, UsergroupAddOutlined, LogoutOutlined } from '@ant-design/icons';
-import { Avatar, Divider, Menu } from 'antd';
-import { useNavigate } from 'react-router-dom';
-import { ClientList } from '../components/ad-interface/list-cl';
-import ClientDocument from '../components/cl-interface/document';
-import CollaboratorList from '../components/ad-interface/list-ens';
+import React, { useState } from "react";
+import {
+  AppstoreOutlined,
+  RiseOutlined,
+  SettingOutlined,
+  UserOutlined,
+  FileOutlined,
+  CalendarOutlined,
+  UsergroupAddOutlined,
+  LogoutOutlined,
+} from "@ant-design/icons";
+import { Avatar, Divider, Menu, Tag } from "antd";
+import { useNavigate } from "react-router-dom";
+import { ClientList } from "../components/ad-interface/list-cl";
+import ClientDocument from "../components/cl-interface/document";
+import CollaboratorList from "../components/ad-interface/list-ens";
 
 const items = [
-    {
-        label: 'Tableau de Bord',
-        key: 'dashboard',
-        icon: <AppstoreOutlined />,
-    },
-    {
-        label: "Liste 'ESN",
-        key: 'profile',
-        icon: <UserOutlined />,
-    },
-    {
-        label: 'Liste Clients',
-        key: 'collaborateur',
-        icon: <UsergroupAddOutlined />,
-    },
-    // Previous commented-out menu items remain the same
+  {
+    label: "Tableau de Bord",
+    key: "dashboard",
+    icon: <AppstoreOutlined />,
+  },
+  {
+    label: "Liste 'ESN",
+    key: "profile",
+    icon: <UserOutlined />,
+  },
+  {
+    label: "Liste Clients",
+    key: "collaborateur",
+    icon: <UsergroupAddOutlined />,
+  },
+  // Previous commented-out menu items remain the same
 ];
 
 const InterfaceAd = () => {
-    const [current, setCurrent] = useState('dashboard');
-    const navigate = useNavigate();
+  const [current, setCurrent] = useState("dashboard");
+  const navigate = useNavigate();
 
-    const onClick = (e) => {
-        console.log('click ', e);
-        setCurrent(e.key);
-    };
+  const onClick = (e) => {
+    console.log("click ", e);
+    setCurrent(e.key);
+  };
 
-    const handleLogout = () => {
-        // Remove admin token from localStorage
-        localStorage.removeItem('adminToken');
-        
-        // Redirect to login page
-        navigate('/loginAdmin');
-    };
+  const handleLogout = () => {
+    // Remove admin token from localStorage
+    localStorage.removeItem("adminToken");
 
-    const renderComponent = () => {
-        const [section, subsection] = current.split(':');
+    // Redirect to login page
+    navigate("/loginAdmin");
+  };
 
-        switch (section) {
-            case 'dashboard':
-                return <></>;
-            case 'profile':
-                return <CollaboratorList />;
-            case 'collaborateur':
-                return <ClientList />;
-            case 'documents':
-                return <ClientDocument />;
-            default:
-                return null;
-        }
-    };
+  const renderComponent = () => {
+    const [section, subsection] = current.split(":");
 
-    return (
-        <div className="w-full">
-            <div className='w-full flex justify-between p-5 items-center'>
-                <Avatar
-                    size={40}
-                    src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
-                />
-                <Menu
-                    className='w-[80%]'
-                    onClick={onClick}
-                    selectedKeys={[current]}
-                    mode="horizontal"
-                    items={items}
-                    style={{
-                        display: 'flex',
-                        justifyContent: '',
-                        border: 'none'
-                    }}
-                    expandedKeys={['calendar', 'settings']}
-                />
-                <LogoutOutlined 
-                    onClick={handleLogout}
-                    style={{ 
-                        fontSize: '20px', 
-                        cursor: 'pointer',
-                        color: '#ff4d4f' // Optional: add a reddish color to signify logout
-                    }}
-                    title="Déconnexion"
-                />
-            </div>
-            <div className='pl-5 pr-5'>
-                <hr />
-            </div>
-            <div className="px-5">
-                {renderComponent()}
-            </div>
+    switch (section) {
+      case "dashboard":
+        return <></>;
+      case "profile":
+        return <CollaboratorList />;
+      case "collaborateur":
+        return <ClientList />;
+      case "documents":
+        return <ClientDocument />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <div className="w-full flex justify-between p-5 items-center">
+        <Avatar
+          size={40}
+          src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
+        />
+        <Menu
+          className="w-[80%]"
+          onClick={onClick}
+          selectedKeys={[current]}
+          mode="horizontal"
+          items={items}
+          style={{
+            display: "flex",
+            justifyContent: "",
+            border: "none",
+          }}
+          expandedKeys={["calendar", "settings"]}
+        />
+        <div className="flex space-x-3 items-center">
+          <Tag>Admin</Tag>
+          <LogoutOutlined
+            onClick={handleLogout}
+            style={{
+              fontSize: "16px",
+              cursor: "pointer",
+              color: "#ff4d4f", // Optional: add a reddish color to signify logout
+            }}
+            title="Déconnexion"
+          />
         </div>
-    );
+      </div>
+      <div className="pl-5 pr-5">
+        <hr />
+      </div>
+      <div className="px-5">{renderComponent()}</div>
+    </div>
+  );
 };
 
 export default InterfaceAd;

@@ -1,168 +1,251 @@
-import React, { useState } from 'react';
-import { AppstoreOutlined, RiseOutlined, SettingOutlined, UserOutlined, FileOutlined, CalendarOutlined, UsergroupAddOutlined } from '@ant-design/icons';
-import { Avatar, Divider, Menu } from 'antd';
-// import { Dashboard, Profile, Messages, Documents, Appointments, Events, Settings } from './Components';
-import { ClientList } from '../components/en-interface/gestionClient';
-import EmployeeManagement from '../components/en-interface/collaborateur';
-import ClientDocumentManagement from '../components/en-interface/clientDocumen';
-// import ServiceDashboard from '../components/cl-interface/dashboard';
-
-const items = [
-    {
-        label: 'Tableau de Bord',
-        key: 'dashboard',
-        icon: <AppstoreOutlined />,
-    },
-    {
-        label: 'Clients',
-        key: 'profile',
-        icon: <UserOutlined />,
-    },
-    {
-        label: 'Collaborateur',
-        key: 'collaborateur',
-        icon: <UsergroupAddOutlined />,
-    },
-    {
-        label: 'Documents',
-        key: 'documents',
-        icon: <FileOutlined />,
-    },
-    // {
-    //     label: 'Calendrier',
-    //     key: 'calendar',
-    //     icon: <CalendarOutlined />,
-    //     children: [
-    //         // {
-    //         //     label: 'Rendez-vous',
-    //         //     key: 'appointments',
-    //         //     children: [
-    //         //         {
-    //         //             label: 'Nouveau',
-    //         //             key: 'appointments:new',
-    //         //         },
-    //         //         {
-    //         //             label: 'Liste',
-    //         //             key: 'appointments:list',
-    //         //         }
-    //         //     ]
-    //         // },
-    //         // {
-    //         //     label: 'Événements',
-    //         //     key: 'events',
-    //         //     children: [
-    //         //         {
-    //         //             label: 'Créer',
-    //         //             key: 'events:create',
-    //         //         },
-    //         //         {
-    //         //             label: 'Voir Tous',
-    //         //             key: 'events:all',
-    //         //         }
-    //         //     ]
-    //         // }
-    //     ]
-    // },
-    // {
-    //     label: 'Paramètres',
-    //     key: 'settings',
-    //     icon: <SettingOutlined />,
-    //     children: [
-    //         {
-    //             label: 'Général',
-    //             key: 'settings:general',
-    //             children: [
-    //                 {
-    //                     label: 'Préférences',
-    //                     key: 'settings:preferences',
-    //                 },
-    //                 {
-    //                     label: 'Sécurité',
-    //                     key: 'settings:security',
-    //                 }
-    //             ]
-    //         },
-    //         {
-    //             label: 'Notifications',
-    //             key: 'settings:notifications',
-    //             children: [
-    //                 {
-    //                     label: 'Email',
-    //                     key: 'notifications:email',
-    //                 },
-    //                 {
-    //                     label: 'Application',
-    //                     key: 'notifications:app',
-    //                 }
-    //             ]
-    //         }
-    //     ]
-    // },
-];
+import React, { useState, useMemo, useEffect } from "react";
+import {
+  LogoutOutlined,
+  MacCommandOutlined,
+  NotificationOutlined,
+  UserOutlined,
+  FileOutlined,
+  UsergroupAddOutlined,
+  DashboardOutlined,
+  TeamOutlined,
+  ShoppingCartOutlined,
+  FileTextOutlined,
+  SearchOutlined,
+  FileDoneOutlined,
+  UserSwitchOutlined,
+} from "@ant-design/icons";
+import { Menu, Tag, AutoComplete, Input } from "antd";
+import { ClientList } from "../components/en-interface/gestionClient";
+import EmployeeManagement from "../components/en-interface/collaborateur";
+import ClientDocumentManagement from "../components/en-interface/clientDocumen";
+import AppelDOffreInterface from "../components/en-interface/add-condi";
+import NotificationInterface from "../components/en-interface/noti-list";
+import BonDeCommandeInterface from "../components/en-interface/bdc-list";
+import ClientPartenariatInterface from "../components/en-interface/partenariat-list";
+import ContractList from "../components/en-interface/contart-en";
+import { isEsnLoggedIn, logoutEsn } from "../helper/db";
+import { useNavigate } from "react-router-dom";
+import ESNCandidatureInterface from "../components/en-interface/me-codi";
 
 const InterfaceEn = () => {
-    const [current, setCurrent] = useState('dashboard');
+  const [current, setCurrent] = useState("dashboard");
+  const [searchValue, setSearchValue] = useState("");
+  const navigate = useNavigate();
 
-    const onClick = (e) => {
-        console.log('click ', e);
-        setCurrent(e.key);
-    };
+  useEffect(() => {
+    {
+      const auth = isEsnLoggedIn();
+      if (auth == false) {
+        navigate("/Login");
+      }
+    }
+  }, []);
 
-    const renderComponent = () => {
-        const [section, subsection] = current.split(':');
+  const menuItems = [
+    {
+      label: "Tableau de Bord",
+      key: "dashboard",
+      icon: <DashboardOutlined />,
+    },
+    {
+      label: "Gestion Clients",
+      key: "client-management",
+      icon: <TeamOutlined />,
+      children: [
+        {
+          label: "Liste des Clients",
+          key: "Liste-des-Clients",
+          icon: <UserOutlined />,
+        },
+        {
+          label: "Collaborateurs",
+          key: "collaborateur",
+          icon: <UsergroupAddOutlined />,
+        },
+      ],
+    },
+    {
+      label: "Appels d'Offres",
+      key: "offers-management",
+      icon: <ShoppingCartOutlined />,
+      children: [
+        {
+          label: "Liste des Appels d'Offres",
+          key: "Liste-des-Appels-d'Offres",
+        },
+        {
+          label: "Bon de Commande",
+          key: "Bon-de-Commande",
+          icon: <MacCommandOutlined />,
+        },
+        {
+          label: "Contrats",
+          key: "Contart",
+          icon: <FileDoneOutlined />,
+        },
+        {
+          label: "Mes condidateur",
+          key: "Mes-condidateur",
+          icon: <UserSwitchOutlined />,
+        },
+      ],
+    },
+    {
+      label: "Ressources",
+      key: "resources",
+      icon: <FileOutlined />,
+      children: [
+        {
+          label: "Documents",
+          key: "documents",
+          icon: <FileTextOutlined />,
+        },
+        {
+          label: "Partenariat",
+          key: "Partenariat",
+          icon: <FileOutlined />,
+        },
+      ],
+    },
+    {
+      label: "Notifications",
+      key: "notification",
+      icon: <NotificationOutlined />,
+    },
+  ];
 
-        switch (section) {
-            case 'dashboard':
-                return <></>;
-            case 'profile':
-                return <ClientList />;
-            case 'collaborateur':
-                return <EmployeeManagement />;
-            case 'documents':
-                return <ClientDocumentManagement />;
-            // case 'appointments':
-            //     return <Appointments type={subsection} />;
-            // case 'events':
-            //     return <Events type={subsection} />;
-            // case 'settings':
-            //     if (current.startsWith('notifications')) {
-            //         return <Settings section="notifications" subsection={subsection} />;
-            //     }
-            // return <Settings section="general" subsection={subsection} />;
-            default:
-            // return <Dashboard />;
-        }
-    };
+  // Flatten menu items for search options
+  const flattenMenuItems = (items) => {
+    return items.reduce((acc, item) => {
+      if (item.children) {
+        return [...acc, ...flattenMenuItems(item.children)];
+      }
+      return [...acc, { key: item.key, label: item.label, icon: item.icon }];
+    }, []);
+  };
 
-    return (
-        <div className="w-full">
-            <div className='w-full flex justify-between p-5 items-center '>
-                <Avatar
-                    size={40}
-                    src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
-                />
-                <Menu
-                    className='w-[80%]'
-                    onClick={onClick}
-                    selectedKeys={[current]}
-                    mode="horizontal"
-                    items={items}
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        border: 'none'
-                    }}
-                    expandedKeys={['calendar', 'settings']}
-                />
-            </div>
-            <div className='pl-5 pr-5'>
-                <hr />
-            </div>
-            <div className="px-5">
-                {renderComponent()}
-            </div>
+  // Get search options based on input
+  const getSearchOptions = (searchText) => {
+    if (!searchText) return [];
+
+    const search = searchText.toLowerCase();
+    const flatItems = flattenMenuItems(menuItems);
+
+    return flatItems
+      .filter((item) => item.label.toLowerCase().includes(search))
+      .map((item) => ({
+        value: item.key,
+        label: (
+          <div className="flex items-center gap-2 py-2">
+            {item.icon}
+            <span>{item.label}</span>
+          </div>
+        ),
+      }));
+  };
+
+  const handleSearch = (value) => {
+    setSearchValue(value);
+  };
+
+  const handleSelect = (value) => {
+    setCurrent(value);
+    setSearchValue("");
+  };
+
+  const handleMenuClick = (e) => {
+    setCurrent(e.key);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && searchValue) {
+      const flatItems = flattenMenuItems(menuItems);
+      const matchingItem = flatItems.find((item) =>
+        item.label.toLowerCase().includes(searchValue.toLowerCase())
+      );
+      if (matchingItem) {
+        setCurrent(matchingItem.key);
+        setSearchValue("");
+      }
+    }
+  };
+
+  const renderComponent = () => {
+    switch (current) {
+      case "dashboard":
+        return null;
+      case "Liste-des-Clients":
+        return <ClientList />;
+      case "Liste-des-Appels-d'Offres":
+        return <AppelDOffreInterface />;
+      case "collaborateur":
+        return <EmployeeManagement />;
+      case "documents":
+        return <ClientDocumentManagement />;
+      case "notification":
+        return <NotificationInterface />;
+      case "Mes-condidateur":
+        return <ESNCandidatureInterface />;
+      case "Bon-de-Commande":
+        return <BonDeCommandeInterface />;
+      case "Contart":
+        return <ContractList />;
+      case "Partenariat":
+        return <ClientPartenariatInterface />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
+        <div className="w-full flex items-center justify-between p-4">
+          <div className="flex items-center flex-grow">
+            <Menu
+              onClick={handleMenuClick}
+              selectedKeys={[current]}
+              mode="horizontal"
+              items={menuItems}
+              className="flex-grow border-none mr-4"
+            />
+            <AutoComplete
+              value={searchValue}
+              options={getSearchOptions(searchValue)}
+              onSelect={handleSelect}
+              onChange={handleSearch}
+              onKeyPress={handleKeyPress}
+              className="w-64"
+            >
+              <Input
+                className="w-full rounded-lg border border-gray-200 focus:outline-none focus:border-blue-500"
+                placeholder="Rechercher dans le menu..."
+                suffix={<SearchOutlined className="text-gray-400" />}
+              />
+            </AutoComplete>
+          </div>
+          <div className="flex space-x-3 items-center ml-4">
+            <Tag color="blue">Espace de l'ENS</Tag>
+            <LogoutOutlined
+              onClick={()=>{
+                logoutEsn();
+                navigate("/Login");
+              }}
+              className="text-red-500 cursor-pointer text-base hover:text-red-600"
+              title="Déconnexion"
+            />
+          </div>
         </div>
-    );
+      </div>
+      <div className="pt-20 px-5 mt-5">
+        <div className="p-1 text-sm">
+          {current.replaceAll("-", " ").charAt(0).toUpperCase() +
+            current.replaceAll("-", " ").slice(1)}
+        </div>
+        <div className="mt-3">{renderComponent()}</div>
+      </div>
+    </div>
+  );
 };
 
 export default InterfaceEn;

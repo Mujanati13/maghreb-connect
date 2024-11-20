@@ -47,12 +47,17 @@ const ClientDocumentManagement = () => {
 
     // Fetch documents
     const fetchDocuments = async () => {
+        const id = localStorage.getItem("id");
+
         try {
             setLoading(true);
-            const response = await axios.get('http://51.38.99.75:4001/api/docEsn/', {
+            const response = await axios.get('http://51.38.99.75:4001/api/getDocumentESN/', {
                 headers: {
                     Authorization: `${token()}`
-                }
+                },
+                params: {
+                    esnId:id,
+                },
             });
             setDocuments(response.data.data.map(doc => ({
                 ...doc,

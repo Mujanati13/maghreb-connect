@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Table,
   Card,
@@ -17,8 +17,8 @@ import {
   Avatar,
   Form,
   Divider,
-  Select
-} from 'antd';
+  Select,
+} from "antd";
 import {
   SearchOutlined,
   PlusOutlined,
@@ -33,19 +33,18 @@ import {
   BankOutlined,
   HomeOutlined,
   GlobalOutlined,
-  
-} from '@ant-design/icons';
-import { token } from '../../helper/enpoint';
+} from "@ant-design/icons";
+import { token } from "../../helper/enpoint";
 
 const CollaboratorList = () => {
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [viewMode, setViewMode] = useState('table');
+  const [viewMode, setViewMode] = useState("table");
   const [collaborators, setCollaborators] = useState([]);
   const [editingCollaborator, setEditingCollaborator] = useState(null);
 
-  const API_BASE_URL = 'http://51.38.99.75:4001/api/ESN/';
+  const API_BASE_URL = "http://51.38.99.75:4001/api/ESN/";
 
   // Fetch Collaborators
   const fetchCollaborators = async () => {
@@ -53,16 +52,16 @@ const CollaboratorList = () => {
     try {
       const response = await axios.get(API_BASE_URL, {
         headers: {
-          Authorization: `${token()}`
-        }
+          Authorization: `${token()}`,
+        },
       });
-      const formattedData = response.data.data.map(item => ({
+      const formattedData = response.data.data.map((item) => ({
         key: item.ID_ESN,
         id: item.ID_ESN,
         nom: item.Raison_sociale,
         email: item.mail_Contact,
         phone: item.Tel_Contact,
-        poste: 'N/A', // Add appropriate field if available
+        poste: "N/A", // Add appropriate field if available
         status: item.Statut,
         Raison_sociale: item.Raison_sociale,
         SIRET: item.SIRET,
@@ -73,15 +72,13 @@ const CollaboratorList = () => {
         mail_Contact: item.mail_Contact,
         IBAN: item.IBAN,
         BIC: item.BIC,
-        Banque: item.Banque
-
-        
+        Banque: item.Banque,
       }));
       setCollaborators(formattedData);
       // message.success('Données chargées avec succès');
     } catch (error) {
-      message.error('Erreur lors du chargement des données');
-      console.error('Fetch error:', error);
+      message.error("Erreur lors du chargement des données");
+      console.error("Fetch error:", error);
     } finally {
       setLoading(false);
     }
@@ -100,14 +97,14 @@ const CollaboratorList = () => {
 
       const response = await axios.post(API_BASE_URL, payload, {
         headers: {
-          Authorization: `${token()}`
-        }
+          Authorization: `${token()}`,
+        },
       });
-      message.success('ENS ajouté avec succès');
+      message.success("ENS ajouté avec succès");
       fetchCollaborators();
     } catch (error) {
-      message.error('Erreur lors de l\'ajout du ENS');
-      console.error('Add error:', error);
+      message.error("Erreur lors de l'ajout du ENS");
+      console.error("Add error:", error);
     }
   };
 
@@ -116,50 +113,49 @@ const CollaboratorList = () => {
     try {
       const payload = {
         ...values,
-        ID_ESN : editingCollaborator.id,
+        ID_ESN: editingCollaborator.id,
         // Adresse : editingCollaborator.adresse
       };
 
       const response = await axios.put(`${API_BASE_URL}`, payload, {
         headers: {
-          Authorization: `${token()}`
-        }
+          Authorization: `${token()}`,
+        },
       });
-      message.success('Collaborateur mis à jour avec succès');
+      message.success("Collaborateur mis à jour avec succès");
       fetchCollaborators();
       setEditingCollaborator(null);
     } catch (error) {
-      message.error('Erreur lors de la mise à jour du collaborateur');
-      console.error('Update error:', error);
+      message.error("Erreur lors de la mise à jour du collaborateur");
+      console.error("Update error:", error);
     }
   };
 
   // Delete Collaborator
   const handleDelete = async (record) => {
     Modal.confirm({
-      title: 'Êtes-vous sûr de vouloir supprimer ce collaborateur ?',
+      title: "Êtes-vous sûr de vouloir supprimer ce collaborateur ?",
       content: `Cette action supprimera définitivement ${record.nom}.`,
-      okText: 'Oui',
-      okType: 'danger',
-      cancelText: 'Non',
+      okText: "Oui",
+      okType: "danger",
+      cancelText: "Non",
       async onOk() {
         try {
           await axios.delete(`${API_BASE_URL}`, {
             data: record, // Pass record here
             headers: {
-              Authorization: `${token()}`
-            }
+              Authorization: `${token()}`,
+            },
           });
-          message.success('ENS supprimé avec succès');
+          message.success("ENS supprimé avec succès");
           fetchCollaborators();
         } catch (error) {
-          message.error('Erreur lors de la suppression du ENS');
-          console.error('Delete error:', error);
+          message.error("Erreur lors de la suppression du ENS");
+          console.error("Delete error:", error);
         }
-      }
+      },
     });
   };
-  
 
   // Initial data fetch
   useEffect(() => {
@@ -176,55 +172,55 @@ const CollaboratorList = () => {
 
   const columns = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
       sorter: (a, b) => a.id - b.id,
-      width: 80
+      width: 80,
     },
     {
-      title: 'Nom',
-      dataIndex: 'nom',
-      key: 'nom',
+      title: "Nom",
+      dataIndex: "nom",
+      key: "nom",
       sorter: (a, b) => a.nom.localeCompare(b.nom),
       filteredValue: searchText ? [searchText] : null,
       onFilter: (value, record) =>
         record.nom.toLowerCase().includes(value.toLowerCase()) ||
-        record.email.toLowerCase().includes(value.toLowerCase())
+        record.email.toLowerCase().includes(value.toLowerCase()),
     },
     {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email'
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
     },
     {
-      title: 'Téléphone',
-      dataIndex: 'phone',
-      key: 'phone'
+      title: "Téléphone",
+      dataIndex: "phone",
+      key: "phone",
     },
     {
-      title: 'Poste',
-      dataIndex: 'poste',
-      key: 'poste'
+      title: "Poste",
+      dataIndex: "poste",
+      key: "poste",
     },
     {
-      title: 'Statut',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Statut",
+      dataIndex: "status",
+      key: "status",
       render: (status) => (
-        <Tag color={status === 'actif' ? 'green' : 'red'}>
-          {status === 'actif' ? 'Actif' : 'Inactif'}
+        <Tag color={status === "actif" ? "green" : "red"}>
+          {status === "actif" ? "Actif" : "Inactif"}
         </Tag>
       ),
       filters: [
-        { text: 'Actif', value: 'actif' },
-        { text: 'Inactif', value: 'inactif' }
+        { text: "Actif", value: "actif" },
+        { text: "Inactif", value: "inactif" },
       ],
-      onFilter: (value, record) => record.status === value
+      onFilter: (value, record) => record.status === value,
     },
     {
-      title: 'Actions',
-      key: 'actions',
+      title: "Actions",
+      key: "actions",
       width: 120,
       render: (_, record) => (
         <ActionButtons
@@ -232,18 +228,14 @@ const CollaboratorList = () => {
           handleDelete={handleDelete}
           onEdit={() => setEditingCollaborator(record)}
         />
-      )
-    }
+      ),
+    },
   ];
 
   const ActionButtons = ({ record, handleDelete, onEdit }) => (
     <Space size="middle">
       <Tooltip title="Modifier">
-        <Button
-          type="text"
-          icon={<EditOutlined />}
-          onClick={onEdit}
-        />
+        <Button type="text" icon={<EditOutlined />} onClick={onEdit} />
       </Tooltip>
       <Tooltip title="Supprimer">
         <Button
@@ -257,16 +249,16 @@ const CollaboratorList = () => {
         menu={{
           items: [
             {
-              key: '1',
-              label: 'Voir détails',
-              onClick: () => message.info(`Voir détails de ${record.nom}`)
+              key: "1",
+              label: "Voir détails",
+              onClick: () => message.info(`Voir détails de ${record.nom}`),
             },
             // {
             //   key: '2',
             //   label: 'Historique',
             //   onClick: () => message.info(`Historique de ${record.nom}`)
             // }
-          ]
+          ],
         }}
       >
         <Button type="text" icon={<MoreOutlined />} />
@@ -276,14 +268,23 @@ const CollaboratorList = () => {
 
   const CardView = ({ data, handleDelete }) => (
     <Row gutter={[16, 16]}>
-      {data.map(collaborator => (
+      {data.map((collaborator) => (
         <Col xs={24} sm={12} md={8} lg={6} key={collaborator.key}>
           <Card
             hoverable
             actions={[
-              <EditOutlined key="edit" onClick={() => setEditingCollaborator(collaborator)} />,
-              <DeleteOutlined key="delete" onClick={() => handleDelete(collaborator)} />,
-              <MoreOutlined key="more" onClick={() => message.info('Plus d\'options')} />
+              <EditOutlined
+                key="edit"
+                onClick={() => setEditingCollaborator(collaborator)}
+              />,
+              <DeleteOutlined
+                key="delete"
+                onClick={() => handleDelete(collaborator)}
+              />,
+              <MoreOutlined
+                key="more"
+                onClick={() => message.info("Plus d'options")}
+              />,
             ]}
           >
             <Card.Meta
@@ -291,8 +292,10 @@ const CollaboratorList = () => {
               title={collaborator.nom}
               description={
                 <Space direction="vertical" size="small">
-                  <Tag color={collaborator.status === 'actif' ? 'green' : 'red'}>
-                    {collaborator.status === 'actif' ? 'Actif' : 'Inactif'}
+                  <Tag
+                    color={collaborator.status === "actif" ? "green" : "red"}
+                  >
+                    {collaborator.status === "actif" ? "Actif" : "Inactif"}
                   </Tag>
                   <Space>
                     <MailOutlined /> {collaborator.email}
@@ -300,9 +303,7 @@ const CollaboratorList = () => {
                   <Space>
                     <PhoneOutlined /> {collaborator.phone}
                   </Space>
-                  <Space>
-                    {collaborator.poste}
-                  </Space>
+                  <Space>{collaborator.poste}</Space>
                 </Space>
               }
             />
@@ -314,13 +315,13 @@ const CollaboratorList = () => {
 
   const rowSelection = {
     selectedRowKeys,
-    onChange: (keys) => setSelectedRowKeys(keys)
+    onChange: (keys) => setSelectedRowKeys(keys),
   };
 
   return (
-    <Card className='w-full'>
-      <Space className='w-full flex flex-row items-center justify-between bg-white'>
-        <div className='flex flex-row items-center space-x-5'>
+    <Card className="w-full">
+      <Space className="w-full flex flex-row items-center justify-between bg-white">
+        <div className="flex flex-row items-center space-x-5">
           <Radio.Group
             value={viewMode}
             onChange={(e) => setViewMode(e.target.value)}
@@ -336,7 +337,7 @@ const CollaboratorList = () => {
             style={{ width: 200 }}
           />
         </div>
-        <div className='flex flex-row items-center space-x-5'>
+        <div className="flex flex-row items-center space-x-5">
           <AddCollaboratorModal
             onAdd={handleAddCollaborator}
             editingCollaborator={editingCollaborator}
@@ -345,20 +346,17 @@ const CollaboratorList = () => {
           />
           <Button
             icon={<ExportOutlined />}
-            onClick={() => message.info('Exporter les données')}
+            onClick={() => message.info("Exporter les données")}
           >
             Exporter
           </Button>
           <Tooltip title="Actualiser">
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={handleRefresh}
-            />
+            <Button icon={<ReloadOutlined />} onClick={handleRefresh} />
           </Tooltip>
         </div>
       </Space>
-      <div className='mt-5'></div>
-      {viewMode === 'table' ? (
+      <div className="mt-5"></div>
+      {viewMode === "table" ? (
         <>
           <Table
             columns={columns}
@@ -370,18 +368,16 @@ const CollaboratorList = () => {
               pageSize: 10,
               showTotal: (total) => `Total ${total} collaborateurs`,
               showSizeChanger: true,
-              showQuickJumper: true
+              showQuickJumper: true,
             }}
             size="middle"
-            scroll={{ x: 'max-content' }}
+            scroll={{ x: "max-content" }}
           />
           <div style={{ marginTop: 16 }}>
             <span style={{ marginLeft: 8 }}>
-              {selectedRowKeys.length > 0 ? (
-                `${selectedRowKeys.length} collaborateur(s) sélectionné(s)`
-              ) : (
-                ''
-              )}
+              {selectedRowKeys.length > 0
+                ? `${selectedRowKeys.length} collaborateur(s) sélectionné(s)`
+                : ""}
             </span>
           </div>
         </>
@@ -396,7 +392,7 @@ const AddCollaboratorModal = ({
   onAdd,
   editingCollaborator,
   onUpdate,
-  onCancel
+  onCancel,
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
@@ -404,7 +400,7 @@ const AddCollaboratorModal = ({
   useEffect(() => {
     if (editingCollaborator) {
       console.log(editingCollaborator);
-      
+
       setIsModalVisible(true);
       form.setFieldsValue({
         nom: editingCollaborator.nom,
@@ -422,7 +418,7 @@ const AddCollaboratorModal = ({
         iban: editingCollaborator.iban,
         bic: editingCollaborator.bic,
         banque: editingCollaborator.banque,
-        password: editingCollaborator.password
+        password: editingCollaborator.password,
       });
     }
   }, [editingCollaborator, form]);
@@ -433,36 +429,39 @@ const AddCollaboratorModal = ({
   };
 
   const handleOk = () => {
-    form.validateFields().then((values) => {
-      const formattedValues = {
-        Raison_sociale: values.nom,
-        SIRET: values.SIRET,
-        RCE: values.rce,
-        Pays: values.Pays,
-        Adresse: values.Adresse,
-        CP: values.CP,
-        Ville: values.Ville,
-        Province: values.province,
-        mail_Contact: values.email,
-        Tel_Contact: values.phone,
-        Statut: values.status || 'En attente',
-        N_TVA: values.tva,
-        IBAN: values.iban,
-        BIC: values.bic,
-        Banque: values.banque,
-        password : values.password,
-      };
+    form
+      .validateFields()
+      .then((values) => {
+        const formattedValues = {
+          Raison_sociale: values.nom,
+          SIRET: values.SIRET,
+          RCE: values.rce,
+          Pays: values.Pays,
+          Adresse: values.Adresse,
+          CP: values.CP,
+          Ville: values.Ville,
+          Province: values.province,
+          mail_Contact: values.email,
+          Tel_Contact: values.phone,
+          Statut: values.status || "En attente",
+          N_TVA: values.tva,
+          IBAN: values.iban,
+          BIC: values.bic,
+          Banque: values.banque,
+          password: values.password,
+        };
 
-      if (editingCollaborator) {
-        onUpdate({ ...formattedValues, id: editingCollaborator.id });
-      } else {
-        onAdd(formattedValues);
-      }
-      setIsModalVisible(false);
-      form.resetFields();
-    }).catch((info) => {
-      console.log('Validate Failed:', info);
-    });
+        if (editingCollaborator) {
+          onUpdate({ ...formattedValues, id: editingCollaborator.id });
+        } else {
+          onAdd(formattedValues);
+        }
+        setIsModalVisible(false);
+        form.resetFields();
+      })
+      .catch((info) => {
+        console.log("Validate Failed:", info);
+      });
   };
 
   const handleCancel = () => {
@@ -474,18 +473,18 @@ const AddCollaboratorModal = ({
   return (
     <>
       <Button type="primary" onClick={showModal} icon={<PlusOutlined />}>
-        {editingCollaborator ? 'Modifier' : 'Nouveau ENS'}
+        {editingCollaborator ? "Modifier" : "Nouveau ENS"}
       </Button>
       <Modal
         title={
           <div className="text-xl font-semibold text-gray-800">
-            {editingCollaborator ? 'Modifier un ENS' : 'Ajouter un ENS'}
+            {editingCollaborator ? "Modifier un ENS" : "Ajouter un ENS"}
           </div>
         }
         visible={isModalVisible}
         onOk={handleOk}
         onCancel={handleCancel}
-        okText={editingCollaborator ? 'Mettre à jour' : 'Ajouter'}
+        okText={editingCollaborator ? "Mettre à jour" : "Ajouter"}
         cancelText="Annuler"
         width={900}
         className="rounded-lg"
@@ -493,14 +492,14 @@ const AddCollaboratorModal = ({
           <Button key="back" onClick={handleCancel}>
             Annuler
           </Button>,
-          <Button 
-            key="submit" 
-            type="primary" 
+          <Button
+            key="submit"
+            type="primary"
             onClick={handleOk}
             className="bg-blue-500 hover:bg-blue-600"
           >
-            {editingCollaborator ? 'Mettre à jour' : 'Ajouter'}
-          </Button>
+            {editingCollaborator ? "Mettre à jour" : "Ajouter"}
+          </Button>,
         ]}
       >
         <Form
@@ -519,10 +518,15 @@ const AddCollaboratorModal = ({
                     </span>
                   }
                   name="nom"
-                  rules={[{ required: true, message: 'Veuillez saisir la raison sociale' }]}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Veuillez saisir la raison sociale",
+                    },
+                  ]}
                 >
-                  <Input 
-                    prefix={<UserOutlined className="text-gray-400" />} 
+                  <Input
+                    prefix={<UserOutlined className="text-gray-400" />}
                     placeholder="Nom de l'entreprise"
                     className="rounded-md"
                   />
@@ -531,17 +535,14 @@ const AddCollaboratorModal = ({
               <Col span={12}>
                 <Form.Item
                   label={
-                    <span className="font-medium text-gray-700">
-                      SIRET
-                    </span>
+                    <span className="font-medium text-gray-700">SIRET</span>
                   }
                   name="SIRET"
-                  rules={[{ required: true, message: 'Veuillez saisir le SIRET' }]}
+                  rules={[
+                    { required: true, message: "Veuillez saisir le SIRET" },
+                  ]}
                 >
-                  <Input 
-                    placeholder="Numéro SIRET"
-                    className="rounded-md"
-                  />
+                  <Input placeholder="Numéro SIRET" className="rounded-md" />
                 </Form.Item>
               </Col>
             </Row>
@@ -552,14 +553,17 @@ const AddCollaboratorModal = ({
               <Col span={8}>
                 <Form.Item
                   label={
-                    <span className="font-medium text-gray-700">
-                      Pays
-                    </span>
+                    <span className="font-medium text-gray-700">Pays</span>
                   }
                   name="Pays"
-                  rules={[{ required: true, message: 'Veuillez sélectionner le pays' }]}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Veuillez sélectionner le pays",
+                    },
+                  ]}
                 >
-                  <Select 
+                  <Select
                     placeholder="Sélectionner un pays"
                     prefix={<GlobalOutlined className="text-gray-400" />}
                     className="w-full"
@@ -574,17 +578,14 @@ const AddCollaboratorModal = ({
               <Col span={8}>
                 <Form.Item
                   label={
-                    <span className="font-medium text-gray-700">
-                      Ville
-                    </span>
+                    <span className="font-medium text-gray-700">Ville</span>
                   }
                   name="Ville"
-                  rules={[{ required: true, message: 'Veuillez saisir la ville' }]}
+                  rules={[
+                    { required: true, message: "Veuillez saisir la ville" },
+                  ]}
                 >
-                  <Input 
-                    placeholder="Nom de la ville"
-                    className="rounded-md"
-                  />
+                  <Input placeholder="Nom de la ville" className="rounded-md" />
                 </Form.Item>
               </Col>
               <Col span={8}>
@@ -595,12 +596,14 @@ const AddCollaboratorModal = ({
                     </span>
                   }
                   name="CP"
-                  rules={[{ required: true, message: 'Veuillez saisir le code postal' }]}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Veuillez saisir le code postal",
+                    },
+                  ]}
                 >
-                  <Input 
-                    placeholder="Code postal"
-                    className="rounded-md"
-                  />
+                  <Input placeholder="Code postal" className="rounded-md" />
                 </Form.Item>
               </Col>
             </Row>
@@ -609,15 +612,15 @@ const AddCollaboratorModal = ({
               <Col span={16}>
                 <Form.Item
                   label={
-                    <span className="font-medium text-gray-700">
-                      Adresse
-                    </span>
+                    <span className="font-medium text-gray-700">Adresse</span>
                   }
                   name="Adresse"
-                  rules={[{ required: true, message: 'Veuillez saisir l\'adresse' }]}
+                  rules={[
+                    { required: true, message: "Veuillez saisir l'adresse" },
+                  ]}
                 >
-                  <Input 
-                    prefix={<HomeOutlined className="text-gray-400" />} 
+                  <Input
+                    prefix={<HomeOutlined className="text-gray-400" />}
                     placeholder="Adresse complète"
                     className="rounded-md"
                   />
@@ -626,21 +629,40 @@ const AddCollaboratorModal = ({
               <Col span={8}>
                 <Form.Item
                   label={
-                    <span className="font-medium text-gray-700">
-                      Email
-                    </span>
+                    <span className="font-medium text-gray-700">Email</span>
                   }
                   name="email"
                   rules={[
-                    { required: true, message: 'Veuillez saisir l\'email' },
-                    { type: 'email', message: 'Veuillez saisir un email valide' }
+                    { required: true, message: "Veuillez saisir l'email" },
+                    {
+                      type: "email",
+                      message: "Veuillez saisir un email valide",
+                    },
                   ]}
                 >
-                  <Input 
-                    prefix={<MailOutlined className="text-gray-400" />} 
+                  <Input
+                    prefix={<MailOutlined className="text-gray-400" />}
                     placeholder="Email de contact"
                     className="rounded-md"
                   />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item
+                  label={
+                    <span className="font-medium text-gray-700">
+                      Mot de passe
+                    </span>
+                  }
+                  name="password"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Veuillez saisir le mot de passe",
+                    },
+                  ]}
+                >
+                  <Input placeholder="Mot de passe" className="rounded-md" />
                 </Form.Item>
               </Col>
             </Row>
@@ -654,14 +676,12 @@ const AddCollaboratorModal = ({
               <Col span={8}>
                 <Form.Item
                   label={
-                    <span className="font-medium text-gray-700">
-                      Banque
-                    </span>
+                    <span className="font-medium text-gray-700">Banque</span>
                   }
                   name="banque"
                 >
-                  <Input 
-                    prefix={<BankOutlined className="text-gray-400" />} 
+                  <Input
+                    prefix={<BankOutlined className="text-gray-400" />}
                     placeholder="Nom de la banque"
                     className="rounded-md"
                   />
@@ -670,31 +690,19 @@ const AddCollaboratorModal = ({
               <Col span={8}>
                 <Form.Item
                   label={
-                    <span className="font-medium text-gray-700">
-                      IBAN
-                    </span>
+                    <span className="font-medium text-gray-700">IBAN</span>
                   }
                   name="iban"
                 >
-                  <Input 
-                    placeholder="Numéro IBAN"
-                    className="rounded-md"
-                  />
+                  <Input placeholder="Numéro IBAN" className="rounded-md" />
                 </Form.Item>
               </Col>
               <Col span={8}>
                 <Form.Item
-                  label={
-                    <span className="font-medium text-gray-700">
-                      BIC
-                    </span>
-                  }
+                  label={<span className="font-medium text-gray-700">BIC</span>}
                   name="bic"
                 >
-                  <Input 
-                    placeholder="Code BIC"
-                    className="rounded-md"
-                  />
+                  <Input placeholder="Code BIC" className="rounded-md" />
                 </Form.Item>
               </Col>
             </Row>
@@ -704,9 +712,7 @@ const AddCollaboratorModal = ({
                 <Col span={24}>
                   <Form.Item
                     label={
-                      <span className="font-medium text-gray-700">
-                        Statut
-                      </span>
+                      <span className="font-medium text-gray-700">Statut</span>
                     }
                     name="status"
                   >

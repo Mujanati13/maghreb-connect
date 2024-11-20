@@ -34,7 +34,7 @@ const { Search } = Input;
 const { Option } = Select;
 const { Dragger } = Upload;
 
-const ClientDocumentManagement = () => {
+const DocumentManagement = () => {
     const [isTableView, setIsTableView] = useState(true);
     const [documents, setDocuments] = useState([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -47,16 +47,20 @@ const ClientDocumentManagement = () => {
 
     // Fetch documents
     const fetchDocuments = async () => {
+        const id = localStorage.getItem("id");
         try {
             setLoading(true);
-            const response = await axios.get('http://51.38.99.75:4001/api/documentClient/', {
+            const response = await axios.get('http://51.38.99.75:4001/api/getDocumentClient/', {
                 headers: {
                     Authorization: `${token()}`
+                },
+                params:{
+                    ClientId:id,
                 }
             });
             setDocuments(response.data.data.map(doc => ({
                 ...doc,
-                key: doc.ID_DOC_CLT
+                key: doc.ID_DOC_ESN
             })));
         } catch (error) {
             message.error('Erreur lors du chargement des documents');
@@ -73,7 +77,7 @@ const ClientDocumentManagement = () => {
     // Add Document Handler
     const handleAddDocument = async (values) => {
         try {
-            const response = await axios.post('http://51.38.99.75:4001/api/documentClient/', values, {
+            const response = await axios.post('http://51.38.99.75:4001/api/docEsn/', values, {
                 headers: {
                     Authorization: `${token()}`
                 }
@@ -90,7 +94,7 @@ const ClientDocumentManagement = () => {
     // Edit Document Handler
     const handleEditDocument = async (values) => {
         try {
-            await axios.put(`http://51.38.99.75:4001/api/documentClient/${selectedDocument.ID_DOC_CLT}`, values, {
+            await axios.put(`http://51.38.99.75:4001/api/docEsn/${selectedDocument.ID_DOC_ESN}`, values, {
                 headers: {
                     Authorization: `${token()}`
                 }
@@ -114,7 +118,7 @@ const ClientDocumentManagement = () => {
             cancelText: 'Non',
             async onOk() {
                 try {
-                    await axios.delete(`http://51.38.99.75:4001/api/documentClient/${record.ID_DOC_CLT}`, {
+                    await axios.delete(`http://51.38.99.75:4001/api/docEsn/${record.ID_DOC_ESN}`, {
                         headers: {
                             Authorization: `${token()}`
                         }
@@ -143,7 +147,7 @@ const ClientDocumentManagement = () => {
                 Doc_URL: record.Doc_URL,
                 Date_Valid: record.Date_Valid,
                 Statut: record.Statut,
-                client: record.client
+                esn: record.esn
             });
         }
     };
@@ -157,9 +161,9 @@ const ClientDocumentManagement = () => {
             sorter: (a, b) => a.Titre.localeCompare(b.Titre)
         },
         {
-            title: 'Client',
-            dataIndex: 'client',
-            key: 'client'
+            title: 'ESN',
+            dataIndex: 'esn',
+            key: 'esn'
         },
         {
             title: 'URL',
@@ -193,7 +197,7 @@ const ClientDocumentManagement = () => {
     // Search Filter
     const filteredDocuments = documents.filter(doc =>
         doc.Titre.toLowerCase().includes(searchText.toLowerCase()) ||
-        doc.client.toLowerCase().includes(searchText.toLowerCase()) ||
+        doc.esn.toLowerCase().includes(searchText.toLowerCase()) ||
         doc.Statut.toLowerCase().includes(searchText.toLowerCase())
     );
 
@@ -203,8 +207,8 @@ const ClientDocumentManagement = () => {
         customRequest: async ({ file, onSuccess, onError, onProgress }) => {
             const formData = new FormData();
             formData.append('uploadedFile', file);
-            formData.append('path', 'C:/Users/helka/OneDrive/Bureau/MaghrebIT-Connect/media/doc_cl/'); // Update path for client documents
-
+            formData.append('path', 'C:/Users/helka/OneDrive/Bureau/MaghrebIT-Connect/media/doc_en/'); // Add path in form-data
+    
             try {
                 // First API call - Save the document file
                 const saveDocResponse = await axios.post(
@@ -221,7 +225,7 @@ const ClientDocumentManagement = () => {
                         }
                     }
                 );
-
+    
                 // If first API call is successful, proceed with second API call
                 if (saveDocResponse.data && saveDocResponse.data.path) {
                     setUploadedFileUrl(saveDocResponse.data.path)
@@ -233,8 +237,7 @@ const ClientDocumentManagement = () => {
                             Titre: file.name,
                             Description: 'Document ajouté via upload',
                             Statut: 'En Attente',
-                            Doc_URL: saveDocResponse.data.path,
-                            client: 'Entreprise XYZ' // Update client name
+                            Doc_URL: saveDocResponse.data.path
                         },
                         {
                             headers: {
@@ -242,7 +245,7 @@ const ClientDocumentManagement = () => {
                             }
                         }
                     );
-
+    
                     if (metadataResponse.data) {
                         onSuccess(saveDocResponse.data);
                         message.success(`${file.name} fichier téléchargé avec succès`);
@@ -260,19 +263,19 @@ const ClientDocumentManagement = () => {
             const isPDForDOC = file.type === 'application/pdf' ||
                 file.type === 'application/msword' ||
                 file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
+    
             if (!isPDForDOC) {
                 message.error(`${file.name} n'est pas un fichier PDF ou DOC`);
                 return false;
             }
-
+    
             // File size validation
             const isLt10M = file.size / 1024 / 1024 < 10;
             if (!isLt10M) {
                 message.error('Le fichier doit être inférieur à 10MB!');
                 return false;
             }
-
+    
             return isPDForDOC && isLt10M;
         },
         onChange: (info) => {
@@ -322,7 +325,7 @@ const ClientDocumentManagement = () => {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
                     {filteredDocuments.map((doc) => (
                         <Card
-                            key={doc.ID_DOC_CLT}
+                            key={doc.ID_DOC_ESN}
                             style={{ width: 300 }}
                             actions={[
                                 <EditOutlined key="edit" onClick={() => openEditModal(doc)} />,
@@ -334,7 +337,7 @@ const ClientDocumentManagement = () => {
                                 title={doc.Titre}
                                 description={
                                     <>
-                                        <p>Client: {doc.client}</p>
+                                        <p>ESN: {doc.esn}</p>
                                         <p>Date Validité: {doc.Date_Valid}</p>
                                         <p>Statut: <Tag color={doc.Statut === 'Validé' ? 'green' : 'orange'}>{doc.Statut}</Tag></p>
                                         <a href={doc.Doc_URL} target="_blank" rel="noopener noreferrer">Voir le document</a>
@@ -348,7 +351,7 @@ const ClientDocumentManagement = () => {
 
             {/* Edit/Add Document Modal */}
             <Modal
-                title={selectedDocument?.ID_DOC_CLT ? "Modifier le Document" : "Ajouter un Document"}
+                title={selectedDocument?.ID_DOC_ESN ? "Modifier le Document" : "Ajouter un Document"}
                 visible={isEditModalVisible}
                 onCancel={() => {
                     setIsEditModalVisible(false);
@@ -360,7 +363,7 @@ const ClientDocumentManagement = () => {
                 <Form
                     form={editForm}
                     layout="vertical"
-                    onFinish={selectedDocument?.ID_DOC_CLT ? handleEditDocument : handleAddDocument}
+                    onFinish={selectedDocument?.ID_DOC_ESN ? handleEditDocument : handleAddDocument}
                 >
                     <Form.Item
                         name="Titre"
@@ -421,18 +424,17 @@ const ClientDocumentManagement = () => {
                     </Form.Item>
 
                     <Form.Item
-                        name="client"
-                        label="Client"
-                        rules={[{ required: true, message: 'Veuillez saisir le nom du client' }]}
+                        name="esn"
+                        label="ESN"
+                        rules={[{ required: true, message: 'Veuillez saisir le nom de l\'ESN' }]}
                     >
                         <Input />
                     </Form.Item>
 
                     <Form.Item>
                         <Button type="primary" htmlType="submit">
-                            {selectedDocument?.ID_DOC_CLT ? "Modifier" : "Ajouter"}
+                            {selectedDocument?.ID_DOC_ESN ? "Modifier" : "Ajouter"}
                         </Button>
-
                     </Form.Item>
                 </Form>
             </Modal>
@@ -440,4 +442,4 @@ const ClientDocumentManagement = () => {
     );
 };
 
-export default ClientDocumentManagement;
+export default DocumentManagement;
