@@ -1686,14 +1686,36 @@ def DocumentESNs(request):
 @csrf_exempt
 def clients_par_esn(request):
     if request.method == 'GET':
-        esn_id = request.GET["esn_id"]
-        cand = Candidature.objects.filter(esn_id=esn_id)
-        app = AppelOffre.objects.filter(id=cand.AO_id)
-        clt = Client.objects.get(ID_clt=app.client_id)
-        
-        client_serializer = ClientSerializer(clt, many=True)
-        data = []
-        for cour in client_serializer.data:
-            data.append(cour)
-        return JsonResponse({"total": len(data),"data": data}, safe=False)
+        try:
+            # Récupération de l'identifiant de l'ESN
+            esn_id = request.GET.get("esn_id")
+            if not esn_id:
+                return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False)
+
+            # Filtrer les candidatures associées à l'ESN
+            candidatures = Candidature.objects.filter(esn_id=esn_id)
+            if not candidatures.exists():
+                return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour cet ESN"}, safe=False)
+
+            # Extraire les IDs des appels d'offres associés
+            appels_offres_ids = candidatures.values_list('AO_id', flat=True)
+
+            # Filtrer les appels d'offres associés
+            appels_offres = AppelOffre.objects.filter(id__in=appels_offres_ids)
+            if not appels_offres.exists():
+                return JsonResponse({"status": False, "message": "Aucun appel d'offre trouvé"}, safe=False)
+
+            # Extraire les IDs des clients associés
+            clients_ids = appels_offres.values_list('client_id', flat=True).distinct()
+
+            # Filtrer les clients associés
+            clients = Client.objects.filter(ID_clt__in=clients_ids)
+
+            # Sérialiser les données des clients
+            client_serializer = ClientSerializer(clients, many=True)
+            return JsonResponse({"total": len(client_serializer.data), "data": client_serializer.data}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
     
