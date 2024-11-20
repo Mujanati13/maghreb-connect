@@ -1784,7 +1784,7 @@ def candidatures_par_client(request):
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
         
 @csrf_exempt
-def consultants_par_esn(request):
+def consultants_par_esn1(request):
     if request.method == 'GET':
         try:
             # Récupérer l'identifiant de l'ESN depuis les paramètres GET
