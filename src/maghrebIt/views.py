@@ -1836,3 +1836,24 @@ def consultants_par_esn1(request):
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
 
+@csrf_exempt
+def candidatures_par_appel_offre(request):
+    if request.method == 'GET':
+        try:
+            # Récupération de l'identifiant de l'appel d'offre depuis les paramètres GET
+            AO_id = request.GET.get("AO_id")
+            if not AO_id:
+                return JsonResponse({"status": False, "message": "AO_id manquant"}, safe=False)
+
+            # Filtrer les candidatures associées à l'appel d'offre
+            candidatures = Candidature.objects.filter(AO_id=AO_id)
+            if not candidatures.exists():
+                return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour cet appel d'offre"}, safe=False)
+
+            # Sérialiser les données des candidatures
+            candidatures_serializer = CandidatureSerializer(candidatures, many=True)
+            return JsonResponse({"total": len(candidatures_serializer.data), "data": candidatures_serializer.data}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
