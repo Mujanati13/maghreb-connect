@@ -1931,3 +1931,74 @@ def get_contract(request):
         except Exception as e:
             # Gestion des erreurs
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
+
+@csrf_exempt
+def get_bon_de_commande_by_client(request):
+    if request.method == 'GET':
+        try:
+            # Récupération du client_id depuis les paramètres de la requête
+            client_id = request.GET.get('client_id')
+
+            # Validation du paramètre
+            if not client_id:
+                return JsonResponse({"status": False, "message": "client_id requis"}, safe=False)
+
+            # Rechercher les appels d'offres liés au client
+            appels_offres = AppelOffre.objects.filter(client_id=client_id)
+            if not appels_offres.exists():
+                return JsonResponse({"status": False, "message": "Aucun appel d'offre trouvé pour ce client"}, safe=False)
+
+            # Récupérer les IDs des appels d'offres
+            appels_offres_ids = appels_offres.values_list('id', flat=True)
+
+            # Trouver les candidatures associées aux appels d'offres
+            candidatures = Candidature.objects.filter(AO_id__in=appels_offres_ids)
+            if not candidatures.exists():
+                return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour ce client"}, safe=False)
+
+            # Récupérer les IDs des candidatures
+            candidatures_ids = candidatures.values_list('id_cd', flat=True)
+
+            # Trouver les bons de commande associés
+            bons_de_commande = Bondecommande.objects.filter(candidature_id__in=candidatures_ids)
+            if not bons_de_commande.exists():
+                return JsonResponse({"status": False, "message": "Aucun bon de commande trouvé pour ce client"}, safe=False)
+
+            # Sérialiser les bons de commande
+            serializer = BondecommandeSerializer(bons_de_commande, many=True)
+            return JsonResponse({"total": len(serializer.data), "data": serializer.data}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
+@csrf_exempt
+def get_bon_de_commande_by_esn(request):
+    if request.method == 'GET':
+        try:
+            # Récupération du esn_id depuis les paramètres de la requête
+            esn_id = request.GET.get('esn_id')
+
+            # Validation du paramètre
+            if not esn_id:
+                return JsonResponse({"status": False, "message": "esn_id requis"}, safe=False)
+
+            # Trouver les candidatures liées à l'ESN
+            candidatures = Candidature.objects.filter(esn_id=esn_id)
+            if not candidatures.exists():
+                return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour cette ESN"}, safe=False)
+
+            # Récupérer les IDs des candidatures
+            candidatures_ids = candidatures.values_list('id_cd', flat=True)
+
+            # Trouver les bons de commande associés aux candidatures de l'ESN
+            bons_de_commande = Bondecommande.objects.filter(candidature_id__in=candidatures_ids)
+            if not bons_de_commande.exists():
+                return JsonResponse({"status": False, "message": "Aucun bon de commande trouvé pour cette ESN"}, safe=False)
+
+            # Sérialiser les bons de commande
+            serializer = BondecommandeSerializer(bons_de_commande, many=True)
+            return JsonResponse({"total": len(serializer.data), "data": serializer.data}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)

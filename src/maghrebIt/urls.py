@@ -136,5 +136,12 @@ urlpatterns = [
     
     path('getDocumentESN/', views.DocumentESNs),
     re_path(r'^getDocumentESN/([0-9]+)$', views.DocumentESNs),
+    
+    path('get_bon_de_commande_by_client/', views.get_bon_de_commande_by_client),
+    re_path(r'^get_bon_de_commande_by_client/([0-9]+)$', views.get_bon_de_commande_by_client),
+    
+    
+    path('get_bon_de_commande_by_esn/', views.get_bon_de_commande_by_esn),
+    re_path(r'^get_bon_de_commande_by_esn/([0-9]+)$', views.get_bon_de_commande_by_esn),
 
 ]
