@@ -125,6 +125,9 @@ urlpatterns = [
     path('candidatures_par_appel_offre/', views.candidatures_par_appel_offre),
     re_path(r'^candidatures_par_appel_offre/([0-9]+)$', views.candidatures_par_appel_offre),
     
+    path('get_candidates/', views.get_candidates),
+    re_path(r'^get_candidates/([0-9]+)$', views.get_candidates),
+    
     path('PartenariatESNs/', views.PartenariatESNs),
     re_path(r'^PartenariatESNs/([0-9]+)$', views.PartenariatESNs),
     

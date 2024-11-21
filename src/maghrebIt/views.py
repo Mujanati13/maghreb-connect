@@ -1856,4 +1856,38 @@ def candidatures_par_appel_offre(request):
 
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
+        
+@csrf_exempt
+def get_candidates(request):
+    if request.method == 'GET':
+        try:
+            # Récupération des paramètres clientId et appelOffreId depuis les paramètres GET
+            client_id = request.GET.get("clientId")
+            appel_offre_id = request.GET.get("appelOffreId")
+
+            # Vérification des paramètres requis
+            if not client_id:
+                return JsonResponse({"status": False, "message": "clientId manquant"}, safe=False)
+            if not appel_offre_id:
+                return JsonResponse({"status": False, "message": "appelOffreId manquant"}, safe=False)
+
+            # Vérification que l'appel d'offre appartient au client
+            appel_offre = AppelOffre.objects.filter(client_id=client_id, id=appel_offre_id).first()
+            if not appel_offre:
+                return JsonResponse({"status": False, "message": "Aucun appel d'offre trouvé pour ce client"}, safe=False)
+
+            # Filtrer les candidatures associées à cet appel d'offre
+            candidatures = Candidature.objects.filter(AO_id=appel_offre_id)
+            if not candidatures.exists():
+                return JsonResponse({"status": False, "message": "Aucune candidature trouvée"}, safe=False)
+
+            # Sérialisation des données des candidatures
+            candidatures_serializer = CandidatureSerializer(candidatures, many=True)
+            return JsonResponse({"total": len(candidatures_serializer.data), "data": candidatures_serializer.data}, safe=False)
+
+        except Exception as e:
+            # Gestion des exceptions générales
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
+
 
