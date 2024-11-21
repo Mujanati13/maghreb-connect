@@ -119,8 +119,8 @@ urlpatterns = [
     path('consultants_par_esn/', views.consultants_par_esn1),
     re_path(r'^consultants_par_esn/([0-9]+)$', views.consultants_par_esn1),
     
-    path('consultants_par_esn/', views.PartenariatClients),
-    re_path(r'^consultants_par_esn/([0-9]+)$', views.PartenariatClients),
+    path('PartenariatClients/', views.PartenariatClients),
+    re_path(r'^PartenariatClients/([0-9]+)$', views.PartenariatClients),
     
     path('PartenariatESNs/', views.PartenariatESNs),
     re_path(r'^PartenariatESNs/([0-9]+)$', views.PartenariatESNs),
