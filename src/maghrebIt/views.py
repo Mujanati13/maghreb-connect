@@ -1891,3 +1891,43 @@ def get_candidates(request):
 
 
 
+@csrf_exempt
+def get_contract(request):
+    if request.method == 'GET':
+        try:
+            # Récupération des paramètres
+            client_id = request.GET.get('clientId')
+            esn_id = request.GET.get('esnId')
+
+            # Validation des paramètres
+            if not client_id or not esn_id:
+                return JsonResponse({"status": False, "message": "clientId et esnId requis"}, safe=False)
+
+            # Rechercher les appels d'offres liés au client
+            appels_offres = AppelOffre.objects.filter(client_id=client_id)
+            if not appels_offres.exists():
+                return JsonResponse({"status": False, "message": "Aucun appel d'offre trouvé pour ce client"}, safe=False)
+
+            # Récupérer les IDs des appels d'offres
+            appels_offres_ids = appels_offres.values_list('id', flat=True)
+
+            # Filtrer les candidatures liées à ces appels d'offres et à l'ESN
+            candidatures = Candidature.objects.filter(AO_id__in=appels_offres_ids, esn_id=esn_id)
+            if not candidatures.exists():
+                return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour cette combinaison client et ESN"}, safe=False)
+
+            # Récupérer les IDs des candidatures
+            candidatures_ids = candidatures.values_list('id_cd', flat=True)
+
+            # Rechercher les contrats liés à ces candidatures
+            contrats = Contrat.objects.filter(candidature_id__in=candidatures_ids)
+            if not contrats.exists():
+                return JsonResponse({"status": False, "message": "Aucun contrat trouvé pour cette combinaison client et ESN"}, safe=False)
+
+            # Sérialiser les contrats
+            contrats_serializer = ContratSerializer(contrats, many=True)
+            return JsonResponse({"total": len(contrats_serializer.data), "data": contrats_serializer.data}, safe=False)
+
+        except Exception as e:
+            # Gestion des erreurs
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)

@@ -131,6 +131,9 @@ urlpatterns = [
     path('PartenariatESNs/', views.PartenariatESNs),
     re_path(r'^PartenariatESNs/([0-9]+)$', views.PartenariatESNs),
     
+    path('get_contract/', views.get_contract),
+    re_path(r'^get_contract/([0-9]+)$', views.get_contract),
+    
     path('getDocumentESN/', views.DocumentESNs),
     re_path(r'^getDocumentESN/([0-9]+)$', views.DocumentESNs),
 
