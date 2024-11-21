@@ -1684,6 +1684,30 @@ def DocumentESNs(request):
         return JsonResponse({"total": len(data),"data": data}, safe=False)
     
 @csrf_exempt
+def PartenariatESNs(request):
+    if request.method == 'GET':
+        esnId = request.GET["esnId"]
+        parte = Partenariat1.objects.filter(id_esn=esnId)
+       
+        part_serializer = Partenariat1Serializer(parte, many=True)
+        data = []
+        for S in part_serializer.data:
+            data.append(S)
+        return JsonResponse({"total": len(data),"data": data}, safe=False)
+    
+@csrf_exempt
+def PartenariatClients(request):
+    if request.method == 'GET':
+        clientId = request.GET["clientId"]
+        parte = Partenariat1.objects.filter(id_client=clientId)
+       
+        part_serializer = Partenariat1Serializer(parte, many=True)
+        data = []
+        for S in part_serializer.data:
+            data.append(S)
+        return JsonResponse({"total": len(data),"data": data}, safe=False)
+    
+@csrf_exempt
 def clients_par_esn(request):
     if request.method == 'GET':
         try:
