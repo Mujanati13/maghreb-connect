@@ -143,5 +143,23 @@ urlpatterns = [
     
     path('get_bon_de_commande_by_esn/', views.get_bon_de_commande_by_esn),
     re_path(r'^get_bon_de_commande_by_esn/([0-9]+)$', views.get_bon_de_commande_by_esn),
+    
+    path('notify_signature_contrat/', views.notify_signature_contrat),
+    re_path(r'^notify_signature_contrat/([0-9]+)$', views.notify_signature_contrat),
+    
+    path('notify_validation_bon_de_commande/', views.notify_validation_bon_de_commande),
+    re_path(r'^notify_validation_bon_de_commande/([0-9]+)$', views.notify_validation_bon_de_commande),
+    
+    path('notify_bon_de_commande/', views.notify_bon_de_commande),
+    re_path(r'^notify_bon_de_commande/([0-9]+)$', views.notify_bon_de_commande),
+    
+    path('notify_validation_candidature/', views.notify_validation_candidature),
+    re_path(r'^notify_validation_candidature/([0-9]+)$', views.notify_validation_candidature),
+    
+    path('notify_reponse_appel_offre/', views.notify_reponse_appel_offre),
+    re_path(r'^notify_reponse_appel_offre/([0-9]+)$', views.notify_reponse_appel_offre),
+    
+    path('notify_appel_offre/', views.notify_appel_offre),
+    re_path(r'^notify_appel_offre/([0-9]+)$', views.notify_appel_offre),
 
 ]

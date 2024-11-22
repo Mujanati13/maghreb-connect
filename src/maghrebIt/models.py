@@ -160,7 +160,7 @@ class Candidature(models.Model):
         
 class Notification(models.Model):
     id = models.AutoField(primary_key=True)  # Identifiant unique pour chaque candidature
-    user_id = models.IntegerField()   # Référence à l'appel d'offre
+    user_id = models.IntegerField()   
     message = models.TextField(blank=True, null=True) # Référence à l'ESN qui postule
     status = models.CharField(max_length=20, blank=True, null=True)  # Responsable du compte
     categorie = models.CharField(max_length=50, blank=True, null=True) 

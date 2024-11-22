@@ -2002,3 +2002,147 @@ def get_bon_de_commande_by_esn(request):
 
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
+@csrf_exempt
+def send_notification(user_id, message, categorie):
+    """
+    Fonction utilitaire pour envoyer une notification.
+    
+    Arguments:
+    - user_id : Identifiant de l'utilisateur recevant la notification.
+    - message : Contenu de la notification.
+    - categorie : Catégorie de la notification.
+    """
+    notification = Notification(
+        user_id=user_id,
+        message=message,
+        status="Unread",
+        categorie=categorie
+    )
+    notification.save()
+    return notification
+
+@csrf_exempt
+def notify_appel_offre(request):
+    if request.method == 'POST':
+        try:
+            data = JSONParser().parse(request)
+            client_id = data.get('client_id')
+            appel_offre_id = data.get('appel_offre_id')
+
+            if not client_id or not appel_offre_id:
+                return JsonResponse({"status": False, "message": "client_id et appel_offre_id requis"}, safe=False)
+
+            partenaires = Partenariat1.objects.filter(id_client=client_id)
+            for partenaire in partenaires:
+                message = f"Un nouvel appel d'offre {appel_offre_id} a été publié par le client {client_id}."
+                send_notification(user_id=partenaire.id_esn, message=message, categorie="Appel d'Offre")
+
+            return JsonResponse({"status": True, "message": "Notifications envoyées aux partenaires."}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
+@csrf_exempt
+def notify_reponse_appel_offre(request):
+    if request.method == 'POST':
+        try:
+            data = JSONParser().parse(request)
+            esn_id = data.get('esn_id')
+            client_id = data.get('client_id')
+            appel_offre_id = data.get('appel_offre_id')
+
+            if not esn_id or not client_id or not appel_offre_id:
+                return JsonResponse({"status": False, "message": "esn_id, client_id, et appel_offre_id requis"}, safe=False)
+
+            message = f"L'ESN {esn_id} a soumis une réponse à l'appel d'offre {appel_offre_id}."
+            send_notification(user_id=client_id, message=message, categorie="Réponse à l'Appel d'Offre")
+
+            return JsonResponse({"status": True, "message": "Notification envoyée au client."}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
+@csrf_exempt
+def notify_validation_candidature(request):
+    if request.method == 'POST':
+        try:
+            data = JSONParser().parse(request)
+            client_id = data.get('client_id')
+            esn_id = data.get('esn_id')
+            candidature_id = data.get('candidature_id')
+
+            if not client_id or not esn_id or not candidature_id:
+                return JsonResponse({"status": False, "message": "client_id, esn_id, et candidature_id requis"}, safe=False)
+
+            message = f"Votre candidature {candidature_id} a été validée par le client {client_id}."
+            send_notification(user_id=esn_id, message=message, categorie="Validation de Candidature")
+
+            return JsonResponse({"status": True, "message": "Notification envoyée à l'ESN."}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+@csrf_exempt
+def notify_bon_de_commande(request):
+    if request.method == 'POST':
+        try:
+            data = JSONParser().parse(request)
+            esn_id = data.get('esn_id')
+            client_id = data.get('client_id')
+            bon_de_commande_id = data.get('bon_de_commande_id')
+
+            if not esn_id or not client_id or not bon_de_commande_id:
+                return JsonResponse({"status": False, "message": "esn_id, client_id, et bon_de_commande_id requis"}, safe=False)
+
+            message = f"L'ESN {esn_id} a généré un bon de commande {bon_de_commande_id}."
+            send_notification(user_id=client_id, message=message, categorie="Bon de Commande")
+
+            return JsonResponse({"status": True, "message": "Notification envoyée au client."}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
+@csrf_exempt
+def notify_validation_bon_de_commande(request):
+    if request.method == 'POST':
+        try:
+            data = JSONParser().parse(request)
+            client_id = data.get('client_id')
+            esn_id = data.get('esn_id')
+            bon_de_commande_id = data.get('bon_de_commande_id')
+
+            if not client_id or not esn_id or not bon_de_commande_id:
+                return JsonResponse({"status": False, "message": "client_id, esn_id, et bon_de_commande_id requis"}, safe=False)
+
+            message = f"Le bon de commande {bon_de_commande_id} a été validé par le client {client_id}."
+            send_notification(user_id=esn_id, message=message, categorie="Validation de Bon de Commande")
+
+            return JsonResponse({"status": True, "message": "Notification envoyée à l'ESN."}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
+@csrf_exempt
+def notify_signature_contrat(request):
+    if request.method == 'POST':
+        try:
+            data = JSONParser().parse(request)
+            client_id = data.get('client_id')
+            esn_id = data.get('esn_id')
+            contrat_id = data.get('contrat_id')
+
+            if not client_id or not esn_id or not contrat_id:
+                return JsonResponse({"status": False, "message": "client_id, esn_id, et contrat_id requis"}, safe=False)
+
+            # Notification pour le client
+            message_client = f"Le contrat {contrat_id} a été signé avec l'ESN {esn_id}."
+            send_notification(user_id=client_id, message=message_client, categorie="Signature de Contrat")
+
+            # Notification pour l'ESN
+            message_esn = f"Le contrat {contrat_id} a été signé avec le client {client_id}."
+            send_notification(user_id=esn_id, message=message_esn, categorie="Signature de Contrat")
+
+            return JsonResponse({"status": True, "message": "Notifications envoyées au client et à l'ESN."}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
