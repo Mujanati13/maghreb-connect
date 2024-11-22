@@ -2150,7 +2150,7 @@ def contrat_by_idClient(request):
     if request.method == 'GET':
         clientId = request.GET["clientId"]
         appel = AppelOffre.objects.filter(client_id=clientId)
-        cand = Candidature.objects.filter(AO_id=appel.id)
+        cand = Candidature.objects.filter(AO_id=appel.AO_id)
         contrat = Contrat.objects.filter(candidature_id=cand.id_cd)
        
         contrat_serializer = ContratSerializer(contrat, many=True)
