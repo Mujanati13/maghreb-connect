@@ -2144,3 +2144,30 @@ def notify_signature_contrat(request):
 
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
+@csrf_exempt
+def contrat_by_idClient(request):
+    if request.method == 'GET':
+        clientId = request.GET["clientId"]
+        appel = AppelOffre.objects.filter(client_id=clientId)
+        cand = Candidature.objects.filter(AO_id=appel.id)
+        contrat = Contrat.objects.filter(candidature_id=cand.id_cd)
+       
+        contrat_serializer = ContratSerializer(contrat, many=True)
+        data = []
+        for S in contrat_serializer.data:
+            data.append(S)
+        return JsonResponse({"total": len(data),"data": data}, safe=False)
+    
+@csrf_exempt
+def contrat_by_idEsn(request):
+    if request.method == 'GET':
+        esnId = request.GET["esnId"]
+        cand = Candidature.objects.filter(esn_id=esnId)
+        contrat = Contrat.objects.filter(candidature_id=cand.id_cd)
+       
+        contrat_serializer = ContratSerializer(contrat, many=True)
+        data = []
+        for S in contrat_serializer.data:
+            data.append(S)
+        return JsonResponse({"total": len(data),"data": data}, safe=False)

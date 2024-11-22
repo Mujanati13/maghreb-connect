@@ -161,5 +161,11 @@ urlpatterns = [
     
     path('notify_appel_offre/', views.notify_appel_offre),
     re_path(r'^notify_appel_offre/([0-9]+)$', views.notify_appel_offre),
+    
+    path('contrat_by_idClient/', views.contrat_by_idClient),
+    re_path(r'^contrat_by_idClient/([0-9]+)$', views.contrat_by_idClient),
+    
+    path('contrat_by_idEsn/', views.contrat_by_idEsn),
+    re_path(r'^contrat_by_idEsn/([0-9]+)$', views.contrat_by_idEsn),
 
 ]
