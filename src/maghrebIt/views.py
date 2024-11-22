@@ -2148,26 +2148,54 @@ def notify_signature_contrat(request):
 @csrf_exempt
 def contrat_by_idClient(request):
     if request.method == 'GET':
-        clientId = request.GET["clientId"]
-        appel = AppelOffre.objects.filter(client_id=clientId)
-        cand = Candidature.objects.filter(AO_id=appel.AO_id)
-        contrat = Contrat.objects.filter(candidature_id=cand.id_cd)
-       
-        contrat_serializer = ContratSerializer(contrat, many=True)
-        data = []
-        for S in contrat_serializer.data:
-            data.append(S)
-        return JsonResponse({"total": len(data),"data": data}, safe=False)
+        try:
+            clientId = request.GET.get("clientId")
+            if not clientId:
+                return JsonResponse({"status": False, "message": "clientId requis"}, safe=False)
+
+            # Récupérer tous les appels d'offres liés au client
+            appels = AppelOffre.objects.filter(client_id=clientId)
+
+            # Récupérer les IDs des appels d'offres
+            appel_ids = appels.values_list('id', flat=True)
+
+            # Récupérer toutes les candidatures liées aux appels d'offres
+            candidatures = Candidature.objects.filter(AO_id__in=appel_ids)
+
+            # Récupérer les IDs des candidatures
+            candidature_ids = candidatures.values_list('id_cd', flat=True)
+
+            # Récupérer tous les contrats liés aux candidatures
+            contrats = Contrat.objects.filter(candidature_id__in=candidature_ids)
+
+            # Sérialiser les contrats
+            contrat_serializer = ContratSerializer(contrats, many=True)
+
+            return JsonResponse({"total": len(contrat_serializer.data), "data": contrat_serializer.data}, safe=False)
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
     
 @csrf_exempt
 def contrat_by_idEsn(request):
     if request.method == 'GET':
-        esnId = request.GET["esnId"]
-        cand = Candidature.objects.filter(esn_id=esnId)
-        contrat = Contrat.objects.filter(candidature_id=cand.id_cd)
-       
-        contrat_serializer = ContratSerializer(contrat, many=True)
-        data = []
-        for S in contrat_serializer.data:
-            data.append(S)
-        return JsonResponse({"total": len(data),"data": data}, safe=False)
+        try:
+            esnId = request.GET.get("esnId")
+            if not esnId:
+                return JsonResponse({"status": False, "message": "esnId requis"}, safe=False)
+
+            # Récupérer toutes les candidatures liées à l'ESN
+            candidatures = Candidature.objects.filter(esn_id=esnId)
+
+            # Récupérer les IDs des candidatures
+            candidature_ids = candidatures.values_list('id_cd', flat=True)
+
+            # Récupérer tous les contrats liés aux candidatures
+            contrats = Contrat.objects.filter(candidature_id__in=candidature_ids)
+
+            # Sérialiser les contrats
+            contrat_serializer = ContratSerializer(contrats, many=True)
+
+            return JsonResponse({"total": len(contrat_serializer.data), "data": contrat_serializer.data}, safe=False)
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
