@@ -2007,20 +2007,18 @@ def get_bon_de_commande_by_esn(request):
 def send_notification(user_id, message, categorie):
     """
     Fonction utilitaire pour envoyer une notification.
-    
-    Arguments:
-    - user_id : Identifiant de l'utilisateur recevant la notification.
-    - message : Contenu de la notification.
-    - categorie : Catégorie de la notification.
     """
-    notification = Notification(
-        user_id=user_id,
-        message=message,
-        status="Unread",
-        categorie=categorie
-    )
-    notification.save()
-    return notification
+    try:
+        notification = Notification(
+            user_id=user_id,
+            message=message,
+            status="Unread",
+            categorie=categorie
+        )
+        notification.save()
+        return notification
+    except Exception as e:
+        raise Exception(f"Erreur lors de l'envoi de la notification : {str(e)}")
 
 @csrf_exempt
 def notify_appel_offre(request):
