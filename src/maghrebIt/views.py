@@ -2003,7 +2003,7 @@ def get_bon_de_commande_by_esn(request):
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
 
-@csrf_exempt
+
 def send_notification(user_id, message, categorie):
     """
     Fonction utilitaire pour envoyer une notification.
