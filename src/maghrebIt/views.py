@@ -1712,33 +1712,34 @@ def PartenariatClients(request):
     if request.method == 'GET':
         try:
             clientId = request.GET.get("clientId")
+            esn_name = request.GET.get("esn_name")
+
             if not clientId:
                 return JsonResponse({"status": False, "message": "clientId requis"}, safe=False)
+            if not esn_name:
+                return JsonResponse({"status": False, "message": "esn_name requis"}, safe=False)
 
-            # Récupérer les partenariats pour le client donné
+            # Filtrer les partenariats pour le client donné et le nom de l'ESN
             partenariats = Partenariat1.objects.filter(id_client=clientId)
 
-            # Ajouter le nom de l'ESN dans les données de réponse
+            # Ajouter un filtre supplémentaire pour le nom de l'ESN
             data = []
             for partenariat in partenariats:
-                esn_name = None
                 try:
-                    esn = ESN.objects.get(id=partenariat.id_esn)  # Supposons que le modèle ESN utilise 'id'
-                    esn_name = esn.Raison_sociale  # Supposons que le champ de nom est 'Raison_sociale'
+                    esn = ESN.objects.get(id=partenariat.id_esn, Raison_sociale__icontains=esn_name)
+                    data.append({
+                        "id_part": partenariat.id_part,
+                        "id_client": partenariat.id_client,
+                        "id_esn": partenariat.id_esn,
+                        "esn_name": esn.Raison_sociale,
+                        "date_debut": partenariat.date_debut,
+                        "date_fin": partenariat.date_fin,
+                        "statut": partenariat.statut,
+                        "description": partenariat.description,
+                        "categorie": partenariat.categorie,
+                    })
                 except ESN.DoesNotExist:
-                    esn_name = "ESN introuvable"
-
-                data.append({
-                    "id_part": partenariat.id_part,
-                    "id_client": partenariat.id_client,
-                    "id_esn": partenariat.id_esn,
-                    "esn_name": esn_name,
-                    "date_debut": partenariat.date_debut,
-                    "date_fin": partenariat.date_fin,
-                    "statut": partenariat.statut,
-                    "description": partenariat.description,
-                    "categorie": partenariat.categorie,
-                })
+                    continue  # Si l'ESN ne correspond pas, passez au suivant
 
             return JsonResponse({"total": len(data), "data": data}, safe=False)
 
