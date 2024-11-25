@@ -1683,18 +1683,55 @@ def DocumentESNs(request):
             data.append(S)
         return JsonResponse({"total": len(data),"data": data}, safe=False)
     
+# @csrf_exempt
+# def PartenariatESNs(request):
+#     if request.method == 'GET':
+#         esnId = request.GET["esnId"]
+#         parte = Partenariat1.objects.filter(id_esn=esnId)
+       
+#         part_serializer = Partenariat1Serializer(parte, many=True)
+#         data = []
+#         for S in part_serializer.data:
+#             data.append(S)
+#         return JsonResponse({"total": len(data),"data": data}, safe=False)
 @csrf_exempt
 def PartenariatESNs(request):
     if request.method == 'GET':
-        esnId = request.GET["esnId"]
-        parte = Partenariat1.objects.filter(id_esn=esnId)
-       
-        part_serializer = Partenariat1Serializer(parte, many=True)
-        data = []
-        for S in part_serializer.data:
-            data.append(S)
-        return JsonResponse({"total": len(data),"data": data}, safe=False)
-    
+        try:
+            esnId = request.GET["esnId"]
+            clt_name = request.GET.get("clt_name")
+
+            if not esnId:
+                return JsonResponse({"status": False, "message": "clientId requis"}, safe=False)
+            if not clt_name:
+                return JsonResponse({"status": False, "message": "esn_name requis"}, safe=False)
+
+            # Filtrer les partenariats pour le client donné et le nom de l'ESN
+            partenariats = Partenariat1.objects.filter(id_esn=esnId)
+
+            # Ajouter un filtre supplémentaire pour le nom de l'ESN
+            data = []
+            for partenariat in partenariats:
+                try:
+                    clt = Client.objects.get(ID_clt=partenariat.id_client, raison_sociale__icontains=clt_name)
+                    data.append({
+                        "id_part": partenariat.id_part,
+                        "id_client": partenariat.id_client,
+                        "id_esn": partenariat.id_esn,
+                        "esn_name": clt.raison_sociale,
+                        "date_debut": partenariat.date_debut,
+                        "date_fin": partenariat.date_fin,
+                        "statut": partenariat.statut,
+                        "description": partenariat.description,
+                        "categorie": partenariat.categorie,
+                    })
+                except ESN.DoesNotExist:
+                    continue  # Si l'ESN ne correspond pas, passez au suivant
+
+            return JsonResponse({"total": len(data), "data": data}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)   
 # @csrf_exempt
 # def PartenariatClients(request):
 #     if request.method == 'GET':
