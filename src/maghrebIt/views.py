@@ -1726,7 +1726,7 @@ def PartenariatClients(request):
             data = []
             for partenariat in partenariats:
                 try:
-                    esn = ESN.objects.get(id=partenariat.id_esn, Raison_sociale__icontains=esn_name)
+                    esn = ESN.objects.get(ID_ESN=partenariat.id_esn, Raison_sociale__icontains=esn_name)
                     data.append({
                         "id_part": partenariat.id_part,
                         "id_client": partenariat.id_client,
