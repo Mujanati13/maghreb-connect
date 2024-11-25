@@ -1699,12 +1699,11 @@ def PartenariatESNs(request):
     if request.method == 'GET':
         try:
             esnId = request.GET["esnId"]
-            clt_name = request.GET.get("clt_name")
+            
 
             if not esnId:
                 return JsonResponse({"status": False, "message": "clientId requis"}, safe=False)
-            if not clt_name:
-                return JsonResponse({"status": False, "message": "esn_name requis"}, safe=False)
+            
 
             # Filtrer les partenariats pour le client donné et le nom de l'ESN
             partenariats = Partenariat1.objects.filter(id_esn=esnId)
@@ -1713,7 +1712,7 @@ def PartenariatESNs(request):
             data = []
             for partenariat in partenariats:
                 try:
-                    clt = Client.objects.get(ID_clt=partenariat.id_client, raison_sociale__icontains=clt_name)
+                    clt = Client.objects.get(ID_clt=partenariat.id_client)
                     data.append({
                         "id_part": partenariat.id_part,
                         "id_client": partenariat.id_client,
@@ -1749,12 +1748,11 @@ def PartenariatClients(request):
     if request.method == 'GET':
         try:
             clientId = request.GET.get("clientId")
-            esn_name = request.GET.get("esn_name")
+         
 
             if not clientId:
                 return JsonResponse({"status": False, "message": "clientId requis"}, safe=False)
-            if not esn_name:
-                return JsonResponse({"status": False, "message": "esn_name requis"}, safe=False)
+           
 
             # Filtrer les partenariats pour le client donné et le nom de l'ESN
             partenariats = Partenariat1.objects.filter(id_client=clientId)
@@ -1763,7 +1761,7 @@ def PartenariatClients(request):
             data = []
             for partenariat in partenariats:
                 try:
-                    esn = ESN.objects.get(ID_ESN=partenariat.id_esn, Raison_sociale__icontains=esn_name)
+                    esn = ESN.objects.get(ID_ESN=partenariat.id_esn)
                     data.append({
                         "id_part": partenariat.id_part,
                         "id_client": partenariat.id_client,
