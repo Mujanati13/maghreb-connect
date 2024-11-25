@@ -1717,7 +1717,7 @@ def PartenariatESNs(request):
                         "id_part": partenariat.id_part,
                         "id_client": partenariat.id_client,
                         "id_esn": partenariat.id_esn,
-                        "esn_name": clt.raison_sociale,
+                        "client_name": clt.raison_sociale,
                         "date_debut": partenariat.date_debut,
                         "date_fin": partenariat.date_fin,
                         "statut": partenariat.statut,
