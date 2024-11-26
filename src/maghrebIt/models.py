@@ -159,12 +159,15 @@ class Candidature(models.Model):
         db_table = 'candidature'  # Nom de la table dans la base de données
         
 class Notification(models.Model):
-    id = models.AutoField(primary_key=True)  # Identifiant unique pour chaque candidature
+    id = models.AutoField(primary_key=True) 
     user_id = models.IntegerField()   
-    message = models.TextField(blank=True, null=True) # Référence à l'ESN qui postule
-    status = models.CharField(max_length=20, blank=True, null=True)  # Responsable du compte
+    dest_id = models.IntegerField()  
+    event_id = models.IntegerField()  
+    message = models.TextField(blank=True, null=True) 
+    status = models.CharField(max_length=20, blank=True, null=True) 
     categorie = models.CharField(max_length=50, blank=True, null=True) 
     created_at = models.DateTimeField(auto_now=True)
+    event = models.CharField(max_length=50, blank=True, null=True) 
    
     class Meta:
         db_table = 'notifications'  # Nom de la table dans la base de données

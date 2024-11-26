@@ -120,7 +120,7 @@ class CandidatureSerializer(serializers.ModelSerializer):
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
-        fields = ['id', 'user_id', 'message','status', 'categorie', 'created_at']
+        fields = ['id', 'dest_id', 'user_id', 'dest_id', 'message','status', 'categorie', 'created_at', 'event']
         
       
 class BondecommandeSerializer(serializers.ModelSerializer):

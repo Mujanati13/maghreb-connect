@@ -2288,3 +2288,134 @@ def Esn_by_id(request):
         for S in esn_serializer.data:
             data.append(S)
         return JsonResponse({"total": len(data),"data": data}, safe=False)
+    
+@csrf_exempt
+def send_notification(user_id, dest_id, event_id, event_type, message, categorie):
+    """
+    Envoie une notification aux utilisateurs concernés.
+
+    Args:
+        user_id (int): L'utilisateur ayant initié l'événement.
+        dest_id (int): Destinataire de la notification.
+        event_id (int): Identifiant de l'événement lié à la notification.
+        event_type (str): Type d'événement (AO, CNDT, BDC, etc.).
+        message (str): Message de la notification.
+        categorie (str): Catégorie du destinataire (ESN, Client, etc.).
+    """
+    notification = Notification(
+        user_id=user_id,
+        dest_id=dest_id,
+        event_id=event_id,
+        event=event_type,
+        message=message,
+        status="Unread",
+        categorie=categorie
+    )
+    notification.save()
+    return notification
+
+@csrf_exempt
+def notify_new_candidature(request):
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        candidature_id = data.get('candidature_id')
+        ao_id = data.get('ao_id')
+        client_id = data.get('client_id')
+
+        if not all([candidature_id, ao_id, client_id]):
+            return JsonResponse({"status": False, "message": "Tous les champs sont requis."}, safe=False)
+
+        message = f"Nouvelle candidature ID={candidature_id} reçue pour l'appel d'offre ID={ao_id}."
+        send_notification(
+            user_id=None,
+            dest_id=client_id,
+            event_id=ao_id,
+            event="CNDT",
+            message=message,
+            categorie="Client"
+        )
+        return JsonResponse({"status": True, "message": "Notification envoyée au client."}, safe=False)
+@csrf_exempt
+def notify_candidature_accepted(request):
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        candidature_id = data.get('candidature_id')
+        esn_id = data.get('esn_id')
+
+        if not all([candidature_id, esn_id]):
+            return JsonResponse({"status": False, "message": "Tous les champs sont requis."}, safe=False)
+
+        message = f"Votre candidature ID={candidature_id} a été acceptée."
+        send_notification(
+            user_id=None,
+            dest_id=esn_id,
+            event_id=candidature_id,
+            event="CNDT",
+            message=message,
+            categorie="ESN"
+        )
+        return JsonResponse({"status": True, "message": "Notification envoyée à l'ESN."}, safe=False)
+@csrf_exempt
+def notify_expiration_ao(request):
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        ao_id = data.get('ao_id')
+        client_id = data.get('client_id')
+        esn_ids = data.get('esn_ids')  # Liste des ESN liés à l'AO
+
+        if not all([ao_id, client_id, esn_ids]):
+            return JsonResponse({"status": False, "message": "Tous les champs sont requis."}, safe=False)
+
+        message_client = f"L'appel d'offre ID={ao_id} est arrivé à expiration."
+        send_notification(
+            user_id=None,
+            dest_id=client_id,
+            event_id=ao_id,
+            event="AO",
+            message=message_client,
+            categorie="Client"
+        )
+
+        for esn_id in esn_ids:
+            message_esn = f"L'appel d'offre ID={ao_id} est arrivé à expiration."
+            send_notification(
+                user_id=None,
+                dest_id=esn_id,
+                event_id=ao_id,
+                event="AO",
+                message=message_esn,
+                categorie="ESN"
+            )
+
+        return JsonResponse({"status": True, "message": "Notifications envoyées aux parties concernées."}, safe=False)
+@csrf_exempt
+def notify_end_of_mission(request):
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        contrat_id = data.get('contrat_id')
+        client_id = data.get('client_id')
+        esn_id = data.get('esn_id')
+
+        if not all([contrat_id, client_id, esn_id]):
+            return JsonResponse({"status": False, "message": "Tous les champs sont requis."}, safe=False)
+
+        message = f"La mission liée au contrat ID={contrat_id} est terminée."
+
+        send_notification(
+            user_id=None,
+            dest_id=client_id,
+            event_id=contrat_id,
+            event="Contrat",
+            message=message,
+            categorie="Client"
+        )
+        send_notification(
+            user_id=None,
+            dest_id=esn_id,
+            event_id=contrat_id,
+            event="Contrat",
+            message=message,
+            categorie="ESN"
+        )
+
+        return JsonResponse({"status": True, "message": "Notifications de fin de mission envoyées."}, safe=False)
