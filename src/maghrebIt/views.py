@@ -2289,7 +2289,7 @@ def Esn_by_id(request):
             data.append(S)
         return JsonResponse({"total": len(data),"data": data}, safe=False)
     
-@csrf_exempt
+
 def send_notification(user_id, dest_id, event_id, event_type, message, categorie):
     """
     Envoie une notification aux utilisateurs concernés.
