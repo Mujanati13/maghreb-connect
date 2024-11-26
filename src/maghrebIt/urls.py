@@ -173,5 +173,13 @@ urlpatterns = [
     
     path('notify_new_candidature/', views.notify_new_candidature),
     re_path(r'^notify_new_candidature/([0-9]+)$', views.notify_new_candidature),
+    
+    path('notify_candidature_accepted/', views.notify_candidature_accepted),
+    re_path(r'^notify_candidature_accepted/([0-9]+)$', views.notify_candidature_accepted),
 
+    path('notify_expiration_ao/', views.notify_expiration_ao),
+    re_path(r'^notify_expiration_ao/([0-9]+)$', views.notify_expiration_ao),
+    
+    path('notify_end_of_mission/', views.notify_end_of_mission),
+    re_path(r'^notify_end_of_mission/([0-9]+)$', views.notify_end_of_mission),
 ]
