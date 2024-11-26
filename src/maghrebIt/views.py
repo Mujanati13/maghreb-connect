@@ -2290,26 +2290,24 @@ def Esn_by_id(request):
         return JsonResponse({"total": len(data),"data": data}, safe=False)
     
 
-def send_notification(user_id, dest_id, event_id, event_type, message, categorie):
+def send_notification(user_id, message, categorie, event, event_id):
     """
-    Envoie une notification aux utilisateurs concernés.
-
-    Args:
-        user_id (int): L'utilisateur ayant initié l'événement.
-        dest_id (int): Destinataire de la notification.
-        event_id (int): Identifiant de l'événement lié à la notification.
-        event_type (str): Type d'événement (AO, CNDT, BDC, etc.).
-        message (str): Message de la notification.
-        categorie (str): Catégorie du destinataire (ESN, Client, etc.).
+    Fonction pour créer une notification.
+    
+    Arguments :
+    - user_id : L'ID du destinataire de la notification.
+    - message : Le message de la notification.
+    - categorie : La catégorie de la notification (Client, ESN, etc.).
+    - event : Le type d'événement déclencheur (ex. "AO", "Candidature").
+    - event_id : L'ID de l'événement (ID de l'appel d'offre, de la candidature, etc.).
     """
     notification = Notification(
         user_id=user_id,
-        dest_id=dest_id,
-        event_id=event_id,
-        event=event_type,
         message=message,
-        status="Unread",
-        categorie=categorie
+        categorie=categorie,
+        event=event,
+        event_id=event_id,
+        status="Not_read"
     )
     notification.save()
     return notification
@@ -2318,23 +2316,25 @@ def send_notification(user_id, dest_id, event_id, event_type, message, categorie
 def notify_new_candidature(request):
     if request.method == 'POST':
         data = JSONParser().parse(request)
-        candidature_id = data.get('candidature_id')
-        ao_id = data.get('ao_id')
         client_id = data.get('client_id')
+        appel_offre_id = data.get('appel_offre_id')
+        candidature_id = data.get('candidature_id')
+        # Validation des données
+        if not client_id or not appel_offre_id or not candidature_id:
+            return JsonResponse({"status": False, "message": "Paramètres manquants"}, safe=False)
 
-        if not all([candidature_id, ao_id, client_id]):
-            return JsonResponse({"status": False, "message": "Tous les champs sont requis."}, safe=False)
-
-        message = f"Nouvelle candidature ID={candidature_id} reçue pour l'appel d'offre ID={ao_id}."
+        # Envoi de la notification au client
+        message = f"Vous avez reçu une nouvelle candidature ID_CD={candidature_id} relative à l'AO ID_AO={appel_offre_id}."
         send_notification(
-            user_id=None,
-            dest_id=client_id,
-            event_id=ao_id,
-            event="CNDT",
+            user_id=client_id,
             message=message,
-            categorie="Client"
+            categorie="Client",
+            event="Candidature",
+            event_id=candidature_id
         )
-        return JsonResponse({"status": True, "message": "Notification envoyée au client."}, safe=False)
+
+        return JsonResponse({"status": True, "message": "Notification envoyée"}, safe=False)
+
 @csrf_exempt
 def notify_candidature_accepted(request):
     if request.method == 'POST':
