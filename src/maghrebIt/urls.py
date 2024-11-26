@@ -170,5 +170,8 @@ urlpatterns = [
     
     path('contrat_by_idEsn/', views.contrat_by_idEsn),
     re_path(r'^contrat_by_idEsn/([0-9]+)$', views.contrat_by_idEsn),
+    
+    path('notify_new_candidature/', views.notify_new_candidature),
+    re_path(r'^notify_new_candidature/([0-9]+)$', views.notify_new_candidature),
 
 ]
