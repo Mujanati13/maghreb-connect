@@ -2290,12 +2290,13 @@ def Esn_by_id(request):
         return JsonResponse({"total": len(data),"data": data}, safe=False)
     
 
-def send_notification(user_id, message, categorie, event, event_id):
+def send_notification(user_id, dest_id, message, categorie, event, event_id):
     """
     Fonction pour créer une notification.
-    
+
     Arguments :
-    - user_id : L'ID du destinataire de la notification.
+    - user_id : L'ID de l'utilisateur ayant généré l'événement.
+    - dest_id : L'ID du destinataire de la notification.
     - message : Le message de la notification.
     - categorie : La catégorie de la notification (Client, ESN, etc.).
     - event : Le type d'événement déclencheur (ex. "AO", "Candidature").
@@ -2303,6 +2304,7 @@ def send_notification(user_id, message, categorie, event, event_id):
     """
     notification = Notification(
         user_id=user_id,
+        dest_id=dest_id,
         message=message,
         categorie=categorie,
         event=event,
@@ -2311,6 +2313,7 @@ def send_notification(user_id, message, categorie, event, event_id):
     )
     notification.save()
     return notification
+
 
 @csrf_exempt
 def notify_new_candidature(request):
@@ -2327,6 +2330,8 @@ def notify_new_candidature(request):
         message = f"Vous avez reçu une nouvelle candidature ID_CD={candidature_id} relative à l'AO ID_AO={appel_offre_id}."
         send_notification(
             user_id=client_id,
+            dest_id=1,  # Assurez-vous que cette valeur n'est pas NULL
+            event_id=1,
             message=message,
             categorie="Client",
             event="Candidature",
