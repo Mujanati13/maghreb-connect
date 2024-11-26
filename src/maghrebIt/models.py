@@ -160,7 +160,7 @@ class Candidature(models.Model):
         
 class Notification(models.Model):
     id = models.AutoField(primary_key=True) 
-    user_id = models.IntegerField()   
+    user_id = models.IntegerField(blank=True, null=True)   
     dest_id = models.IntegerField()  
     event_id = models.IntegerField()  
     message = models.TextField(blank=True, null=True) 
