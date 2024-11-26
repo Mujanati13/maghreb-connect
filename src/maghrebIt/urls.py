@@ -98,6 +98,9 @@ urlpatterns = [
     path('getUserData/', views.Client_by_id),
     re_path(r'^getUserData/([0-9]+)$', views.Client_by_id),
     
+    path('getEsnData/', views.Esn_by_id),
+    re_path(r'^getEsnData/([0-9]+)$', views.Esn_by_id),
+    
     path('getAppelOffre/', views.apprlOffre_by_idClient),
     re_path(r'^getAppelOffre/([0-9]+)$', views.apprlOffre_by_idClient),
     

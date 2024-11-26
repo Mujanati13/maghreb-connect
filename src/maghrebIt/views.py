@@ -1731,6 +1731,7 @@ def PartenariatESNs(request):
 
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)   
+        
 # @csrf_exempt
 # def PartenariatClients(request):
 #     if request.method == 'GET':
@@ -2274,3 +2275,16 @@ def contrat_by_idEsn(request):
             return JsonResponse({"total": len(contrat_serializer.data), "data": contrat_serializer.data}, safe=False)
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
+        
+        
+@csrf_exempt
+def Esn_by_id(request):
+    if request.method == 'GET':
+        esnId = request.GET["esnId"]
+        esn = ESN.objects.filter(ID_ESN=esnId)
+       
+        esn_serializer = ESNSerializer(esn, many=True)
+        data = []
+        for S in esn_serializer.data:
+            data.append(S)
+        return JsonResponse({"total": len(data),"data": data}, safe=False)
