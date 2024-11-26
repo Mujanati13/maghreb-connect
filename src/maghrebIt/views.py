@@ -2374,36 +2374,46 @@ def notify_candidature_accepted(request):
 @csrf_exempt
 def notify_expiration_ao(request):
     if request.method == 'POST':
-        data = JSONParser().parse(request)
-        ao_id = data.get('ao_id')
-        client_id = data.get('client_id')
-        esn_ids = data.get('esn_ids')  # Liste des ESN liés à l'AO
+        try:
+            data = JSONParser().parse(request)
+            print(data)  # Afficher les données reçues
 
-        if not all([ao_id, client_id, esn_ids]):
-            return JsonResponse({"status": False, "message": "Tous les champs sont requis."}, safe=False)
+            ao_id = data.get('ao_id')
+            client_id = data.get('client_id')
+            esn_ids = data.get('esn_ids')
 
-        message_client = f"L'appel d'offre ID={ao_id} est arrivé à expiration."
-        send_notification(
-            user_id=None,
-            dest_id=client_id,
-            event_id=ao_id,
-            event="AO",
-            message=message_client,
-            categorie="Client"
-        )
+            print(f"ao_id: {ao_id}, client_id: {client_id}, esn_ids: {esn_ids}")
 
-        for esn_id in esn_ids:
-            message_esn = f"L'appel d'offre ID={ao_id} est arrivé à expiration."
+            if not all([ao_id, client_id, esn_ids]):
+                return JsonResponse({"status": False, "message": "Tous les champs sont requis."}, safe=False)
+
+            message_client = f"L'appel d'offre ID={ao_id} est arrivé à expiration."
             send_notification(
-                user_id=None,
-                dest_id=esn_id,
+                user_id=None,  # Aucun utilisateur spécifique
+                dest_id=client_id,
                 event_id=ao_id,
                 event="AO",
-                message=message_esn,
-                categorie="ESN"
+                message=message_client,
+                categorie="Client"
             )
 
-        return JsonResponse({"status": True, "message": "Notifications envoyées aux parties concernées."}, safe=False)
+            for esn_id in esn_ids:
+                message_esn = f"L'appel d'offre ID={ao_id} est arrivé à expiration."
+                send_notification(
+                    user_id=None,  # Aucun utilisateur spécifique
+                    dest_id=esn_id,
+                    event_id=ao_id,
+                    event="AO",
+                    message=message_esn,
+                    categorie="ESN"
+                )
+
+            return JsonResponse({"status": True, "message": "Notifications envoyées aux parties concernées."}, safe=False)
+
+        except Exception as e:
+            print(f"Erreur: {e}")  # Déboguer l'erreur
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
 @csrf_exempt
 def notify_end_of_mission(request):
     if request.method == 'POST':
