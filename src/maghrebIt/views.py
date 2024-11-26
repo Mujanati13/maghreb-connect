@@ -2314,31 +2314,42 @@ def send_notification(user_id, dest_id, message, categorie, event, event_id):
     notification.save()
     return notification
 
-
 @csrf_exempt
 def notify_new_candidature(request):
     if request.method == 'POST':
-        data = JSONParser().parse(request)
-        client_id = data.get('client_id')
-        appel_offre_id = data.get('appel_offre_id')
-        candidature_id = data.get('candidature_id')
-        # Validation des données
-        if not client_id or not appel_offre_id or not candidature_id:
-            return JsonResponse({"status": False, "message": "Paramètres manquants"}, safe=False)
+        try:
+            data = JSONParser().parse(request)
+            client_id = data.get('client_id')  # ID du client destinataire
+            appel_offre_id = data.get('appel_offre_id')
+            candidature_id = data.get('candidature_id')
 
-        # Envoi de la notification au client
-        message = f"Vous avez reçu une nouvelle candidature ID_CD={candidature_id} relative à l'AO ID_AO={appel_offre_id}."
-        send_notification(
-            user_id=client_id,
-            dest_id=1,  # Assurez-vous que cette valeur n'est pas NULL
-            event_id=1,
-            message=message,
-            categorie="Client",
-            event="Candidature",
-            event_id=candidature_id
-        )
+            # Validation des paramètres
+            if not client_id or not appel_offre_id or not candidature_id:
+                return JsonResponse({"status": False, "message": "Paramètres manquants (client_id, appel_offre_id, candidature_id)"}, safe=False)
 
-        return JsonResponse({"status": True, "message": "Notification envoyée"}, safe=False)
+            # Vérification que le client existe
+            try:
+                client = Client.objects.get(ID_clt=client_id)
+            except Client.DoesNotExist:
+                return JsonResponse({"status": False, "message": "Client introuvable"}, safe=False)
+
+            # Préparation du message de notification
+            message = f"Vous avez reçu une nouvelle candidature ID_CD={candidature_id} relative à l'AO ID_AO={appel_offre_id}."
+
+            # Envoi de la notification au client
+            send_notification(
+                user_id=client_id,  # L'utilisateur ayant généré l'événement
+                dest_id=client_id,  # Le client est aussi le destinataire ici
+                message=message,
+                categorie="Client",
+                event="Candidature",
+                event_id=candidature_id
+            )
+
+            return JsonResponse({"status": True, "message": "Notification envoyée"}, safe=False)
+
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
 
 @csrf_exempt
 def notify_candidature_accepted(request):
