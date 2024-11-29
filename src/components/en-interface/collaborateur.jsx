@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Table,
   Card,
@@ -16,8 +16,8 @@ import {
   Col,
   Avatar,
   Form,
-  Select
-} from 'antd';
+  Select,
+} from "antd";
 import {
   SearchOutlined,
   PlusOutlined,
@@ -29,37 +29,41 @@ import {
   UserOutlined,
   MailOutlined,
   PhoneOutlined,
-} from '@ant-design/icons';
-import { token } from '../../helper/enpoint';
+} from "@ant-design/icons";
+import { token } from "../../helper/enpoint";
 
-const API_URL = 'http://51.38.99.75:4001/api/collaborateur/';
+const API_URL = "http://51.38.99.75:4001/api/collaborateur/";
 
 const CollaboratorList = () => {
   const [collaborators, setCollaborators] = useState([]);
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [viewMode, setViewMode] = useState('table');
+  const [viewMode, setViewMode] = useState("table");
 
   // Fetch collaborators
   const fetchCollaborators = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(API_URL ,  {
-        headers: {
-            Authorization: `${token()}`
+      const response = await axios.get(
+        "http://51.38.99.75:4001/api/consultants_par_esn/?esn_id=" +
+          localStorage.getItem("id"),
+        {
+          headers: {
+            Authorization: `${token()}`,
+          },
         }
-    });
-      const formattedData = response.data.data.map(collab => ({
+      );
+      const formattedData = response.data.data.map((collab) => ({
         ...collab,
         key: collab.ID_collab,
         fullName: `${collab.Nom} ${collab.Prenom}`,
-        status: collab.Actif ? 'actif' : 'inactif'
+        status: collab.Actif ? "actif" : "inactif",
       }));
       setCollaborators(formattedData);
       setLoading(false);
     } catch (error) {
-      message.error('Erreur lors du chargement des collaborateurs');
+      message.error("Erreur lors du chargement des collaborateurs");
       setLoading(false);
     }
   };
@@ -71,22 +75,22 @@ const CollaboratorList = () => {
   // Delete Collaborator
   const handleDelete = async (record) => {
     Modal.confirm({
-      title: 'Êtes-vous sûr de vouloir supprimer ce collaborateur ?',
+      title: "Êtes-vous sûr de vouloir supprimer ce collaborateur ?",
       content: `Cette action supprimera définitivement ${record.fullName}.`,
-      okText: 'Oui',
-      okType: 'danger',
-      cancelText: 'Non',
+      okText: "Oui",
+      okType: "danger",
+      cancelText: "Non",
       async onOk() {
         try {
-          await axios.delete(`${API_URL}${record.ID_collab}`  , {
+          await axios.delete(`${API_URL}${record.ID_collab}`, {
             headers: {
-                Authorization: `${token()}`
-            }
-        });
-          message.success('Collaborateur supprimé avec succès');
+              Authorization: `${token()}`,
+            },
+          });
+          message.success("Collaborateur supprimé avec succès");
           fetchCollaborators();
         } catch (error) {
-          message.error('Erreur lors de la suppression du collaborateur');
+          message.error("Erreur lors de la suppression du collaborateur");
         }
       },
     });
@@ -95,54 +99,54 @@ const CollaboratorList = () => {
   // Columns for Table View
   const columns = [
     {
-      title: 'ID',
-      dataIndex: 'ID_collab',
-      key: 'ID_collab',
+      title: "ID",
+      dataIndex: "ID_collab",
+      key: "ID_collab",
       sorter: (a, b) => a.ID_collab - b.ID_collab,
       width: 80,
     },
     {
-      title: 'Nom Complet',
-      dataIndex: 'fullName',
-      key: 'fullName',
+      title: "Nom Complet",
+      dataIndex: "fullName",
+      key: "fullName",
       sorter: (a, b) => a.fullName.localeCompare(b.fullName),
       filteredValue: searchText ? [searchText] : null,
       onFilter: (value, record) =>
         record.fullName.toLowerCase().includes(value.toLowerCase()),
     },
     {
-      title: 'Poste',
-      dataIndex: 'Poste',
-      key: 'Poste',
+      title: "Poste",
+      dataIndex: "Poste",
+      key: "Poste",
     },
     {
-      title: 'Date de Début',
-      dataIndex: 'date_debut_activ',
-      key: 'date_debut_activ',
+      title: "Date de Début",
+      dataIndex: "date_debut_activ",
+      key: "date_debut_activ",
     },
     {
-      title: 'Statut',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Statut",
+      dataIndex: "status",
+      key: "status",
       render: (status) => (
-        <Tag color={status === 'actif' ? 'green' : 'red'}>
-          {status === 'actif' ? 'Actif' : 'Inactif'}
+        <Tag color={status === "actif" ? "green" : "red"}>
+          {status === "actif" ? "Actif" : "Inactif"}
         </Tag>
       ),
       filters: [
-        { text: 'Actif', value: 'actif' },
-        { text: 'Inactif', value: 'inactif' },
+        { text: "Actif", value: "actif" },
+        { text: "Inactif", value: "inactif" },
       ],
       onFilter: (value, record) => record.status === value,
     },
     {
-      title: 'Actions',
-      key: 'actions',
+      title: "Actions",
+      key: "actions",
       width: 120,
       render: (_, record) => (
-        <ActionButtons 
-          record={record} 
-          handleDelete={handleDelete} 
+        <ActionButtons
+          record={record}
+          handleDelete={handleDelete}
           fetchCollaborators={fetchCollaborators}
         />
       ),
@@ -165,19 +169,19 @@ const CollaboratorList = () => {
         const updatedData = {
           ...record,
           ...values,
-          Actif: values.Actif || record.Actif
+          Actif: values.Actif || record.Actif,
         };
 
-        await axios.put(`${API_URL}${record.ID_collab}`, updatedData  , {
+        await axios.put(`${API_URL}${record.ID_collab}`, updatedData, {
           headers: {
-              Authorization: `${token()}`
-          }
-      });
-        message.success('Collaborateur mis à jour avec succès');
+            Authorization: `${token()}`,
+          },
+        });
+        message.success("Collaborateur mis à jour avec succès");
         fetchCollaborators();
         setIsEditModalVisible(false);
       } catch (error) {
-        message.error('Erreur lors de la mise à jour du collaborateur');
+        message.error("Erreur lors de la mise à jour du collaborateur");
       }
     };
 
@@ -203,11 +207,11 @@ const CollaboratorList = () => {
             menu={{
               items: [
                 {
-                  key: '1',
-                  label: 'Voir détails',
+                  key: "1",
+                  label: "Voir détails",
                   onClick: () => {
                     Modal.info({
-                      title: 'Détails du Collaborateur',
+                      title: "Détails du Collaborateur",
                       content: (
                         <div>
                           <p>Nom: {record.fullName}</p>
@@ -220,7 +224,7 @@ const CollaboratorList = () => {
                     });
                   },
                 },
-              ]
+              ],
             }}
           >
             <Button type="text" icon={<MoreOutlined />} />
@@ -240,28 +244,25 @@ const CollaboratorList = () => {
             <Form.Item
               name="Nom"
               label="Nom"
-              rules={[{ required: true, message: 'Veuillez saisir le nom' }]}
+              rules={[{ required: true, message: "Veuillez saisir le nom" }]}
             >
               <Input />
             </Form.Item>
             <Form.Item
               name="Prenom"
               label="Prénom"
-              rules={[{ required: true, message: 'Veuillez saisir le prénom' }]}
+              rules={[{ required: true, message: "Veuillez saisir le prénom" }]}
             >
               <Input />
             </Form.Item>
             <Form.Item
               name="Poste"
               label="Poste"
-              rules={[{ required: true, message: 'Veuillez saisir le poste' }]}
+              rules={[{ required: true, message: "Veuillez saisir le poste" }]}
             >
               <Input />
             </Form.Item>
-            <Form.Item
-              name="Actif"
-              label="Statut"
-            >
+            <Form.Item name="Actif" label="Statut">
               <Select>
                 <Select.Option value={true}>Actif</Select.Option>
                 <Select.Option value={false}>Inactif</Select.Option>
@@ -276,14 +277,27 @@ const CollaboratorList = () => {
   // Card View Component
   const CardView = ({ data, handleDelete, fetchCollaborators }) => (
     <Row gutter={[16, 16]}>
-      {data.map(collaborator => (
+      {data.map((collaborator) => (
         <Col xs={24} sm={12} md={8} lg={6} key={collaborator.ID_collab}>
           <Card
             hoverable
             actions={[
-              <EditOutlined key="edit" onClick={() => {/* Edit logic */}} />,
-              <DeleteOutlined key="delete" onClick={() => handleDelete(collaborator)} />,
-              <MoreOutlined key="more" onClick={() => {/* More options logic */}} />
+              <EditOutlined
+                key="edit"
+                onClick={() => {
+                  /* Edit logic */
+                }}
+              />,
+              <DeleteOutlined
+                key="delete"
+                onClick={() => handleDelete(collaborator)}
+              />,
+              <MoreOutlined
+                key="more"
+                onClick={() => {
+                  /* More options logic */
+                }}
+              />,
             ]}
           >
             <Card.Meta
@@ -291,12 +305,10 @@ const CollaboratorList = () => {
               title={`${collaborator.Nom} ${collaborator.Prenom}`}
               description={
                 <Space direction="vertical" size="small">
-                  <Tag color={collaborator.Actif ? 'green' : 'red'}>
-                    {collaborator.Actif ? 'Actif' : 'Inactif'}
+                  <Tag color={collaborator.Actif ? "green" : "red"}>
+                    {collaborator.Actif ? "Actif" : "Inactif"}
                   </Tag>
-                  <Space>
-                    {collaborator.Poste}
-                  </Space>
+                  <Space>{collaborator.Poste}</Space>
                 </Space>
               }
             />
@@ -319,22 +331,23 @@ const CollaboratorList = () => {
       try {
         const values = await form.validateFields();
         const newCollaborator = {
+          ID_ESN:localStorage.getItem("id"),
           ...values,
           Actif: true,
-          date_debut_activ: new Date().toISOString().split('T')[0]
+          date_debut_activ: new Date().toISOString().split("T")[0],
         };
 
-        await axios.post(API_URL, newCollaborator,   {
+        await axios.post(API_URL, newCollaborator, {
           headers: {
-              Authorization: `${token()}`
-          }
-      });
-        message.success('Nouveau collaborateur ajouté avec succès');
+            Authorization: `${token()}`,
+          },
+        });
+        message.success("Nouveau collaborateur ajouté avec succès");
         fetchCollaborators();
         setIsModalVisible(false);
         form.resetFields();
       } catch (error) {
-        message.error('Erreur lors de l\'ajout du collaborateur');
+        message.error("Erreur lors de l'ajout du collaborateur");
       }
     };
 
@@ -360,31 +373,45 @@ const CollaboratorList = () => {
             <Form.Item
               label="Nom"
               name="Nom"
-              rules={[{ required: true, message: 'Veuillez saisir le nom du collaborateur' }]}
+              rules={[
+                {
+                  required: true,
+                  message: "Veuillez saisir le nom du collaborateur",
+                },
+              ]}
             >
               <Input />
             </Form.Item>
             <Form.Item
               label="Prénom"
               name="Prenom"
-              rules={[{ required: true, message: 'Veuillez saisir le prénom du collaborateur' }]}
+              rules={[
+                {
+                  required: true,
+                  message: "Veuillez saisir le prénom du collaborateur",
+                },
+              ]}
             >
               <Input />
             </Form.Item>
             <Form.Item
               label="Poste"
               name="Poste"
-              rules={[{ required: true, message: 'Veuillez saisir le poste du collaborateur' }]}
+              rules={[
+                {
+                  required: true,
+                  message: "Veuillez saisir le poste du collaborateur",
+                },
+              ]}
             >
               <Input />
             </Form.Item>
-            <Form.Item
-              label="Mobilité"
-              name="Mobilité"
-            >
+            <Form.Item label="Mobilité" name="Mobilité">
               <Select>
                 <Select.Option value="National">National</Select.Option>
-                <Select.Option value="International">International</Select.Option>
+                <Select.Option value="International">
+                  International
+                </Select.Option>
               </Select>
             </Form.Item>
           </Form>
@@ -394,9 +421,9 @@ const CollaboratorList = () => {
   };
 
   return (
-    <Card className='w-full'>
-      <Space className='w-full flex flex-row items-center justify-between bg-white'>
-        <div className='flex flex-row items-center space-x-5'>
+    <Card className="w-full">
+      <Space className="w-full flex flex-row items-center justify-between bg-white">
+        <div className="flex flex-row items-center space-x-5">
           <Radio.Group
             value={viewMode}
             onChange={(e) => setViewMode(e.target.value)}
@@ -412,24 +439,21 @@ const CollaboratorList = () => {
             style={{ width: 200 }}
           />
         </div>
-        <div className='flex flex-row items-center space-x-5'>
+        <div className="flex flex-row items-center space-x-5">
           <AddCollaboratorModal />
           <Button
             icon={<ExportOutlined />}
-            onClick={() => message.info('Exporter les données')}
+            onClick={() => message.info("Exporter les données")}
           >
             Exporter
           </Button>
           <Tooltip title="Actualiser">
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={fetchCollaborators}
-            />
+            <Button icon={<ReloadOutlined />} onClick={fetchCollaborators} />
           </Tooltip>
         </div>
       </Space>
-      <div className='mt-5'></div>
-      {viewMode === 'table' ? (
+      <div className="mt-5"></div>
+      {viewMode === "table" ? (
         <Table
           columns={columns}
           dataSource={collaborators}
@@ -442,13 +466,13 @@ const CollaboratorList = () => {
             showQuickJumper: true,
           }}
           size="middle"
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: "max-content" }}
         />
       ) : (
-        <CardView 
-          data={collaborators} 
-          handleDelete={handleDelete} 
-          fetchCollaborators={fetchCollaborators} 
+        <CardView
+          data={collaborators}
+          handleDelete={handleDelete}
+          fetchCollaborators={fetchCollaborators}
         />
       )}
     </Card>

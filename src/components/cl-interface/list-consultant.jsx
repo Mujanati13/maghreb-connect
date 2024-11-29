@@ -34,12 +34,13 @@ const ConsultantManagement = () => {
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [viewMode, setViewMode] = useState(''); // 'table' or 'card'
+  const [viewMode, setViewMode] = useState('table'); // Default to table view
   const [consultantData, setConsultantData] = useState([]);
 
   const fetchConsultantData = async () => {
+    const id = localStorage.getItem("id");
     try {
-      const response = await axios.get('http://51.38.99.75:4001/api/candidature/');
+      const response = await axios.get('http://51.38.99.75:4001/api/consultants_par_client/?client_id=' + id);
       setConsultantData(response.data.data);
     } catch (error) {
       console.error('Error fetching consultant data:', error);
@@ -79,10 +80,10 @@ const ConsultantManagement = () => {
 
   const columns = [
     {
-      title: 'ID Candidature',
-      dataIndex: 'id_cd',
-      key: 'id_cd',
-      sorter: (a, b) => a.id_cd - b.id_cd,
+      title: 'ID Consultant',
+      dataIndex: 'id_consultant',
+      key: 'id_consultant',
+      sorter: (a, b) => a.id_consultant - b.id_consultant,
       width: 120,
     },
     {
@@ -95,24 +96,9 @@ const ConsultantManagement = () => {
         record.responsable_compte.toLowerCase().includes(value.toLowerCase()),
     },
     {
-      title: 'Date Candidature',
-      dataIndex: 'date_candidature',
-      key: 'date_candidature',
-    },
-    {
-      title: 'Statut',
-      dataIndex: 'statut',
-      key: 'statut',
-      render: (status) => (
-        <Tag color={status === 'En cours' ? 'geekblue' : 'volcano'}>
-          {status}
-        </Tag>
-      ),
-      filters: [
-        { text: 'En cours', value: 'En cours' },
-        { text: 'Fermé', value: 'Fermé' },
-      ],
-      onFilter: (value, record) => record.statut === value,
+      title: 'Poste',
+      dataIndex: 'poste',
+      key: 'poste',
     },
     {
       title: 'TJM',
@@ -126,9 +112,19 @@ const ConsultantManagement = () => {
       key: 'date_disponibilite',
     },
     {
-      title: 'Commentaire',
-      dataIndex: 'commentaire',
-      key: 'commentaire',
+      title: 'Statut',
+      dataIndex: 'statut',
+      key: 'statut',
+      render: (status) => (
+        <Tag color={status === 'Disponible' ? 'geekblue' : 'volcano'}>
+          {status}
+        </Tag>
+      ),
+      filters: [
+        { text: 'Disponible', value: 'Disponible' },
+        { text: 'Non Disponible', value: 'Non Disponible' },
+      ],
+      onFilter: (value, record) => record.statut === value,
     },
     {
       title: 'Actions',
@@ -181,7 +177,7 @@ const ConsultantManagement = () => {
   const CardView = ({ data, handleDelete }) => (
     <Row gutter={[16, 16]}>
       {data.map(consultant => (
-        <Col xs={24} sm={12} md={8} lg={6} key={consultant.id_cd}>
+        <Col xs={24} sm={12} md={8} lg={6} key={consultant.id_consultant}>
           <Card
             hoverable
             actions={[
@@ -195,17 +191,17 @@ const ConsultantManagement = () => {
               title={consultant.responsable_compte}
               description={
                 <Space direction="vertical" size="small">
-                  <Tag color={consultant.statut === 'En cours' ? 'geekblue' : 'volcano'}>
+                  <Tag color={consultant.statut === 'Disponible' ? 'geekblue' : 'volcano'}>
                     {consultant.statut}
                   </Tag>
                   <Space>
-                    <MailOutlined /> {consultant.responsable_compte}
+                    <MailOutlined /> {consultant.email || 'N/A'}
                   </Space>
                   <Space>
-                    <PhoneOutlined /> {consultant.id_consultant}
+                    <PhoneOutlined /> {consultant.telephone || 'N/A'}
                   </Space>
                   <Space>
-                     {consultant.poste}
+                    {consultant.poste}
                   </Space>
                 </Space>
               }
@@ -221,8 +217,9 @@ const ConsultantManagement = () => {
     onChange: (keys) => setSelectedRowKeys(keys),
   };
 
-  const handleAddConsultant = () => {
+  const handleAddConsultant = (values) => {
     // Implement add consultant functionality
+    console.log('New consultant:', values);
   };
 
   return (
@@ -265,11 +262,11 @@ const ConsultantManagement = () => {
         <>
           <Table
             columns={columns}
-            dataSource={consultantData}
+            dataSource={consultantData&&consultantData}
             rowSelection={rowSelection}
             loading={loading}
             pagination={{
-              total: consultantData.length,
+              total: consultantData&&consultantData.length,
               pageSize: 10,
               showTotal: (total) => `Total ${total} Consultants`,
               showSizeChanger: true,
@@ -292,7 +289,7 @@ const ConsultantManagement = () => {
           </div>
         </>
       ) : (
-        <CardView data={consultantData} handleDelete={handleDelete} />
+        <CardView data={consultantData&&consultantData} handleDelete={handleDelete} />
       )}
     </Card>
   );
@@ -324,9 +321,9 @@ const AddConsultantModal = ({ onAdd }) => {
 
   return (
     <>
-      {/* <Button type="primary" onClick={showModal} icon={<PlusOutlined />}>
+      <Button type="primary" onClick={showModal} icon={<PlusOutlined />}>
         Nouveau Consultant
-      </Button> */}
+      </Button>
       <Modal
         title="Ajouter un Consultant"
         visible={isModalVisible}
@@ -344,23 +341,27 @@ const AddConsultantModal = ({ onAdd }) => {
             <Input />
           </Form.Item>
           <Form.Item
-            label="ID Consultant"
-            name="id_consultant"
-            rules={[{ required: true, message: 'Veuillez saisir l\'ID du consultant' }]}
+            label="Poste"
+            name="poste"
+            rules={[{ required: true, message: 'Veuillez saisir le poste' }]}
           >
             <Input />
           </Form.Item>
           <Form.Item
-            label="Date Candidature"
-            name="date_candidature"
-            rules={[{ required: true, message: 'Veuillez saisir la date de candidature' }]}
+            label="Email"
+            name="email"
+            rules={[{ 
+              required: true, 
+              message: 'Veuillez saisir l\'email',
+              type: 'email' 
+            }]}
           >
             <Input />
           </Form.Item>
           <Form.Item
-            label="Statut"
-            name="statut"
-            rules={[{ required: true, message: 'Veuillez saisir le statut' }]}
+            label="Téléphone"
+            name="telephone"
+            rules={[{ required: true, message: 'Veuillez saisir le numéro de téléphone' }]}
           >
             <Input />
           </Form.Item>
@@ -379,8 +380,9 @@ const AddConsultantModal = ({ onAdd }) => {
             <Input />
           </Form.Item>
           <Form.Item
-            label="Commentaire"
-            name="commentaire"
+            label="Statut"
+            name="statut"
+            rules={[{ required: true, message: 'Veuillez saisir le statut' }]}
           >
             <Input />
           </Form.Item>

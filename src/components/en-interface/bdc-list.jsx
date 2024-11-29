@@ -46,7 +46,8 @@ const BonDeCommandeInterface = () => {
   const fetchPurchaseOrders = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://51.38.99.75:4001/api/Bondecommande/');
+      const clientId = localStorage.getItem('id');
+      const response = await axios.get(`http://51.38.99.75:4001/api/get_bon_de_commande_by_client/?client_id=${clientId}`);
       setPurchaseOrders(response.data.data);
     } catch (error) {
       message.error('Échec de la récupération des bons de commande');
@@ -178,14 +179,16 @@ const BonDeCommandeInterface = () => {
 
   const handleSubmit = async (values) => {
     try {
+      const clientId = localStorage.getItem('id');
       const formattedValues = {
         ...values,
         date_creation: values.date_creation.toISOString(),
-        candidature_id: 1 // Adding required field from API structure
+        candidature_id: 1, // Adding required field from API structure
+        client_id: clientId
       };
 
       if (currentPurchaseOrder) {
-        await axios.put(`http://51.38.99.75:4001/api/Bondecommande/${currentPurchaseOrder.id_bdc}`, formattedValues);
+        await axios.put(`http://51.38.99.75:4001/api/Bondecommande/`, {...formattedValues, id_bdc:currentPurchaseOrder.id_bdc});
         message.success('Bon de commande mis à jour avec succès');
       } else {
         await axios.post('http://51.38.99.75:4001/api/Bondecommande/', {
@@ -217,15 +220,15 @@ const BonDeCommandeInterface = () => {
             prefix={<SearchOutlined />}
             className="w-64"
           />
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+          {/* <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
             Créer un bon de commande
-          </Button>
+          </Button> */}
         </div>
       </div>
 
       <Table
         columns={columns}
-        dataSource={purchaseOrders.filter((po) =>
+        dataSource={purchaseOrders&&purchaseOrders.filter((po) =>
           po.numero_bdc?.toLowerCase().includes(searchText.toLowerCase()) ||
           po.description?.toLowerCase().includes(searchText.toLowerCase())
         )}

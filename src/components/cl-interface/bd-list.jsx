@@ -45,7 +45,14 @@ const PurchaseOrderInterface = () => {
   const fetchPurchaseOrders = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://51.38.99.75:4001/api/Bondecommande/');
+      const esnId = localStorage.getItem('id');
+      if (!esnId) {
+        message.error('ID ESN non trouvé dans le stockage local');
+        setLoading(false);
+        return;
+      }
+
+      const response = await axios.get(`http://51.38.99.75:4001/api/get_bon_de_commande_by_client/?client_id=${esnId}`);
       setPurchaseOrders(response.data.data);
     } catch (error) {
       message.error('Échec de la récupération des bons de commande');
@@ -196,7 +203,7 @@ const PurchaseOrderInterface = () => {
         <Space direction="vertical" className="w-full">
           <div className="flex justify-between items-center">
             <Badge 
-              count={purchaseOrders.filter(po => po.statut === 'pending_esn').length}
+              count={purchaseOrders&&purchaseOrders.filter(po => po.statut === 'pending_esn').length}
               showZero
               className="mr-4"
             >
@@ -220,7 +227,7 @@ const PurchaseOrderInterface = () => {
           />
         </div>
 
-        {purchaseOrders.filter(po => po.statut === 'pending_esn').length > 0 && (
+        {purchaseOrders&&purchaseOrders.filter(po => po.statut === 'pending_esn').length > 0 && (
           <Alert
             message="Bons de commande en attente"
             description={`Vous avez ${purchaseOrders.filter(po => po.statut === 'pending_esn').length} bon(s) de commande en attente de validation.`}
@@ -233,7 +240,7 @@ const PurchaseOrderInterface = () => {
 
       <Table
         columns={columns}
-        dataSource={purchaseOrders.filter((po) =>
+        dataSource={purchaseOrders&&purchaseOrders.filter((po) =>
           po.numero_bdc?.toLowerCase().includes(searchText.toLowerCase()) ||
           po.description?.toLowerCase().includes(searchText.toLowerCase())
         )}

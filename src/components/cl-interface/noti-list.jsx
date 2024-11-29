@@ -32,7 +32,7 @@ const NotificationInterfaceClient = () => {
       setLoading(true);
       const response = await fetch(
         "http://51.38.99.75:4001/api/getNotifications/?type=client",
-        
+
       );
       if (!response.ok) {
         throw new Error("Failed to fetch notifications");

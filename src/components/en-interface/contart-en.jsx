@@ -48,17 +48,20 @@ const ContractList = () => {
 
   const fetchContracts = async () => {
     try {
-      const response = await fetch('http://51.38.99.75:4001/api/Contrat/');
+      const response = await fetch(
+        "http://51.38.99.75:4001/api/contrat_by_idEsn/?esnId=" +
+          localStorage.getItem("id")
+      );
       const result = await response.json();
-      
+
       // Transform API data to match our component's data structure
-      const transformedContracts = result.data.map(contract => ({
+      const transformedContracts = result.data.map((contract) => ({
         id: contract.id_contrat,
         status: getStatusMapping(contract.statut),
         projectDetails: {
           title: `Contrat ${contract.numero_contrat}`,
-          startDate: new Date(contract.date_debut).toLocaleDateString('fr-FR'),
-          endDate: new Date(contract.date_fin).toLocaleDateString('fr-FR'),
+          startDate: new Date(contract.date_debut).toLocaleDateString("fr-FR"),
+          endDate: new Date(contract.date_fin).toLocaleDateString("fr-FR"),
           duration: calculateDuration(contract.date_debut, contract.date_fin),
           budget: `${contract.montant.toLocaleString()} €`,
           location: "France", // Default value as not provided in API
@@ -70,13 +73,13 @@ const ContractList = () => {
           {
             key: "1",
             item: "Début de mission",
-            deadline: new Date(contract.date_debut).toLocaleDateString('fr-FR'),
+            deadline: new Date(contract.date_debut).toLocaleDateString("fr-FR"),
             status: "En cours",
           },
           {
             key: "2",
             item: "Fin de mission",
-            deadline: new Date(contract.date_fin).toLocaleDateString('fr-FR'),
+            deadline: new Date(contract.date_fin).toLocaleDateString("fr-FR"),
             status: "En attente",
           },
         ],
@@ -85,8 +88,8 @@ const ContractList = () => {
       setContracts(transformedContracts);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching contracts:', error);
-      message.error('Erreur lors du chargement des contrats');
+      console.error("Error fetching contracts:", error);
+      message.error("Erreur lors du chargement des contrats");
       setLoading(false);
     }
   };
@@ -101,34 +104,34 @@ const ContractList = () => {
 
   const getStatusMapping = (apiStatus) => {
     const statusMap = {
-      'En cours': 'processing',
-      'Terminé': 'success',
-      'En attente': 'pending',
+      "En cours": "processing",
+      Terminé: "success",
+      "En attente": "pending",
     };
-    return statusMap[apiStatus] || 'default';
+    return statusMap[apiStatus] || "default";
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending':
-        return 'warning';
-      case 'processing':
-        return 'processing';
-      case 'success':
-        return 'success';
+      case "pending":
+        return "warning";
+      case "processing":
+        return "processing";
+      case "success":
+        return "success";
       default:
-        return 'default';
+        return "default";
     }
   };
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'pending':
-        return 'En attente';
-      case 'processing':
-        return 'En cours';
-      case 'success':
-        return 'Terminé';
+      case "pending":
+        return "En attente";
+      case "processing":
+        return "En cours";
+      case "success":
+        return "Terminé";
       default:
         return status;
     }
@@ -144,16 +147,16 @@ const ContractList = () => {
             const newContract = {
               ...contract,
               esnSigned: true,
-              status: 'processing',
+              status: "processing",
             };
-            message.success('Signature effectuée avec succès');
+            message.success("Signature effectuée avec succès");
             return newContract;
           }
           return contract;
         })
       );
     } catch (error) {
-      message.error('Erreur lors de la signature du contrat');
+      message.error("Erreur lors de la signature du contrat");
     }
   };
 

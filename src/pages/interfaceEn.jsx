@@ -26,6 +26,7 @@ import ContractList from "../components/en-interface/contart-en";
 import { isEsnLoggedIn, logoutEsn } from "../helper/db";
 import { useNavigate } from "react-router-dom";
 import ESNCandidatureInterface from "../components/en-interface/me-codi";
+import ESNProfilePageFrancais from "../components/en-interface/profile";
 
 const InterfaceEn = () => {
   const [current, setCurrent] = useState("dashboard");
@@ -52,6 +53,11 @@ const InterfaceEn = () => {
       key: "client-management",
       icon: <TeamOutlined />,
       children: [
+        {
+          label: "Profile",
+          key: "Profile",
+          icon: <UserOutlined />,
+        },
         {
           label: "Liste des Clients",
           key: "Liste-des-Clients",
@@ -192,6 +198,8 @@ const InterfaceEn = () => {
         return <ContractList />;
       case "Partenariat":
         return <ClientPartenariatInterface />;
+      case "Profile":
+        return <ESNProfilePageFrancais />;
       default:
         return null;
     }
@@ -227,7 +235,7 @@ const InterfaceEn = () => {
           <div className="flex space-x-3 items-center ml-4">
             <Tag color="blue">Espace de l'ENS</Tag>
             <LogoutOutlined
-              onClick={()=>{
+              onClick={() => {
                 logoutEsn();
                 navigate("/Login");
               }}

@@ -80,7 +80,7 @@ const AppelDOffreInterface = () => {
   const onFinish = async (values) => {
     try {
       const formData = {
-        client_id: 1, // You might want to make this dynamic
+        client_id: localStorage.getItem("id"), // You might want to make this dynamic
         titre: values.title,
         description: values.description,
         profil: values.profile,
@@ -98,7 +98,11 @@ const AppelDOffreInterface = () => {
         message.success("Appel d'offre modifié avec succès");
       } else {
         // Create new record
-        await axios.post(`${API_BASE_URL}/appelOffre/`, formData);
+        const res_data = await axios.post(`${API_BASE_URL}/appelOffre/`, formData);
+        await axios.post(`${API_BASE_URL}/notify_expiration_ao/`, {
+          ao_id : res_data.id,
+          client_id : localStorage.getItem("id")
+        });
         message.success("Appel d'offre créé avec succès");
       }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Collapse, Card, Button, Modal, Descriptions, Tag, Typography, Table, message } from 'antd';
+import { Collapse, Card, Button, Modal, Descriptions, Tag, Typography, Table, message, Empty } from 'antd';
 import { DownloadOutlined, CheckOutlined, CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 
 const { Panel } = Collapse;
@@ -7,25 +7,52 @@ const { Title, Text } = Typography;
 
 const CandidatureInterface = () => {
     const [appelsOffre, setAppelsOffre] = useState([]);
-    const [candidatures, setCandidatures] = useState([]);
+    const [candidates, setCandidates] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [currentCandidature, setCurrentCandidature] = useState(null);
+    const [currentCandidate, setCurrentCandidate] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
 
-    // Fetch data from both APIs
+    // Fetch data from APIs
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [appelsOffreRes, candidaturesRes] = await Promise.all([
-                fetch('http://51.38.99.75:4001/api/appelOffre/'),
-                fetch('http://51.38.99.75:4001/api/candidature/')
-            ]);
+            // Get client ID from local storage
+            const clientId = localStorage.getItem('id');
+            if (!clientId) {
+                throw new Error('Client ID not found in local storage');
+            }
 
+            // First, fetch Appel d'Offre data
+            const appelsOffreRes = await fetch('http://51.38.99.75:4001/api/appelOffre/');
             const appelsOffreData = await appelsOffreRes.json();
-            const candidaturesData = await candidaturesRes.json();
-
             setAppelsOffre(appelsOffreData.data);
-            setCandidatures(candidaturesData.data);
+
+            // Fetch candidates for each Appel d'Offre
+            const candidatesPromises = appelsOffreData.data.map(async (offre) => {
+                try {
+                    const candidatesRes = await fetch(`http://51.38.99.75:4001/api/get_candidates/?clientId=${clientId}&appelOffreId=${offre.id}`);
+                    const candidatesData = await candidatesRes.json();
+
+                    // Check if the response indicates no candidates found
+                    if (candidatesData.status === false && 
+                        candidatesData.message === "Aucun appel d'offre trouvé pour ce client") {
+                        return []; // Return empty array for this specific offre
+                    }
+
+                    // Return candidates data if available
+                    return candidatesData.data || [];
+                } catch (error) {
+                    console.error(`Error fetching candidates for offre ${offre.id}:`, error);
+                    return []; // Return empty array in case of error
+                }
+            });
+
+            const candidatesResults = await Promise.all(candidatesPromises);
+            
+            // Flatten and combine candidates from all Appel d'Offre
+            const allCandidates = candidatesResults.flatMap(result => result);
+            setCandidates(allCandidates);
+
         } catch (error) {
             message.error('Erreur lors du chargement des données');
             console.error('Error fetching data:', error);
@@ -38,29 +65,27 @@ const CandidatureInterface = () => {
         fetchData();
     }, []);
 
-    const handleViewCandidature = (candidature) => {
-        setCurrentCandidature(candidature);
+    const handleViewCandidate = (candidate) => {
+        setCurrentCandidate(candidate);
         setIsModalVisible(true);
     };
 
-    const handleAccept = async (candidature) => {
+    const handleAccept = async (candidate) => {
         try {
-            // Update candidature status through API
-            const response = await fetch(`http://51.38.99.75:4001/api/candidature/`, {
+            const response = await fetch(`http://51.38.99.75:4001/api/get_candidates/`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    id_cd : candidature.id_cd,
-                    ...candidature,
+                    ...candidate,
                     statut: 'Accepté'
                 })
             });
 
             if (response.ok) {
                 message.success('Candidature acceptée avec succès');
-                fetchData(); // Refresh data
+                fetchData();
             } else {
                 throw new Error('Failed to update candidature');
             }
@@ -70,24 +95,22 @@ const CandidatureInterface = () => {
         }
     };
 
-    const handleReject = async (candidature) => {
+    const handleReject = async (candidate) => {
         try {
-            // Update candidature status through API
-            const response = await fetch(`http://51.38.99.75:4001/api/candidature/`, {
+            const response = await fetch(`http://51.38.99.75:4001/api/get_candidates/`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    id_cd : candidature.id_cd,
-                    ...candidature,
+                    ...candidate,
                     statut: 'Refusé'
                 })
             });
 
             if (response.ok) {
                 message.success('Candidature refusée');
-                fetchData(); // Refresh data
+                fetchData();
             } else {
                 throw new Error('Failed to update candidature');
             }
@@ -122,8 +145,8 @@ const CandidatureInterface = () => {
         <div>
             <Collapse accordion>
                 {appelsOffre.map((offre) => {
-                    const relatedCandidatures = candidatures.filter(
-                        (candidature) => candidature.AO_id === offre.id
+                    const relatedCandidates = candidates.filter(
+                        (candidate) => candidate.appelOffreId === offre.id
                     );
 
                     return (
@@ -156,69 +179,81 @@ const CandidatureInterface = () => {
                                     </div>
                                 </div>
 
-                                <Table
-                                    dataSource={relatedCandidatures}
-                                    rowKey="id_cd"
-                                    columns={[
-                                        {
-                                            title: 'Responsable',
-                                            dataIndex: 'responsable_compte',
-                                            key: 'responsable_compte'
-                                        },
-                                        {
-                                            title: 'TJM Proposé',
-                                            dataIndex: 'tjm',
-                                            key: 'tjm',
-                                            render: (tjm) => `${tjm} €`
-                                        },
-                                        {
-                                            title: 'Date Candidature',
-                                            dataIndex: 'date_candidature',
-                                            key: 'date_candidature',
-                                            render: (date) => new Date(date).toLocaleDateString()
-                                        },
-                                        {
-                                            title: 'Disponibilité',
-                                            dataIndex: 'date_disponibilite',
-                                            key: 'date_disponibilite',
-                                            render: (date) => new Date(date).toLocaleDateString()
-                                        },
-                                        {
-                                            title: 'Statut',
-                                            dataIndex: 'statut',
-                                            key: 'statut',
-                                            render: (statut) => (
-                                                <Tag color={getStatusColor(statut)}>{statut}</Tag>
-                                            )
-                                        },
-                                        {
-                                            title: 'Actions',
-                                            key: 'actions',
-                                            render: (_, record) => (
-                                                <div>
-                                                    <Button
-                                                        type="primary"
-                                                        shape="circle"
-                                                        icon={<CheckOutlined />}
-                                                        onClick={() => handleAccept(record)}
-                                                        disabled={record.statut !== 'En cours'}
-                                                    />
-                                                    <Button
-                                                        type="danger"
-                                                        shape="circle"
-                                                        icon={<CloseOutlined />}
-                                                        style={{ marginLeft: 8 }}
-                                                        onClick={() => handleReject(record)}
-                                                        disabled={record.statut !== 'En cours'}
-                                                    />
-                                                </div>
-                                            )
-                                        }
-                                    ]}
-                                    onRow={(record) => ({
-                                        onClick: () => handleViewCandidature(record)
-                                    })}
-                                />
+                                {relatedCandidates.length > 0 ? (
+                                    <Table
+                                        dataSource={relatedCandidates}
+                                        rowKey="id"
+                                        columns={[
+                                            {
+                                                title: 'Nom',
+                                                dataIndex: 'nom',
+                                                key: 'nom'
+                                            },
+                                            {
+                                                title: 'Prénom',
+                                                dataIndex: 'prenom',
+                                                key: 'prenom'
+                                            },
+                                            {
+                                                title: 'TJM Proposé',
+                                                dataIndex: 'tjm',
+                                                key: 'tjm',
+                                                render: (tjm) => `${tjm} €`
+                                            },
+                                            {
+                                                title: 'Date Candidature',
+                                                dataIndex: 'dateCandidature',
+                                                key: 'dateCandidature',
+                                                render: (date) => new Date(date).toLocaleDateString()
+                                            },
+                                            {
+                                                title: 'Disponibilité',
+                                                dataIndex: 'dateDisponibilite',
+                                                key: 'dateDisponibilite',
+                                                render: (date) => new Date(date).toLocaleDateString()
+                                            },
+                                            {
+                                                title: 'Statut',
+                                                dataIndex: 'statut',
+                                                key: 'statut',
+                                                render: (statut) => (
+                                                    <Tag color={getStatusColor(statut)}>{statut}</Tag>
+                                                )
+                                            },
+                                            {
+                                                title: 'Actions',
+                                                key: 'actions',
+                                                render: (_, record) => (
+                                                    <div>
+                                                        <Button
+                                                            type="primary"
+                                                            shape="circle"
+                                                            icon={<CheckOutlined />}
+                                                            onClick={() => handleAccept(record)}
+                                                            disabled={record.statut !== 'En cours'}
+                                                        />
+                                                        <Button
+                                                            type="danger"
+                                                            shape="circle"
+                                                            icon={<CloseOutlined />}
+                                                            style={{ marginLeft: 8 }}
+                                                            onClick={() => handleReject(record)}
+                                                            disabled={record.statut !== 'En cours'}
+                                                        />
+                                                    </div>
+                                                )
+                                            }
+                                        ]}
+                                        onRow={(record) => ({
+                                            onClick: () => handleViewCandidate(record)
+                                        })}
+                                    />
+                                ) : (
+                                    <Empty 
+                                        description="Aucun candidat pour cet appel d'offre"
+                                        image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                                    />
+                                )}
                             </Card>
                         </Panel>
                     );
@@ -226,33 +261,33 @@ const CandidatureInterface = () => {
             </Collapse>
 
             <Modal
-                title={`Candidature - ${currentCandidature?.responsable_compte}`}
+                title={`Candidature - ${currentCandidate?.nom} ${currentCandidate?.prenom}`}
                 visible={isModalVisible}
                 onCancel={() => setIsModalVisible(false)}
                 footer={null}
             >
                 <Descriptions bordered>
-                    <Descriptions.Item label="Responsable" span={3}>
-                        {currentCandidature?.responsable_compte}
+                    <Descriptions.Item label="Nom" span={3}>
+                        {currentCandidate?.nom}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Prénom" span={3}>
+                        {currentCandidate?.prenom}
                     </Descriptions.Item>
                     <Descriptions.Item label="TJM Proposé" span={3}>
-                        {currentCandidature?.tjm} €
+                        {currentCandidate?.tjm} €
                     </Descriptions.Item>
                     <Descriptions.Item label="Date de candidature" span={3}>
-                        {currentCandidature?.date_candidature &&
-                            new Date(currentCandidature.date_candidature).toLocaleDateString()}
+                        {currentCandidate?.dateCandidature &&
+                            new Date(currentCandidate.dateCandidature).toLocaleDateString()}
                     </Descriptions.Item>
                     <Descriptions.Item label="Date de disponibilité" span={3}>
-                        {currentCandidature?.date_disponibilite &&
-                            new Date(currentCandidature.date_disponibilite).toLocaleDateString()}
+                        {currentCandidate?.dateDisponibilite &&
+                            new Date(currentCandidate.dateDisponibilite).toLocaleDateString()}
                     </Descriptions.Item>
                     <Descriptions.Item label="Statut" span={3}>
-                        <Tag color={getStatusColor(currentCandidature?.statut)}>
-                            {currentCandidature?.statut}
+                        <Tag color={getStatusColor(currentCandidate?.statut)}>
+                            {currentCandidate?.statut}
                         </Tag>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Commentaire" span={3}>
-                        {currentCandidature?.commentaire}
                     </Descriptions.Item>
                 </Descriptions>
             </Modal>

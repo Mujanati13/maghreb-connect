@@ -25,7 +25,7 @@ import {
   CommentOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
-import dayjs from 'dayjs';
+import dayjs from "dayjs";
 
 const { TextArea } = Input;
 
@@ -40,7 +40,9 @@ const AppelDOffreInterface = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://51.38.99.75:4001/api/appelOffre/");
+      const response = await axios.get(
+        "http://51.38.99.75:4001/api/appelOffre/"
+      );
       setData(response.data.data);
     } catch (error) {
       message.error("Erreur lors du chargement des appels d'offre");
@@ -57,7 +59,9 @@ const AppelDOffreInterface = () => {
   const handleSearch = async (value) => {
     setLoading(true);
     try {
-      const response = await axios.get(`http://51.38.99.75:4001/api/appelOffre/?search=${value}`);
+      const response = await axios.get(
+        `http://51.38.99.75:4001/api/appelOffre/?search=${value}`
+      );
       setData(response.data.data);
     } catch (error) {
       message.error("Erreur lors de la recherche");
@@ -84,19 +88,24 @@ const AppelDOffreInterface = () => {
     try {
       const formData = {
         AO_id: currentOffer.id,
-        esn_id: 1, // This should come from user context or configuration
+        esn_id: localStorage.getItem("id") || 3, // This should come from user context or configuration
         responsable_compte: values.responsable_compte,
         id_consultant: values.id_consultant,
-        date_candidature: dayjs().format('YYYY-MM-DD'),
+        date_candidature: dayjs().format("YYYY-MM-DD"),
         statut: "En cours",
         tjm: values.tjm,
-        date_disponibilite: values.date_disponibilite.format('YYYY-MM-DD'),
+        date_disponibilite: values.date_disponibilite.format("YYYY-MM-DD"),
         commentaire: values.commentaire,
       };
 
-      await axios.post('http://51.38.99.75:4001/api/candidature/', formData);
-      
+      const res_data = await axios.post("http://51.38.99.75:4001/api/candidature/", formData);
+      await axios.post("http://51.38.99.75:4001/api/notify_new_candidature/", {
+        condidature_id: res_data.id,
+        appel_offre_id: currentOffer.id,
+      });
+
       message.success("Votre candidature a été soumise avec succès !");
+
       setIsApplyModalVisible(false);
       applyForm.resetFields();
     } catch (error) {
@@ -108,14 +117,14 @@ const AppelDOffreInterface = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR');
+    return new Date(dateString).toLocaleDateString("fr-FR");
   };
 
   const getStatusLabel = (status) => {
     const statusMap = {
-      "1": "Ouvert",
-      "2": "En cours",
-      "3": "Fermé"
+      1: "Ouvert",
+      2: "En cours",
+      3: "Fermé",
     };
     return statusMap[status] || status;
   };
@@ -144,8 +153,8 @@ const AppelDOffreInterface = () => {
             <Card
               className="h-full"
               actions={[
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   onClick={() => handleApply(item)}
                   disabled={item.statut === "3"}
                 >
@@ -154,9 +163,7 @@ const AppelDOffreInterface = () => {
                 <Dropdown
                   overlay={
                     <Menu>
-                      <Menu.Item key="view-details">
-                        Voir les détails
-                      </Menu.Item>
+                      <Menu.Item key="view-details">Voir les détails</Menu.Item>
                     </Menu>
                   }
                   trigger={["click"]}
@@ -173,11 +180,21 @@ const AppelDOffreInterface = () => {
                   <div className="space-y-2">
                     <p className="text-sm">{item.description}</p>
                     <p className="text-sm">Profil: {item.profil}</p>
-                    <p className="text-sm">TJM: {item.tjm_min}€ - {item.tjm_max}€</p>
-                    <p className="text-sm">Statut: {getStatusLabel(item.statut)}</p>
-                    <p className="text-sm">Publication: {formatDate(item.date_publication)}</p>
-                    <p className="text-sm">Date limite: {formatDate(item.date_limite)}</p>
-                    <p className="text-sm">Début: {formatDate(item.date_debut)}</p>
+                    <p className="text-sm">
+                      TJM: {item.tjm_min}€ - {item.tjm_max}€
+                    </p>
+                    <p className="text-sm">
+                      Statut: {getStatusLabel(item.statut)}
+                    </p>
+                    <p className="text-sm">
+                      Publication: {formatDate(item.date_publication)}
+                    </p>
+                    <p className="text-sm">
+                      Date limite: {formatDate(item.date_limite)}
+                    </p>
+                    <p className="text-sm">
+                      Début: {formatDate(item.date_debut)}
+                    </p>
                   </div>
                 }
               />
@@ -194,9 +211,9 @@ const AppelDOffreInterface = () => {
           <Button key="cancel" onClick={() => setIsApplyModalVisible(false)}>
             Annuler
           </Button>,
-          <Button 
-            key="submit" 
-            type="primary" 
+          <Button
+            key="submit"
+            type="primary"
             onClick={handleApplySubmit}
             loading={submitting}
           >
@@ -205,9 +222,9 @@ const AppelDOffreInterface = () => {
         ]}
         width={600}
       >
-        <Form 
-          form={applyForm} 
-          onFinish={onApplyFinish} 
+        <Form
+          form={applyForm}
+          onFinish={onApplyFinish}
           layout="vertical"
           initialValues={{
             date_candidature: dayjs(),
@@ -220,7 +237,12 @@ const AppelDOffreInterface = () => {
           <Form.Item
             name="responsable_compte"
             label="Responsable compte"
-            rules={[{ required: true, message: "Veuillez saisir le nom du responsable" }]}
+            rules={[
+              {
+                required: true,
+                message: "Veuillez saisir le nom du responsable",
+              },
+            ]}
           >
             <Input prefix={<UserOutlined />} placeholder="Ex: Jean Dupont" />
           </Form.Item>
@@ -238,23 +260,26 @@ const AppelDOffreInterface = () => {
             label="TJM proposé"
             rules={[
               { required: true, message: "Veuillez saisir le TJM" },
-              { 
+              {
                 validator: (_, value) => {
                   if (value && currentOffer) {
-                    if (value < currentOffer.tjm_min || value > currentOffer.tjm_max) {
+                    if (
+                      value < currentOffer.tjm_min ||
+                      value > currentOffer.tjm_max
+                    ) {
                       return Promise.reject(
                         `Le TJM doit être entre ${currentOffer.tjm_min}€ et ${currentOffer.tjm_max}€`
                       );
                     }
                   }
                   return Promise.resolve();
-                }
-              }
+                },
+              },
             ]}
           >
-            <Input 
-              prefix={<DollarOutlined />} 
-              type="number" 
+            <Input
+              prefix={<DollarOutlined />}
+              type="number"
               suffix="€"
               placeholder={`Entre ${currentOffer?.tjm_min} et ${currentOffer?.tjm_max}`}
             />
@@ -263,10 +288,15 @@ const AppelDOffreInterface = () => {
           <Form.Item
             name="date_disponibilite"
             label="Date de disponibilité"
-            rules={[{ required: true, message: "Veuillez sélectionner une date de disponibilité" }]}
+            rules={[
+              {
+                required: true,
+                message: "Veuillez sélectionner une date de disponibilité",
+              },
+            ]}
           >
-            <DatePicker 
-              className="w-full" 
+            <DatePicker
+              className="w-full"
               format="DD/MM/YYYY"
               placeholder="Sélectionnez une date"
               suffixIcon={<CalendarOutlined />}
@@ -276,10 +306,12 @@ const AppelDOffreInterface = () => {
           <Form.Item
             name="commentaire"
             label="Commentaire"
-            rules={[{ required: true, message: "Veuillez ajouter un commentaire" }]}
+            rules={[
+              { required: true, message: "Veuillez ajouter un commentaire" },
+            ]}
           >
-            <TextArea 
-              rows={4} 
+            <TextArea
+              rows={4}
               placeholder="Ajoutez vos commentaires, expériences pertinentes..."
               prefix={<CommentOutlined />}
             />

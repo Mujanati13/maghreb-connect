@@ -79,20 +79,26 @@ const PartenariatInterface = () => {
   const fetchPartenariats = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/partenariats/`, axiosConfig);
+      const clientId = localStorage.getItem('id');
+      
+      if (!clientId) {
+        message.error('ID du client non trouvé');
+        return;
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/PartenariatClients/?clientId=${clientId}`, axiosConfig);
       const partnershipsData = response.data.data;
       
       // Fetch related data for each partnership
       const enrichedData = await Promise.all(
         partnershipsData.map(async (partnership) => {
-          const [clientResponse, esnResponse] = await Promise.all([
-            axios.get(`${API_BASE_URL}/client/${partnership.id_client}`, axiosConfig),
+          const [esnResponse] = await Promise.all([
             axios.get(`${API_BASE_URL}/ESN/${partnership.id_esn}`, axiosConfig)
           ]);
           
           return {
             ...partnership,
-            client: clientResponse.data.data[0],
+            client: { raison_sociale: partnership.client_name }, // Use the name from the API
             esn: esnResponse.data.data[0]
           };
         })
@@ -157,6 +163,7 @@ const PartenariatInterface = () => {
     try {
       const values = await form.validateFields();
       const formattedValues = {
+        id_client: localStorage.getItem('id'),
         ...values,
         date_debut: values.date_debut.format('YYYY-MM-DD'),
         date_fin: values.date_fin.format('YYYY-MM-DD'),
@@ -192,18 +199,18 @@ const PartenariatInterface = () => {
 
   // Table Columns
   const columns = [
-    {
-      title: 'Client',
-      dataIndex: ['client', 'raison_sociale'],
-      key: 'client',
-      sorter: (a, b) => a.client.raison_sociale.localeCompare(b.client.raison_sociale),
-    },
-    {
-      title: 'ESN',
-      dataIndex: ['esn', 'Raison_sociale'],
-      key: 'esn',
-      sorter: (a, b) => a.esn.Raison_sociale.localeCompare(b.esn.Raison_sociale),
-    },
+    // {
+    //   title: 'Client',
+    //   dataIndex: ['client', 'raison_sociale'],
+    //   key: 'client',
+    //   sorter: (a, b) => a.client.raison_sociale.localeCompare(b.client.raison_sociale),
+    // },
+    // {
+    //   title: 'ESN',
+    //   dataIndex: ['esn', 'Raison_sociale'],
+    //   key: 'esn',
+    //   sorter: (a, b) => a.esn.Raison_sociale.localeCompare(b.esn.Raison_sociale),
+    // },
     {
       title: 'Catégorie',
       dataIndex: 'categorie',

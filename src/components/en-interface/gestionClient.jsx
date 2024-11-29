@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
     Table,
     Card,
@@ -13,7 +14,8 @@ import {
     Radio,
     Row,
     Col,
-    Avatar
+    Avatar,
+    Form
 } from 'antd';
 import {
     SearchOutlined,
@@ -33,35 +35,38 @@ export const ClientList = () => {
     const [searchText, setSearchText] = useState('');
     const [loading, setLoading] = useState(false);
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-    const [viewMode, setViewMode] = useState(''); // 'table' or 'card'
+    const [viewMode, setViewMode] = useState('table');
+    const [clients, setClients] = useState([]);
 
-    // Sample data for the client table
-    const data = [
-        {
-            key: '1',
-            id: 1,
-            name: 'Jean Dupont',
-            email: 'jean.dupont@email.com',
-            phone: '+33 6 12 34 56 78',
-            status: 'active',
-            address: '123 Rue de Paris',
-            created: '2024-01-15',
-        },
-        {
-            key: '2',
-            id: 2,
-            name: 'Marie Martin',
-            email: 'marie.martin@email.com',
-            phone: '+33 6 98 76 54 32',
-            status: 'inactive',
-            address: '456 Avenue des Champs',
-            created: '2024-02-20',
-        },
-    ];
+    useEffect(() => {
+        fetchClients();
+    }, []);
+
+    const fetchClients = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.get('http://51.38.99.75:4001/api/clients_par_esn/?esn_id=3');
+            const formattedData = response.data.map((client, index) => ({
+                key: client.id.toString(),
+                id: client.id,
+                name: client.nom,
+                email: client.email,
+                phone: client.telephone,
+                status: client.actif ? 'active' : 'inactive',
+                address: client.adresse || 'Non spécifié',
+                created: client.date_creation || new Date().toISOString().split('T')[0],
+            }));
+            setClients(formattedData);
+        } catch (error) {
+            message.error('Erreur lors du chargement des clients');
+            console.error('Fetch error:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSearch = (value) => {
         setSearchText(value);
-        // Implement search logic here
     };
 
     const handleDelete = (record) => {
@@ -71,18 +76,20 @@ export const ClientList = () => {
             okText: 'Oui',
             okType: 'danger',
             cancelText: 'Non',
-            onOk() {
-                message.success('Client supprimé avec succès');
+            onOk: async () => {
+                try {
+                    // Implement delete API call here
+                    message.success('Client supprimé avec succès');
+                    fetchClients();
+                } catch (error) {
+                    message.error('Erreur lors de la suppression');
+                }
             },
         });
     };
 
     const handleRefresh = () => {
-        setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
-            message.success('Données actualisées');
-        }, 1000);
+        fetchClients();
     };
 
     const columns = [
@@ -219,13 +226,20 @@ export const ClientList = () => {
         onChange: (keys) => setSelectedRowKeys(keys),
     };
 
-    return (
-        <Card
-            className='w-full'
+    const handleAddClient = async (values) => {
+        try {
+            // Implement add client API call here
+            message.success('Nouveau client ajouté avec succès');
+            fetchClients();
+        } catch (error) {
+            message.error('Erreur lors de l\'ajout du client');
+        }
+    };
 
-        >
+    return (
+        <Card className='w-full'>
             <Space className='w-full flex flex-row items-center justify-between bg-white'>
-                <div className='fflex flex-row items-center space-x-5'>
+                <div className='flex flex-row items-center space-x-5'>
                     <Radio.Group
                         value={viewMode}
                         onChange={(e) => setViewMode(e.target.value)}
@@ -242,13 +256,7 @@ export const ClientList = () => {
                     />
                 </div>
                 <div className='flex flex-row items-center space-x-5'>
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={() => message.info('Ajouter un nouveau client')}
-                    >
-                        Nouveau Client
-                    </Button>
+                    <AddClientModal onAdd={handleAddClient} />
                     <Button
                         icon={<ExportOutlined />}
                         onClick={() => message.info('Exporter les données')}
@@ -268,11 +276,11 @@ export const ClientList = () => {
                 <>
                     <Table
                         columns={columns}
-                        dataSource={data}
+                        dataSource={clients}
                         rowSelection={rowSelection}
                         loading={loading}
                         pagination={{
-                            total: data.length,
+                            total: clients.length,
                             pageSize: 10,
                             showTotal: (total) => `Total ${total} clients`,
                             showSizeChanger: true,
@@ -295,10 +303,78 @@ export const ClientList = () => {
                     </div>
                 </>
             ) : (
-                <CardView data={data} handleDelete={handleDelete} />
+                <CardView data={clients} handleDelete={handleDelete} />
             )}
         </Card>
     );
 };
 
-export default ClientList;
+const AddClientModal = ({ onAdd }) => {
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [form] = Form.useForm();
+
+    const showModal = () => {
+        setIsModalVisible(true);
+    };
+
+    const handleOk = () => {
+        form.validateFields().then((values) => {
+            onAdd(values);
+            setIsModalVisible(false);
+            form.resetFields();
+        }).catch((info) => {
+            console.log('Validate Failed:', info);
+        });
+    };
+
+    const handleCancel = () => {
+        setIsModalVisible(false);
+        form.resetFields();
+    };
+
+    return (
+        <>
+            {/* <Button type="primary" onClick={showModal} icon={<PlusOutlined />}>
+                Nouveau Client
+            </Button> */}
+            {/* <Modal
+                title="Ajouter un Client"
+                visible={isModalVisible}
+                onOk={handleOk}
+                onCancel={handleCancel}
+                okText="Ajouter"
+                cancelText="Annuler"
+            >
+                <Form form={form} layout="vertical" name="add_client">
+                    <Form.Item
+                        label="Nom"
+                        name="name"
+                        rules={[{ required: true, message: 'Veuillez saisir le nom du client' }]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item
+                        label="Email"
+                        name="email"
+                        rules={[{ required: true, message: 'Veuillez saisir l\'email du client' }, { type: 'email', message: 'Veuillez saisir un email valide' }]}
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item
+                        label="Téléphone"
+                        name="phone"
+                    >
+                        <Input />
+                    </Form.Item>
+                    <Form.Item
+                        label="Adresse"
+                        name="address"
+                    >
+                        <Input />
+                    </Form.Item>
+                </Form>
+            </Modal> */}
+        </>
+    );
+};
+
