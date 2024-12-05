@@ -100,8 +100,9 @@ const AppelDOffreInterface = () => {
 
       const res_data = await axios.post("http://51.38.99.75:4001/api/candidature/", formData);
       await axios.post("http://51.38.99.75:4001/api/notify_new_candidature/", {
-        condidature_id: res_data.id,
+        condidature_id: res_data.data.id_cd,
         appel_offre_id: currentOffer.id,
+        client_id : currentOffer.id_client
       });
 
       message.success("Votre candidature a été soumise avec succès !");

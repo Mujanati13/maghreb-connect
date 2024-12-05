@@ -100,8 +100,9 @@ const AppelDOffreInterface = () => {
         // Create new record
         const res_data = await axios.post(`${API_BASE_URL}/appelOffre/`, formData);
         await axios.post(`${API_BASE_URL}/notify_expiration_ao/`, {
-          ao_id : res_data.id,
+          ao_id : res_data.data.id,
           client_id : localStorage.getItem("id")
+          // esn_list 
         });
         message.success("Appel d'offre créé avec succès");
       }
