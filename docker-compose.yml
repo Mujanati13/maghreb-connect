@@ -42,7 +42,7 @@ services:
       - maghrebIt_network
   mysql:
     image: mysql:8.0
-    container_name: maghrebIt_db
+    container_name: maghrebIt_db_v2
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
