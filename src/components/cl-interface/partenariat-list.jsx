@@ -33,7 +33,7 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import { token } from '../../helper/enpoint';
+import { Endponit, token } from '../../helper/enpoint';
 import Paragraph from 'antd/es/skeleton/Paragraph';
 
 const { Title, Text } = Typography;
@@ -52,7 +52,7 @@ const PartenariatInterface = () => {
   const [isCardView, setIsCardView] = useState(false);
 
   // API Configuration
-  const API_BASE_URL = 'http://51.38.99.75:4001/api';
+  const API_BASE_URL = Endponit()+'/api';
 
   const axiosConfig = {
     headers: {
@@ -167,6 +167,7 @@ const PartenariatInterface = () => {
         ...values,
         date_debut: values.date_debut.format('YYYY-MM-DD'),
         date_fin: values.date_fin.format('YYYY-MM-DD'),
+        id_part : editingId // done by me until now 
       };
 
       if (editingId) {

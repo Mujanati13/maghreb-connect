@@ -30,7 +30,7 @@ import {
   SaveOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
-import { token } from "../../helper/enpoint";
+import { Endponit, token } from "../../helper/enpoint";
 
 const { Text, Paragraph } = Typography;
 
@@ -59,7 +59,7 @@ const ESNProfilePageFrancais = () => {
         }
 
         const response = await axios.get(
-          `http://51.38.99.75:4001/api/getEsnData/?esnId=${esnId}`
+          `${Endponit()}/api/getEsnData/?esnId=${esnId}`
         );
 
         if (
@@ -135,7 +135,7 @@ const ESNProfilePageFrancais = () => {
 
       // Make API call to update ESN data
       const response = await axios.put(
-        `http://51.38.99.75:4001/api/ESN/`,
+        `${Endponit()}/api/ESN/`,
         updatePayload,
         axiosConfig
       );

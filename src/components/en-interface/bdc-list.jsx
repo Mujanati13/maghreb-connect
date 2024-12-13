@@ -27,6 +27,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import moment from 'moment';
+import { Endponit } from '../../helper/enpoint';
 
 const { TextArea } = Input;
 const { Step } = Steps;
@@ -47,7 +48,7 @@ const BonDeCommandeInterface = () => {
     setLoading(true);
     try {
       const clientId = localStorage.getItem('id');
-      const response = await axios.get(`http://51.38.99.75:4001/api/get_bon_de_commande_by_client/?client_id=${clientId}`);
+      const response = await axios.get(`${Endponit()}/api/get_bon_de_commande_by_client/?client_id=${clientId}`);
       setPurchaseOrders(response.data.data);
     } catch (error) {
       message.error('Échec de la récupération des bons de commande');
@@ -141,7 +142,7 @@ const BonDeCommandeInterface = () => {
 
   const handleSendToESN = async (record) => {
     try {
-      await axios.put(`http://51.38.99.75:4001/api/Bondecommande/${record.id_bdc}`, {
+      await axios.put(`${Endponit()}/api/Bondecommande/${record.id_bdc}`, {
         ...record,
         statut: 'pending_esn'
       });
@@ -169,7 +170,7 @@ const BonDeCommandeInterface = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://51.38.99.75:4001/api/Bondecommande/${id}`);
+      await axios.delete(`${Endponit()}/api/Bondecommande/${id}`);
       fetchPurchaseOrders();
       message.success('Bon de commande supprimé avec succès');
     } catch (error) {
@@ -188,10 +189,10 @@ const BonDeCommandeInterface = () => {
       };
 
       if (currentPurchaseOrder) {
-        await axios.put(`http://51.38.99.75:4001/api/Bondecommande/`, {...formattedValues, id_bdc:currentPurchaseOrder.id_bdc});
+        await axios.put(`${Endponit()}/api/Bondecommande/`, {...formattedValues, id_bdc:currentPurchaseOrder.id_bdc});
         message.success('Bon de commande mis à jour avec succès');
       } else {
-        await axios.post('http://51.38.99.75:4001/api/Bondecommande/', {
+        await axios.post(`${Endponit()}/api/Bondecommande/`, {
           ...formattedValues,
           statut: 'pending_esn'
         });

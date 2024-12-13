@@ -27,10 +27,13 @@ import ContractSignature from "../components/cl-interface/contart-cl";
 import PartenariatInterface from "../components/cl-interface/partenariat-list";
 import ContractList from "../components/cl-interface/contart-cl";
 import ConsultantManagement from "../components/cl-interface/list-consultant";
+import { logoutEsn } from "../helper/db";
+import { useNavigate } from "react-router-dom";
 
 const ClientProfile = () => {
   const [current, setCurrent] = useState("dashboard");
   const [searchValue, setSearchValue] = useState("");
+  const navigate = useNavigate();
 
   const menuItems = [
     {
@@ -229,6 +232,7 @@ const ClientProfile = () => {
             </AutoComplete>
             <Tag color="green">Espace client</Tag>
             <LogoutOutlined
+            onClick={()=>{logoutEsn();navigate("/Login");}}
               style={{
                 fontSize: "16px",
                 cursor: "pointer",

@@ -589,7 +589,7 @@ import {
   FilterOutlined,
   CloseOutlined,
 } from "@ant-design/icons";
-import { token } from "../../helper/enpoint";
+import { Endponit, token } from "../../helper/enpoint";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -607,7 +607,7 @@ const EntrepriseServices = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("http://51.38.99.75:4001/api/ESN/", {
+      const response = await fetch(Endponit()+"/api/ESN/", {
         headers: {
           Authorization: `Bearer ${token()}`,
         },

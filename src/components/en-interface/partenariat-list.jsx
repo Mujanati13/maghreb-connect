@@ -33,7 +33,7 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import { token } from '../../helper/enpoint';
+import { Endponit, token } from '../../helper/enpoint';
 import Paragraph from 'antd/es/skeleton/Paragraph';
 
 const { Title, Text } = Typography;
@@ -52,7 +52,7 @@ const PartenariatInterface = () => {
   const [isCardView, setIsCardView] = useState(false);
 
   // API Configuration
-  const API_BASE_URL = 'http://51.38.99.75:4001/api';
+  const API_BASE_URL = Endponit()+'/api';
 
   const axiosConfig = {
     headers: {
@@ -86,7 +86,7 @@ const PartenariatInterface = () => {
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/PartenariatESNs/?esnId=${esnId}`, axiosConfig);
+      const response = await axios.get(`${API_BASE_URL}/PartenariatESNs/?esn_id=${esnId}`, axiosConfig);
       const partnershipsData = response.data.data;
       
       // Fetch related data for each partnership
@@ -258,14 +258,14 @@ const PartenariatInterface = () => {
               ghost
             />
           </Tooltip>
-          <Tooltip title="Modifier">
+          {/* <Tooltip title="Modifier">
             <Button
               type="primary"
               icon={<EditOutlined />}
               onClick={() => showModal(record)}
               style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
             />
-          </Tooltip>
+          </Tooltip> */}
           <Tooltip title="Supprimer">
             <Popconfirm
               title="Êtes-vous sûr de vouloir supprimer?"
@@ -294,9 +294,9 @@ const PartenariatInterface = () => {
           <Tooltip title="Voir les détails">
             <EyeOutlined key="view" onClick={() => showViewModal(item)} />
           </Tooltip>,
-          <Tooltip title="Modifier">
-            <EditOutlined key="edit" onClick={() => showModal(item)} />
-          </Tooltip>,
+          // <Tooltip title="Modifier">
+          //   <EditOutlined key="edit" onClick={() => showModal(item)} />
+          // </Tooltip>,
           <Popconfirm
             title="Êtes-vous sûr de vouloir supprimer?"
             onConfirm={() => handleDelete(item.id_part)}

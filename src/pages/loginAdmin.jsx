@@ -3,6 +3,7 @@ import { Form, Input, Button, Checkbox, Card, Typography, Space, Divider, messag
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate } from "react-router-dom";
 import axios from 'axios'; // Make sure to install axios: npm install axios
+import { Endponit } from '../helper/enpoint';
 
 const { Title, Text, Link } = Typography;
 
@@ -13,7 +14,7 @@ const AdminLoginPage = () => {
     const onFinish = async (values) => {
         setLoading(true);
         try {
-            const response = await axios.post('http://51.38.99.75:4001/api/login/', {
+            const response = await axios.post(Endponit()+'/api/login/', {
                 username: values.username,
                 mdp: values.password
             });

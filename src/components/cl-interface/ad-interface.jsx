@@ -1,10 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Input, Button, Modal, Form, message, Card, Row, Col, Select, DatePicker } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import axios from 'axios';
-import moment from 'moment';
+import React, { useState, useEffect } from "react";
+import {
+  Table,
+  Input,
+  Button,
+  Modal,
+  Form,
+  message,
+  Card,
+  Row,
+  Col,
+  Select,
+  DatePicker,
+} from "antd";
+import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import axios from "axios";
+import moment from "moment";
+import { Endponit } from "../../helper/enpoint";
 
-const API_BASE_URL = 'http://51.38.99.75:4001/api';
+const API_BASE_URL = Endponit() + "/api";
 
 const AppelDOffreInterface = () => {
   const [data, setData] = useState([]);
@@ -18,7 +31,7 @@ const AppelDOffreInterface = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/appelOffre`);
-      const formattedData = response.data.data.map(item => ({
+      const formattedData = response.data.data.map((item) => ({
         key: item.id.toString(),
         title: item.titre,
         description: item.description,
@@ -29,12 +42,12 @@ const AppelDOffreInterface = () => {
         publication_date: item.date_publication,
         deadline: item.date_limite,
         start_date: item.date_debut,
-        client_id: item.client_id
+        client_id: item.client_id,
       }));
       setData(formattedData);
     } catch (error) {
-      message.error('Erreur lors du chargement des données');
-      console.error('Error fetching data:', error);
+      message.error("Erreur lors du chargement des données");
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -61,7 +74,7 @@ const AppelDOffreInterface = () => {
       status: record.status,
       publication_date: moment(record.publication_date),
       deadline: moment(record.deadline),
-      start_date: moment(record.start_date)
+      start_date: moment(record.start_date),
     });
     setIsModalVisible(true);
   };
@@ -72,8 +85,8 @@ const AppelDOffreInterface = () => {
       message.success("Appel d'offre supprimé avec succès");
       fetchData();
     } catch (error) {
-      message.error('Erreur lors de la suppression');
-      console.error('Error deleting item:', error);
+      message.error("Erreur lors de la suppression");
+      console.error("Error deleting item:", error);
     }
   };
 
@@ -86,23 +99,29 @@ const AppelDOffreInterface = () => {
         profil: values.profile,
         tjm_min: values.tjm_min,
         tjm_max: values.tjm_max,
-        date_publication: values.publication_date.format('YYYY-MM-DD'),
-        date_limite: values.deadline.format('YYYY-MM-DD'),
-        date_debut: values.start_date.format('YYYY-MM-DD'),
-        statut: values.status === "Ouvert" ? "1" : "0"
+        date_publication: moment().format("YYYY-MM-DD"),
+        date_limite: values.deadline.format("YYYY-MM-DD"),
+        date_debut: values.start_date.format("YYYY-MM-DD"),
+        statut: values.status === "Ouvert" ? "1" : "0",
       };
 
       if (editingId) {
         // Update existing record
-        await axios.put(`${API_BASE_URL}/appelOffre/`, {...formData,id:editingId});
+        await axios.put(`${API_BASE_URL}/appelOffre/`, {
+          ...formData,
+          id: editingId,
+        });
         message.success("Appel d'offre modifié avec succès");
       } else {
         // Create new record
-        const res_data = await axios.post(`${API_BASE_URL}/appelOffre/`, formData);
+        const res_data = await axios.post(
+          `${API_BASE_URL}/appelOffre/`,
+          formData
+        );
         await axios.post(`${API_BASE_URL}/notify_expiration_ao/`, {
-          ao_id : res_data.data.id,
-          client_id : localStorage.getItem("id")
-          // esn_list 
+          ao_id: res_data.data.id,
+          client_id: localStorage.getItem("id"),
+          // esn_list
         });
         message.success("Appel d'offre créé avec succès");
       }
@@ -112,8 +131,8 @@ const AppelDOffreInterface = () => {
       form.resetFields();
       fetchData();
     } catch (error) {
-      message.error('Erreur lors de l\'enregistrement');
-      console.error('Error saving data:', error);
+      message.error("Erreur lors de l'enregistrement");
+      console.error("Error saving data:", error);
     }
   };
 
@@ -125,56 +144,56 @@ const AppelDOffreInterface = () => {
 
   const columns = [
     {
-      title: 'Titre',
-      dataIndex: 'title',
-      key: 'title',
-      sorter: (a, b) => a.title.localeCompare(b.title)
+      title: "Titre",
+      dataIndex: "title",
+      key: "title",
+      sorter: (a, b) => a.title.localeCompare(b.title),
     },
     {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+      ellipsis: true,
     },
     {
-      title: 'Profil',
-      dataIndex: 'profile',
-      key: 'profile'
+      title: "Profil",
+      dataIndex: "profile",
+      key: "profile",
     },
     {
-      title: 'TJM',
+      title: "TJM",
       render: (_, record) => `${record.tjm_min} - ${record.tjm_max} €`,
     },
     {
-      title: 'Statut',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Statut",
+      dataIndex: "status",
+      key: "status",
       filters: [
-        { text: 'Ouvert', value: 'Ouvert' },
-        { text: 'Fermé', value: 'Fermé' }
+        { text: "Ouvert", value: "Ouvert" },
+        { text: "Fermé", value: "Fermé" },
       ],
       onFilter: (value, record) => record.status === value,
       render: (status) => (
-        <span style={{ color: status === 'Ouvert' ? '#52c41a' : '#ff4d4f' }}>
+        <span style={{ color: status === "Ouvert" ? "#52c41a" : "#ff4d4f" }}>
           {status}
         </span>
-      )
+      ),
     },
     {
-      title: 'Date de publication',
-      dataIndex: 'publication_date',
-      key: 'publication_date',
-      render: (date) => moment(date).format('DD/MM/YYYY')
+      title: "Date de publication",
+      dataIndex: "publication_date",
+      key: "publication_date",
+      render: (date) => moment(date).format("DD/MM/YYYY"),
     },
     {
-      title: 'Date limite',
-      dataIndex: 'deadline',
-      key: 'deadline',
-      render: (date) => moment(date).format('DD/MM/YYYY')
+      title: "Date limite",
+      dataIndex: "deadline",
+      key: "deadline",
+      render: (date) => moment(date).format("DD/MM/YYYY"),
     },
     {
-      title: 'Actions',
-      key: 'actions',
+      title: "Actions",
+      key: "actions",
       render: (_, record) => (
         <Row gutter={8}>
           <Col>
@@ -193,13 +212,19 @@ const AppelDOffreInterface = () => {
             />
           </Col>
         </Row>
-      )
-    }
+      ),
+    },
   ];
 
   return (
     <div style={{ padding: 0 }}>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+      <div
+        style={{
+          marginBottom: 16,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
         <Input.Search
           placeholder="Rechercher un appel d'offre"
           style={{ width: 300 }}
@@ -227,20 +252,16 @@ const AppelDOffreInterface = () => {
             Annuler
           </Button>,
           <Button key="submit" type="primary" onClick={() => form.submit()}>
-            {editingId ? 'Modifier' : 'Créer'}
-          </Button>
+            {editingId ? "Modifier" : "Créer"}
+          </Button>,
         ]}
         width={800}
       >
-        <Form
-          form={form}
-          onFinish={onFinish}
-          layout="vertical"
-        >
+        <Form form={form} onFinish={onFinish} layout="vertical">
           <Form.Item
             name="title"
             label="Titre"
-            rules={[{ required: true, message: 'Veuillez saisir un titre' }]}
+            rules={[{ required: true, message: "Veuillez saisir un titre" }]}
           >
             <Input />
           </Form.Item>
@@ -248,7 +269,9 @@ const AppelDOffreInterface = () => {
           <Form.Item
             name="description"
             label="Description"
-            rules={[{ required: true, message: 'Veuillez saisir une description' }]}
+            rules={[
+              { required: true, message: "Veuillez saisir une description" },
+            ]}
           >
             <Input.TextArea rows={4} />
           </Form.Item>
@@ -256,9 +279,15 @@ const AppelDOffreInterface = () => {
           <Form.Item
             name="profile"
             label="Profil"
-            rules={[{ required: true, message: 'Veuillez saisir un profil' }]}
+            rules={[
+              { required: true, message: "Veuillez sélectionner un profil" },
+            ]}
           >
-            <Input />
+            <Select>
+              <Select.Option value="Junior">Junior</Select.Option>
+              <Select.Option value="Confirmé">Confirmé</Select.Option>
+              <Select.Option value="Expert">Expert</Select.Option>
+            </Select>
           </Form.Item>
 
           <Row gutter={16}>
@@ -266,7 +295,9 @@ const AppelDOffreInterface = () => {
               <Form.Item
                 name="tjm_min"
                 label="TJM Minimum"
-                rules={[{ required: true, message: 'Veuillez saisir un TJM minimum' }]}
+                rules={[
+                  { required: true, message: "Veuillez saisir un TJM minimum" },
+                ]}
               >
                 <Input type="number" min={0} />
               </Form.Item>
@@ -275,7 +306,9 @@ const AppelDOffreInterface = () => {
               <Form.Item
                 name="tjm_max"
                 label="TJM Maximum"
-                rules={[{ required: true, message: 'Veuillez saisir un TJM maximum' }]}
+                rules={[
+                  { required: true, message: "Veuillez saisir un TJM maximum" },
+                ]}
               >
                 <Input type="number" min={0} />
               </Form.Item>
@@ -285,29 +318,24 @@ const AppelDOffreInterface = () => {
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item
-                name="publication_date"
-                label="Date de publication"
-                rules={[{ required: true, message: 'Veuillez sélectionner une date' }]}
-              >
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
                 name="deadline"
                 label="Date limite"
-                rules={[{ required: true, message: 'Veuillez sélectionner une date' }]}
+                rules={[
+                  { required: true, message: "Veuillez sélectionner une date" },
+                ]}
               >
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item
                 name="start_date"
                 label="Date de début"
-                rules={[{ required: true, message: 'Veuillez sélectionner une date' }]}
+                rules={[
+                  { required: true, message: "Veuillez sélectionner une date" },
+                ]}
               >
-                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
           </Row>
@@ -315,7 +343,9 @@ const AppelDOffreInterface = () => {
           <Form.Item
             name="status"
             label="Statut"
-            rules={[{ required: true, message: 'Veuillez sélectionner un statut' }]}
+            rules={[
+              { required: true, message: "Veuillez sélectionner un statut" },
+            ]}
           >
             <Select>
               <Select.Option value="Ouvert">Ouvert</Select.Option>

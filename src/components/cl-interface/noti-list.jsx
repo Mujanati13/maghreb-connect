@@ -17,6 +17,7 @@ import {
 } from "@ant-design/icons";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { Endponit } from "../../helper/enpoint";
 
 const { TabPane } = Tabs;
 const { Title, Text } = Typography;
@@ -31,7 +32,7 @@ const NotificationInterfaceClient = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        "http://51.38.99.75:4001/api/getNotifications/?type=client",
+        Endponit()+"/api/getNotifications/?type=client",
 
       );
       if (!response.ok) {

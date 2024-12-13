@@ -27,7 +27,7 @@ import {
     EditOutlined,
     InboxOutlined
 } from '@ant-design/icons';
-import { token } from '../../helper/enpoint';
+import { Endponit, token } from '../../helper/enpoint';
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -50,7 +50,7 @@ const DocumentManagement = () => {
         const id = localStorage.getItem("id");
         try {
             setLoading(true);
-            const response = await axios.get('http://51.38.99.75:4001/api/getDocumentClient/', {
+            const response = await axios.get(Endponit()+'/api/getDocumentClient/', {
                 headers: {
                     Authorization: `${token()}`
                 },
@@ -77,7 +77,12 @@ const DocumentManagement = () => {
     // Add Document Handler
     const handleAddDocument = async (values) => {
         try {
-            const response = await axios.post('http://51.38.99.75:4001/api/docEsn/', values, {
+            const documentData = {
+                ...values,
+                ID_CLT: localStorage.getItem("id"), // Add client ID
+                Doc_URL: uploadedFileUrl, // Use the uploaded file URL
+            };
+            const response = await axios.post(Endponit()+'/api/documentClient/', documentData, {
                 headers: {
                     Authorization: `${token()}`
                 }
@@ -92,21 +97,30 @@ const DocumentManagement = () => {
     };
 
     // Edit Document Handler
-    const handleEditDocument = async (values) => {
-        try {
-            await axios.put(`http://51.38.99.75:4001/api/docEsn/${selectedDocument.ID_DOC_ESN}`, values, {
-                headers: {
-                    Authorization: `${token()}`
-                }
-            });
-            message.success('Document modifié avec succès');
-            fetchDocuments();
-            setIsEditModalVisible(false);
-        } catch (error) {
-            message.error('Erreur lors de la modification du document');
-            console.error('Edit error:', error);
-        }
-    };
+ // Edit Document Handler
+const handleEditDocument = async (values) => {
+    try {
+        const documentData = {
+            ...values,
+            ID_CLT: localStorage.getItem("id"), // Add client ID
+            Doc_URL: uploadedFileUrl || selectedDocument.Doc_URL, // Use new URL or existing URL
+            ID_DOC_CLT: selectedDocument.ID_DOC_CLT // Include the document ID
+        };
+
+        const response = await axios.put(Endponit()+'/api/documentClient/', documentData, {
+            headers: {
+                Authorization: `${token()}`
+            }
+        });
+        
+        message.success('Document modifié avec succès');
+        fetchDocuments();
+        setIsEditModalVisible(false);
+    } catch (error) {
+        message.error('Erreur lors de la modification du document');
+        console.error('Edit error:', error);
+    }
+};
 
     // Delete Document Handler
     const handleDelete = async (record) => {
@@ -118,7 +132,7 @@ const DocumentManagement = () => {
             cancelText: 'Non',
             async onOk() {
                 try {
-                    await axios.delete(`http://51.38.99.75:4001/api/docEsn/${record.ID_DOC_ESN}`, {
+                    await axios.delete(`${Endponit()}/api/documentClient/${selectedDocument.ID_DOC_CLT}` , {
                         headers: {
                             Authorization: `${token()}`
                         }
@@ -160,17 +174,17 @@ const DocumentManagement = () => {
             key: 'Titre',
             sorter: (a, b) => a.Titre.localeCompare(b.Titre)
         },
-        {
-            title: 'ESN',
-            dataIndex: 'esn',
-            key: 'esn'
-        },
-        {
-            title: 'URL',
-            dataIndex: 'Doc_URL',
-            key: 'Doc_URL',
-            render: (url) => <a href={url} target="_blank" rel="noopener noreferrer">Voir le document</a>
-        },
+        // {
+        //     title: 'ESN',
+        //     dataIndex: 'esn',
+        //     key: 'esn'
+        // },
+        // {
+        //     title: 'URL',
+        //     dataIndex: 'Doc_URL',
+        //     key: 'Doc_URL',
+        //     render: (url) => <a href={url} target="_blank" rel="noopener noreferrer">Voir le document</a>
+        // },
         {
             title: 'Date Validité',
             dataIndex: 'Date_Valid',
@@ -207,12 +221,12 @@ const DocumentManagement = () => {
         customRequest: async ({ file, onSuccess, onError, onProgress }) => {
             const formData = new FormData();
             formData.append('uploadedFile', file);
-            formData.append('path', 'C:/Users/helka/OneDrive/Bureau/MaghrebIT-Connect/media/doc_en/'); // Add path in form-data
-    
+            formData.append('path', './upload/');
+        
             try {
                 // First API call - Save the document file
                 const saveDocResponse = await axios.post(
-                    'http://51.38.99.75:4001/api/saveDoc/', // Remove path from URL
+                    Endponit()+'/api/saveDoc/',
                     formData,
                     {
                         headers: {
@@ -225,27 +239,11 @@ const DocumentManagement = () => {
                         }
                     }
                 );
-    
+        
                 // If first API call is successful, proceed with second API call
                 if (saveDocResponse.data && saveDocResponse.data.path) {
-                    setUploadedFileUrl(saveDocResponse.data.path)
                     // Second API call - Save document metadata
-                    const metadataResponse = await axios.post(
-                        'http://51.38.99.75:4001/api/documentClient/',
-                        {
-                            ID_CLT: '1', // Consider making this dynamic
-                            Titre: file.name,
-                            Description: 'Document ajouté via upload',
-                            Statut: 'En Attente',
-                            Doc_URL: saveDocResponse.data.path
-                        },
-                        {
-                            headers: {
-                                Authorization: `${token()}`
-                            }
-                        }
-                    );
-    
+        
                     if (metadataResponse.data) {
                         onSuccess(saveDocResponse.data);
                         message.success(`${file.name} fichier téléchargé avec succès`);
@@ -363,7 +361,7 @@ const DocumentManagement = () => {
                 <Form
                     form={editForm}
                     layout="vertical"
-                    onFinish={selectedDocument?.ID_DOC_ESN ? handleEditDocument : handleAddDocument}
+                    onFinish={selectedDocument?.ID_CLT	 ? handleEditDocument : handleAddDocument}
                 >
                     <Form.Item
                         name="Titre"
@@ -393,17 +391,6 @@ const DocumentManagement = () => {
                     </Form.Item>
 
                     <Form.Item
-                        name="Doc_URL"
-                        label="URL du Document"
-                        rules={[{
-                            required: !uploadedFileUrl,
-                            message: 'Veuillez télécharger un document ou fournir une URL'
-                        }]}
-                    >
-                        <Input disabled={!!uploadedFileUrl} />
-                    </Form.Item>
-
-                    <Form.Item
                         name="Date_Valid"
                         label="Date de Validité"
                         rules={[{ required: true, message: 'Veuillez saisir la date de validité' }]}
@@ -421,14 +408,6 @@ const DocumentManagement = () => {
                             <Option value="En attente">En attente</Option>
                             <Option value="Expiré">Expiré</Option>
                         </Select>
-                    </Form.Item>
-
-                    <Form.Item
-                        name="esn"
-                        label="ESN"
-                        rules={[{ required: true, message: 'Veuillez saisir le nom de l\'ESN' }]}
-                    >
-                        <Input />
                     </Form.Item>
 
                     <Form.Item>

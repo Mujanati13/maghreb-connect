@@ -26,6 +26,7 @@ import {
 } from "@ant-design/icons";
 import axios from "axios";
 import dayjs from "dayjs";
+import { Endponit } from "../../helper/enpoint";
 
 const { TextArea } = Input;
 
@@ -36,13 +37,25 @@ const AppelDOffreInterface = () => {
   const [isApplyModalVisible, setIsApplyModalVisible] = useState(false);
   const [currentOffer, setCurrentOffer] = useState(null);
   const [applyForm] = Form.useForm();
+  const [consultants, setConsultants] = useState([]);
+
+  const fetchConsultants = async (id_project) => {
+    const esnId = localStorage.getItem("id") || 3;
+    try {
+      const response = await axios.get(
+        `${Endponit()}/api/consultants-par-esn-et-projet/?esn_id=${esnId}&project_id=${id_project}`
+      );
+      setConsultants(response.data.data);
+    } catch (error) {
+      message.error("Erreur lors du chargement des consultants");
+      console.error("Error fetching consultants:", error);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
-        "http://51.38.99.75:4001/api/appelOffre/"
-      );
+      const response = await axios.get(Endponit() + "/api/appelOffre/");
       setData(response.data.data);
     } catch (error) {
       message.error("Erreur lors du chargement des appels d'offre");
@@ -54,13 +67,14 @@ const AppelDOffreInterface = () => {
 
   useEffect(() => {
     fetchData();
+    // fetchConsultants();
   }, []);
 
   const handleSearch = async (value) => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `http://51.38.99.75:4001/api/appelOffre/?search=${value}`
+        `${Endponit()}/api/appelOffre/?search=${value}`
       );
       setData(response.data.data);
     } catch (error) {
@@ -72,6 +86,7 @@ const AppelDOffreInterface = () => {
 
   const handleApply = (record) => {
     setCurrentOffer(record);
+    fetchConsultants(record.id);
     applyForm.resetFields();
     applyForm.setFieldsValue({
       AO_id: record.id,
@@ -98,11 +113,14 @@ const AppelDOffreInterface = () => {
         commentaire: values.commentaire,
       };
 
-      const res_data = await axios.post("http://51.38.99.75:4001/api/candidature/", formData);
-      await axios.post("http://51.38.99.75:4001/api/notify_new_candidature/", {
+      const res_data = await axios.post(
+        Endponit() + "/api/candidature/",
+        formData
+      );
+      await axios.post(Endponit() + "/api/notify_new_candidature/", {
         condidature_id: res_data.data.id_cd,
         appel_offre_id: currentOffer.id,
-        client_id : currentOffer.id_client
+        client_id: currentOffer.id_client,
       });
 
       message.success("Votre candidature a été soumise avec succès !");
@@ -179,7 +197,16 @@ const AppelDOffreInterface = () => {
                 title={item.titre}
                 description={
                   <div className="space-y-2">
-                    <p className="text-sm">{item.description}</p>
+                    <p className="text-sm">
+                      <p className="text-sm">
+                        {item.description.split(" ").length > 5
+                          ? `${item.description
+                              .split(" ")
+                              .slice(0, 5)
+                              .join(" ")}...`
+                          : item.description}
+                      </p>{" "}
+                    </p>
                     <p className="text-sm">Profil: {item.profil}</p>
                     <p className="text-sm">
                       TJM: {item.tjm_min}€ - {item.tjm_max}€
@@ -238,22 +265,50 @@ const AppelDOffreInterface = () => {
           <Form.Item
             name="responsable_compte"
             label="Responsable compte"
-            rules={[
-              {
-                required: true,
-                message: "Veuillez saisir le nom du responsable",
-              },
-            ]}
+            rules={[{ required: true, message: "Sélectionnez un consultant" }]}
           >
-            <Input prefix={<UserOutlined />} placeholder="Ex: Jean Dupont" />
+            <Select
+              placeholder="Sélectionnez un consultants"
+              allowClear // This allows clearing the selection
+              optionFilterProp="children"
+            >
+              {consultants &&
+                consultants.map((consultant) =>
+                  consultant.Poste === "commercail" ? (
+                    <Select.Option
+                      key={consultant.ID_collab}
+                      value={`${consultant.Nom} ${consultant.Prenom}`} // Adjusted value format
+                    >
+                      {consultant.Prenom} {consultant.Nom} - {consultant.Poste}
+                    </Select.Option>
+                  ) : null
+                )}
+            </Select>
           </Form.Item>
 
           <Form.Item
             name="id_consultant"
-            label="Consultant"
-            rules={[{ required: true, message: "Consultant" }]}
+            label="Consultants"
+            rules={[{ required: true, message: "Sélectionnez un consultant" }]}
           >
-            <Input type="number" placeholder="" />
+            <Select
+              placeholder="Sélectionnez un consultant"
+              optionFilterProp="children"
+            >
+              {consultants &&
+                consultants.map((consultant) =>
+                  consultant.Poste === "consultant" ? (
+                    <Select.Option
+                      key={consultant.ID_collab}
+                      value={consultant.ID_collab}
+                    >
+                      {consultant.Prenom} {consultant.Nom} - {consultant.Poste}
+                    </Select.Option>
+                  ) : (
+                    ""
+                  )
+                )}
+            </Select>
           </Form.Item>
 
           <Form.Item

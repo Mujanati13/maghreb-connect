@@ -16,31 +16,39 @@ import {
   CloseOutlined,
   LoadingOutlined,
 } from "@ant-design/icons";
+import { Endponit } from "../../helper/enpoint";
 
 const { Panel } = Collapse;
 const { Title, Text } = Typography;
 
 const ESNCandidatureInterface = () => {
   const [missions, setMissions] = useState([]);
-  const [consultants, setConsultants] = useState([]);
+  const [candidatures, setCandidatures] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentConsultant, setCurrentConsultant] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  // Fetch data from both APIs
+
+  // Fetch data from APIs
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [missionsRes, consultantsRes] = await Promise.all([
-        fetch("http://51.38.99.75:4001/api/appelOffre/"),
-        fetch("http://51.38.99.75:4001/api/candidature/"),
-      ]);
-
+      // Fetch missions
+      const missionsRes = await fetch(Endponit() + "/api/appelOffre/");
       const missionsData = await missionsRes.json();
-      const consultantsData = await consultantsRes.json();
+      const missions = missionsData.data;
+      setMissions(missions);
 
-      setMissions(missionsData.data);
-      setConsultants(consultantsData.data);
+      
+      // Fetch candidatures for the first mission (or you can modify this logic)
+      if (missions.length > 0) {
+        const projectId = missions[0].id;
+        const candidaturesRes = await fetch(
+          `${Endponit()}/api/get-candidatures/?esn_id=${localStorage.getItem('id')}&project_id=${projectId}`
+        );
+        const candidaturesData = await candidaturesRes.json();
+        setCandidatures(candidaturesData.data);
+      }
     } catch (error) {
       message.error("Erreur lors du chargement des données");
       console.error("Error fetching data:", error);
@@ -137,12 +145,9 @@ const ESNCandidatureInterface = () => {
     <div>
       <Collapse accordion>
         {missions.map((mission) => {
-          const availableConsultants = consultants.filter(
-            (consultant) =>
-              consultant.status === "Disponible" &&
-              consultant.competences.some((comp) =>
-                mission.competences_requises.includes(comp)
-              )
+          // Filter candidatures for the current mission
+          const missionCandidatures = candidatures.filter(
+            (candidature) => candidature.AO_id === mission.id
           );
 
           return (
@@ -178,69 +183,69 @@ const ESNCandidatureInterface = () => {
                 </div>
 
                 <Table
-                  dataSource={availableConsultants}
-                  rowKey="id_consultant"
+                  dataSource={missionCandidatures}
+                  rowKey="id_candidature"
                   columns={[
                     {
                       title: "Nom",
-                      dataIndex: "nom",
+                      dataIndex: "responsable_compte",
                       key: "nom",
                     },
-                    {
-                      title: "Compétences",
-                      dataIndex: "competences",
-                      key: "competences",
-                      render: (competences) => (
-                        <>
-                          {competences.map((comp) => (
-                            <Tag key={comp}>{comp}</Tag>
-                          ))}
-                        </>
-                      ),
-                    },
+                    // {
+                    //   title: "Compétences",
+                    //   dataIndex: "competences",
+                    //   key: "competences",
+                    //   render: (competences) => (
+                    //     <>
+                    //       {competences.map((comp) => (
+                    //         <Tag key={comp}>{comp}</Tag>
+                    //       ))}
+                    //     </>
+                    //   ),
+                    // },
                     {
                       title: "TJM Consultant",
                       dataIndex: "tjm",
                       key: "tjm",
                       render: (tjm) => `${tjm} €`,
                     },
-                    {
-                      title: "Expérience",
-                      dataIndex: "experience",
-                      key: "experience",
-                      render: (exp) => `${exp} ans`,
-                    },
-                    {
-                      title: "Statut",
-                      dataIndex: "status",
-                      key: "status",
-                      render: (status) => (
-                        <Tag color={getStatusColor(status)}>{status}</Tag>
-                      ),
-                    },
-                    {
-                      title: "Actions",
-                      key: "actions",
-                      render: (_, record) => (
-                        <div>
-                          <Button
-                            type="primary"
-                            shape="circle"
-                            icon={<CheckOutlined />}
-                            onClick={() => handleAssign(record, mission)}
-                            disabled={record.status !== "Disponible"}
-                          />
-                          <Button
-                            type="danger"
-                            shape="circle"
-                            icon={<CloseOutlined />}
-                            style={{ marginLeft: 8 }}
-                            onClick={() => handleUnassign(record)}
-                            disabled={record.status !== "Assigné"}
-                          />
-                        </div>
-                      ),
-                    },
+                    // {
+                    //   title: "Expérience",
+                    //   dataIndex: "experience",
+                    //   key: "experience",
+                    //   render: (exp) => `${exp} ans`,
+                    // },
+                    // {
+                    //   title: "Statut",
+                    //   dataIndex: "status",
+                    //   key: "status",
+                    //   render: (status) => (
+                    //     <Tag color={getStatusColor(status)}>{status}</Tag>
+                    //   ),
+                    // },
+                    // {
+                    //   title: "Actions",
+                    //   key: "actions",
+                    //   render: (_, record) => (
+                    //     <div>
+                    //       <Button
+                    //         type="primary"
+                    //         shape="circle"
+                    //         icon={<CheckOutlined />}
+                    //         onClick={() => handleAssign(record, mission)}
+                    //         disabled={record.status !== "Disponible"}
+                    //       />
+                    //       <Button
+                    //         type="danger"
+                    //         shape="circle"
+                    //         icon={<CloseOutlined />}
+                    //         style={{ marginLeft: 8 }}
+                    //         onClick={() => handleUnassign(record)}
+                    //         disabled={record.status !== "Assigné"}
+                    //       />
+                    //     </div>
+                    //   ),
+                    // },
                   ]}
                   onRow={(record) => ({
                     onClick: () => handleViewConsultant(record),
@@ -253,7 +258,7 @@ const ESNCandidatureInterface = () => {
       </Collapse>
 
       <Modal
-        title={`Consultant - ${currentConsultant?.nom}`}
+        title={`Candidature - ${currentConsultant?.nom}`}
         visible={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}

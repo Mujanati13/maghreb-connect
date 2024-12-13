@@ -14,7 +14,9 @@ import {
   Row,
   Col,
   Avatar,
-  Form
+  Form,
+  DatePicker,
+  Select
 } from 'antd';
 import {
   SearchOutlined,
@@ -29,6 +31,7 @@ import {
   PhoneOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
+import { Endponit } from '../../helper/enpoint';
 
 const ConsultantManagement = () => {
   const [searchText, setSearchText] = useState('');
@@ -40,7 +43,7 @@ const ConsultantManagement = () => {
   const fetchConsultantData = async () => {
     const id = localStorage.getItem("id");
     try {
-      const response = await axios.get('http://51.38.99.75:4001/api/consultants_par_client/?client_id=' + id);
+      const response = await axios.get(Endponit()+'/api/consultants_par_client/?client_id=' + id);
       setConsultantData(response.data.data);
     } catch (error) {
       console.error('Error fetching consultant data:', error);
@@ -80,15 +83,8 @@ const ConsultantManagement = () => {
 
   const columns = [
     {
-      title: 'ID Consultant',
-      dataIndex: 'id_consultant',
-      key: 'id_consultant',
-      sorter: (a, b) => a.id_consultant - b.id_consultant,
-      width: 120,
-    },
-    {
-      title: 'Responsable Compte',
-      dataIndex: 'responsable_compte',
+      title: 'Nom',
+      dataIndex: 'Nom',
       key: 'responsable_compte',
       sorter: (a, b) => a.responsable_compte.localeCompare(b.responsable_compte),
       filteredValue: searchText ? [searchText] : null,
@@ -96,20 +92,20 @@ const ConsultantManagement = () => {
         record.responsable_compte.toLowerCase().includes(value.toLowerCase()),
     },
     {
-      title: 'Poste',
-      dataIndex: 'poste',
+      title: 'Prenom',
+      dataIndex: 'Prenom',
       key: 'poste',
     },
     {
-      title: 'TJM',
-      dataIndex: 'tjm',
+      title: 'Date naissance',
+      dataIndex: 'Date_naissance',
       key: 'tjm',
       sorter: (a, b) => parseFloat(a.tjm) - parseFloat(b.tjm),
     },
     {
-      title: 'Date Disponibilité',
-      dataIndex: 'date_disponibilite',
-      key: 'date_disponibilite',
+      title: 'Poste',
+      dataIndex: 'Poste',
+      key: 'Poste',
     },
     {
       title: 'Statut',
@@ -138,21 +134,21 @@ const ConsultantManagement = () => {
 
   const ActionButtons = ({ record, handleDelete }) => (
     <Space size="middle">
-      <Tooltip title="Modifier">
+      {/* <Tooltip title="Modifier">
         <Button
           type="text"
           icon={<EditOutlined />}
           onClick={() => message.info(`Modifier ${record.responsable_compte}`)}
         />
-      </Tooltip>
-      <Tooltip title="Supprimer">
+      </Tooltip> */}
+      {/* <Tooltip title="Supprimer">
         <Button
           type="text"
           danger
           icon={<DeleteOutlined />}
           onClick={() => handleDelete(record)}
         />
-      </Tooltip>
+      </Tooltip> */}
       <Dropdown
         menu={{
           items: [
@@ -181,8 +177,8 @@ const ConsultantManagement = () => {
           <Card
             hoverable
             actions={[
-              <EditOutlined key="edit" onClick={() => message.info(`Modifier ${consultant.responsable_compte}`)} />,
-              <DeleteOutlined key="delete" onClick={() => handleDelete(consultant)} />,
+              // <EditOutlined key="edit" onClick={() => message.info(`Modifier ${consultant.responsable_compte}`)} />,
+              // <DeleteOutlined key="delete" onClick={() => handleDelete(consultant)} />,
               <MoreOutlined key="more" onClick={() => message.info('Plus d\'options')} />
             ]}
           >
@@ -321,9 +317,9 @@ const AddConsultantModal = ({ onAdd }) => {
 
   return (
     <>
-      <Button type="primary" onClick={showModal} icon={<PlusOutlined />}>
+      {/* <Button type="primary" onClick={showModal} icon={<PlusOutlined />}>
         Nouveau Consultant
-      </Button>
+      </Button> */}
       <Modal
         title="Ajouter un Consultant"
         visible={isModalVisible}
@@ -377,14 +373,17 @@ const AddConsultantModal = ({ onAdd }) => {
             name="date_disponibilite"
             rules={[{ required: true, message: 'Veuillez saisir la date de disponibilité' }]}
           >
-            <Input />
+            <DatePicker className='w-full' />
           </Form.Item>
           <Form.Item
             label="Statut"
             name="statut"
             rules={[{ required: true, message: 'Veuillez saisir le statut' }]}
           >
-            <Input />
+            <Select>
+              <Select.Option value="Actif">Actif</Select.Option>
+              <Select.Option value="Inactif">Inactif</Select.Option>
+            </Select>
           </Form.Item>
         </Form>
       </Modal>

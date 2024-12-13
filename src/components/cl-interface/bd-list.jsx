@@ -27,6 +27,7 @@ import {
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Endponit } from '../../helper/enpoint';
 
 const { Text } = Typography;
 const { confirm } = Modal;
@@ -52,7 +53,7 @@ const PurchaseOrderInterface = () => {
         return;
       }
 
-      const response = await axios.get(`http://51.38.99.75:4001/api/get_bon_de_commande_by_client/?client_id=${esnId}`);
+      const response = await axios.get(`${Endponit()}/api/get_bon_de_commande_by_client/?client_id=${esnId}`);
       setPurchaseOrders(response.data.data);
     } catch (error) {
       message.error('Échec de la récupération des bons de commande');
@@ -106,7 +107,7 @@ const PurchaseOrderInterface = () => {
 
   const handleAccept = async (id) => {
     try {
-      await axios.put(`http://51.38.99.75:4001/api/Bondecommande/${id}`, { statut: 'accepted_esn' });
+      await axios.put(`${Endponit()}/api/Bondecommande/${id}`, { statut: 'accepted_esn' });
       message.success('Bon de commande accepté avec succès');
       await fetchPurchaseOrders();
     } catch (error) {
@@ -116,7 +117,7 @@ const PurchaseOrderInterface = () => {
 
   const handleReject = async (id) => {
     try {
-      await axios.put(`http://51.38.99.75:4001/api/Bondecommande/${id}`, { statut: 'rejected_esn' });
+      await axios.put(`${Endponit()}/api/Bondecommande/${id}`, { statut: 'rejected_esn' });
       message.success('Bon de commande refusé');
       await fetchPurchaseOrders();
     } catch (error) {

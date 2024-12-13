@@ -30,6 +30,7 @@ import {
     MailOutlined,
     HomeOutlined
 } from '@ant-design/icons';
+import { Endponit } from '../../helper/enpoint';
 
 export const ClientList = () => {
     const [searchText, setSearchText] = useState('');
@@ -45,8 +46,8 @@ export const ClientList = () => {
     const fetchClients = async () => {
         setLoading(true);
         try {
-            const response = await axios.get('http://51.38.99.75:4001/api/clients_par_esn/?esn_id=3');
-            const formattedData = response.data.map((client, index) => ({
+            const response = await axios.get(Endponit()+'/api/clients_par_esn/?esn_id=3');
+            const formattedData = response.data.data.map((client, index) => ({
                 key: client.id.toString(),
                 id: client.id,
                 name: client.nom,

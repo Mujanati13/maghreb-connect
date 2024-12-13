@@ -32,6 +32,7 @@ import {
   EnvironmentOutlined,
   BarsOutlined,
 } from "@ant-design/icons";
+import { Endponit } from "../../helper/enpoint";
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -49,7 +50,7 @@ const ContractList = () => {
   const fetchContracts = async () => {
     try {
       const response = await fetch(
-        "http://51.38.99.75:4001/api/contrat_by_idClient/?clientId=" +
+        Endponit()+"/api/contrat_by_idClient/?clientId=" +
           localStorage.getItem("id")
       );
       const result = await response.json();

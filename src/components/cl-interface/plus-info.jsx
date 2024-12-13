@@ -32,7 +32,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import axios from "axios";
-import { token } from "../../helper/enpoint";
+import { Endponit, token } from "../../helper/enpoint";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -41,6 +41,7 @@ const ClientPlusInfo = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
   const [profileImage, setProfileImage] = useState(null);
+  const [img_path, setimg_path] = useState("");
   const [privacySettings, setPrivacySettings] = useState({
     showEmail: true,
     showPhone: false,
@@ -56,23 +57,20 @@ const ClientPlusInfo = () => {
     const id = localStorage.getItem("id");
 
     try {
-      const response = await axios.get(
-        `http://51.38.99.75:4001/api/getUserData/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token()}`,
-          },
-          params: {
-            clientId: id,
-          },
-        }
-      );
+      const response = await axios.get(`${Endponit()}/api/getUserData`, {
+        headers: {
+          Authorization: `Bearer ${token()}`,
+        },
+        params: {
+          clientId: id,
+        },
+      });
       const client = response.data.data;
 
       setProfile({
         id: client[0].ID_clt,
-        firstName: client[0].raison_sociale || "",
-        lastName: client[0].raison_sociale || "",
+        img_path: client[0].img_path,
+        raison_sociale: client[0].raison_sociale || "",
         email: client[0].mail_contact,
         phone: client[0].tel_contact,
         address: client[0].adresse,
@@ -87,8 +85,7 @@ const ClientPlusInfo = () => {
           website: "",
         },
         completionStatus: calculateProfileCompletion({
-          firstName: client[0].raison_sociale.split(" ")[0],
-          lastName: client[0].raison_sociale.split(" ")[1] || "",
+          raison_sociale: client[0].raison_sociale.split(" ")[0],
           email: client[0].mail_contact,
           phone: client[0].tel_contact,
           address: client[0].adresse,
@@ -103,20 +100,6 @@ const ClientPlusInfo = () => {
       message.error(
         "Une erreur s'est produite lors du chargement des données du client."
       );
-    }
-  };
-
-  const handleProfileImageUpload = (info) => {
-    const file = info.file;
-    if (file.status === "done") {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileImage(e.target.result);
-        message.success("Photo de profil mise à jour avec succès");
-      };
-      reader.readAsDataURL(file);
-    } else if (file.status === "error") {
-      message.error("Échec du téléchargement de la photo");
     }
   };
 
@@ -139,7 +122,7 @@ const ClientPlusInfo = () => {
         .then(async (values) => {
           const updatedProfile = {
             ID_clt: profile.ID_clt,
-            raison_sociale: `${values.firstName} ${values.lastName}`,
+            raison_sociale: `${values.raison_sociale}`,
             mail_contact: values.email,
             tel_contact: values.phone,
             adresse: values.address,
@@ -154,8 +137,13 @@ const ClientPlusInfo = () => {
 
           try {
             await axios.put(
-              `http://51.38.99.75:4001/api/client/`,
-              { ...updatedProfile, ID_clt: profile.id, password: "1234" }, // Data to be sent in the request body
+              `${Endponit()}/api/client/`,
+              {
+                ...updatedProfile,
+                ID_clt: profile.id,
+                password: null,
+                img_path: img_path,
+              }, // Data to be sent in the request body
               {
                 headers: {
                   Authorization: `Bearer ${token()}`, // Authorization header
@@ -185,6 +173,7 @@ const ClientPlusInfo = () => {
       setIsEditing(true);
     }
   }, [form, isEditing, profile]);
+
   const calculateProfileCompletion = (values) => {
     const requiredFields = [
       "firstName",
@@ -197,10 +186,36 @@ const ClientPlusInfo = () => {
       "bio",
       "industry",
     ];
-    const filledFields = requiredFields.filter(
-      (field) => values[field] && values[field] !== undefined
+
+    const filledFields = requiredFields.filter((field) => {
+      // Handle different types of values
+      if (field === "birthDate") {
+        // Check if birthDate is a valid dayjs object or date string
+        return (
+          values[field] &&
+          (values[field].isValid ? values[field].isValid() : true)
+        );
+      }
+
+      // For other fields, check if they are non-empty strings
+      return (
+        values[field] &&
+        values[field] !== undefined &&
+        values[field] !== "" &&
+        values[field] !== null
+      );
+    });
+
+    // Calculate completion percentage, ensuring it's between 0 and 100
+    const completionPercentage = Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round((filledFields.length / requiredFields.length) * 100)
+      )
     );
-    return Math.round((filledFields.length / requiredFields.length) * 100);
+
+    return completionPercentage;
   };
 
   const handleCancelEdit = () => {
@@ -214,6 +229,107 @@ const ClientPlusInfo = () => {
     </Form.Item>
   );
 
+  const handleProfileImageUpload = async (info) => {
+    const file = info.file;
+
+    // Validate file before upload
+    const isImage = file.type.startsWith("image/");
+    const isLt2M = file.size / 1024 / 1024 < 2;
+
+    if (!isImage) {
+      message.error("Vous ne pouvez télécharger que des fichiers image!");
+      return;
+    }
+
+    if (!isLt2M) {
+      message.error("L'image doit être inférieure à 2MB!");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("uploadedFile", file.originFileObj);
+    formData.append("path", "./upload/profile/");
+
+    try {
+      const uploadResponse = await axios.post(
+        `${Endponit()}/api/saveDoc/`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token()}`,
+          },
+          onUploadProgress: (progressEvent) => {
+            const percent = Math.floor(
+              (progressEvent.loaded / progressEvent.total) * 100
+            );
+            console.log(`Upload Progress: ${percent}%`);
+          },
+        }
+      );
+
+      const imagePath = uploadResponse.data.path;
+      console.log("Upload Response Path:", imagePath);
+
+      if (imagePath) {
+        // Update profile with the new image path
+        await axios.put(
+          `${Endponit()}/api/client/`,
+          {
+            ID_clt: profile.id,
+            password: null,
+            img_path: imagePath, // Ensure image path is included
+            raison_sociale: profile.raison_sociale,
+            mail_contact: profile.email,
+            tel_contact: profile.phone,
+            adresse: profile.address,
+            statut: profile.occupation,
+            date_validation: profile.birthDate.format("YYYY-MM-DD"),
+            rce: profile.bio,
+            pays: profile.industry,
+            linkedin: profile.socialLinks?.linkedin || "",
+            twitter: profile.socialLinks?.twitter || "",
+            website: profile.socialLinks?.website || "",
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token()}`,
+            },
+          }
+        );
+
+        // Update local state
+        setimg_path(imagePath);
+        setProfile((prevProfile) => ({
+          ...prevProfile,
+          img_path: imagePath,
+        }));
+
+        // message.success("Image de profil mise à jour avec succès");
+      }
+    } catch (error) {
+      console.error("Detailed Upload Error:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config,
+      });
+
+      // More detailed error message
+      if (error.response) {
+        message.error(
+          `Échec du téléchargement: ${
+            error.response.data?.message || "Erreur serveur"
+          }`
+        );
+      } else if (error.request) {
+        message.error("Aucune réponse reçue du serveur");
+      } else {
+        message.error("Erreur lors de la préparation du téléchargement");
+      }
+    }
+  };
+
   return profile ? (
     <div className="w-full mx-auto p-6 bg-gradient-to-br from-blue-50 to-blue-100">
       <Card
@@ -223,7 +339,7 @@ const ClientPlusInfo = () => {
         {/* En-tête avec Progression et Actions de Modification */}
         <div className="p-6 bg-white flex justify-between items-center border-b border-blue-100">
           <div className="w-full mr-4">
-            <Tooltip title={`Profil ${profile.completionStatus}% Complété`}>
+            {/* <Tooltip title={`Profil ${profile.completionStatus}% Complété`}>
               <Progress
                 percent={profile.completionStatus}
                 status={profile.completionStatus === 100 ? "success" : "active"}
@@ -234,7 +350,7 @@ const ClientPlusInfo = () => {
                 strokeWidth={10}
                 className="w-full"
               />
-            </Tooltip>
+            </Tooltip>  */}
           </div>
           <div className="flex space-x-2">
             {isEditing ? (
@@ -275,8 +391,12 @@ const ClientPlusInfo = () => {
             <div className="flex flex-col items-center">
               <Avatar
                 size={180}
-                src={profileImage || undefined}
-                icon={!profileImage && <UserOutlined />}
+                src={
+                  profile.img_path
+                    ? `${Endponit()}/media/${profile.img_path}`
+                    : undefined
+                }
+                // icon={!profile.img_path && <UserOutlined />}
                 className="mb-4 border-4 border-blue-500 shadow-lg"
               />
               <Upload
@@ -284,13 +404,31 @@ const ClientPlusInfo = () => {
                 listType="picture"
                 className="avatar-uploader"
                 showUploadList={false}
-                beforeUpload={() => false}
+                beforeUpload={(file) => {
+                  // Image type validation
+                  const isImage = file.type.startsWith("image/");
+                  if (!isImage) {
+                    message.error(
+                      "Vous ne pouvez télécharger que des fichiers image!"
+                    );
+                    return false;
+                  }
+
+                  // File size validation
+                  const isLt2M = file.size / 1024 / 1024 < 2;
+                  if (!isLt2M) {
+                    message.error("L'image doit être inférieure à 2MB!");
+                    return false;
+                  }
+
+                  return isImage && isLt2M;
+                }}
                 onChange={handleProfileImageUpload}
               >
                 <Button
                   icon={<UploadOutlined />}
                   type="dashed"
-                  disabled={!isEditing}
+                  // disabled={!isEditing}
                   className="mb-4"
                 >
                   Changer de Photo
@@ -337,8 +475,8 @@ const ClientPlusInfo = () => {
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item
-                    name="firstName"
-                    label="Prénom"
+                    name="raison_sociale"
+                    label="Raison social"
                     rules={[
                       {
                         required: true,
@@ -348,12 +486,12 @@ const ClientPlusInfo = () => {
                   >
                     <Input
                       prefix={<UserOutlined />}
-                      placeholder="Prénom"
+                      placeholder="Raison social"
                       className="rounded-lg"
                     />
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={12}>
+                {/* <Col xs={24} md={12}>
                   <Form.Item
                     name="lastName"
                     label="Nom de Famille"
@@ -370,7 +508,7 @@ const ClientPlusInfo = () => {
                       className="rounded-lg"
                     />
                   </Form.Item>
-                </Col>
+                </Col> */}
               </Row>
 
               <Form.Item

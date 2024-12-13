@@ -3,6 +3,7 @@ import { Card, Input, Tabs, Tag, Typography, Dropdown, Menu, Badge } from 'antd'
 import { SearchOutlined, BellOutlined, MailOutlined, DownOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Endponit } from '../../helper/enpoint';
 
 const { TabPane } = Tabs;
 const { Title, Text } = Typography;
@@ -16,7 +17,7 @@ const NotificationInterface = () => {
     const fetchNotifications = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://51.38.99.75:4001/api/getNotifications/?type=esn');
+            const response = await fetch(Endponit()+'/api/getNotifications/?type=esn');
             if (!response.ok) {
                 throw new Error('Failed to fetch notifications');
             }

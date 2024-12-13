@@ -90,7 +90,7 @@ const InterfaceEn = () => {
           icon: <FileDoneOutlined />,
         },
         {
-          label: "Mes condidateur",
+          label: "Mes Candidatures",
           key: "Mes-condidateur",
           icon: <UserSwitchOutlined />,
         },

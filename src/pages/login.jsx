@@ -14,6 +14,7 @@ import {
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { isEsnLoggedIn } from "../helper/db";
+import { Endponit } from "../helper/enpoint";
 
 const { Title, Text, Link } = Typography;
 
@@ -37,8 +38,8 @@ const LoginPage = () => {
     try {
       const endpoint =
         userType === "client"
-          ? "http://51.38.99.75:4001/api/login_client/"
-          : "http://51.38.99.75:4001/api/login_esn/";
+          ? Endponit()+"/api/login_client/"
+          : Endponit()+"/api/login_esn/";
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -146,7 +147,7 @@ const LoginPage = () => {
               placeholder={
                 userType === "client" ? "Adresse email" : "Adresse email"
               }
-              maxLength={userType === "client" ? undefined : 14}
+              // maxLength={userType === "client" ? undefined : 14}
             />
           </Form.Item>
 

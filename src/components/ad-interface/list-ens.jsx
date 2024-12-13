@@ -34,7 +34,7 @@ import {
   HomeOutlined,
   GlobalOutlined,
 } from "@ant-design/icons";
-import { token } from "../../helper/enpoint";
+import { Endponit, token } from "../../helper/enpoint";
 
 const CollaboratorList = () => {
   const [searchText, setSearchText] = useState("");
@@ -44,7 +44,7 @@ const CollaboratorList = () => {
   const [collaborators, setCollaborators] = useState([]);
   const [editingCollaborator, setEditingCollaborator] = useState(null);
 
-  const API_BASE_URL = "http://51.38.99.75:4001/api/ESN/";
+  const API_BASE_URL = Endponit()+"/api/ESN/";
 
   // Fetch Collaborators
   const fetchCollaborators = async () => {

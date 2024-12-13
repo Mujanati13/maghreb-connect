@@ -35,7 +35,7 @@ import {
     ,
     EyeOutlined
 } from '@ant-design/icons';
-import { token } from '../../helper/enpoint';
+import { Endponit, token } from '../../helper/enpoint';
 
 export const ClientList = () => {
     const [searchText, setSearchText] = useState('');
@@ -50,7 +50,7 @@ export const ClientList = () => {
     const fetchClients = async () => {
         setLoading(true);
         try {
-            const response = await axios.get('http://51.38.99.75:4001/api/client/', {
+            const response = await axios.get(`${Endponit()}/api/client/`, {
                 headers: {
                     Authorization: `${token()}`
                 }
@@ -92,7 +92,7 @@ export const ClientList = () => {
         try {
             if (editingClient) {
                 // Update existing client
-                await axios.put(`http://51.38.99.75:4001/api/client/`, { ...payload, ID_clt: editingClient.id }, {
+                await axios.put(`${Endponit()}/api/client/`, { ...payload, ID_clt: editingClient.id }, {
                     headers: {
                         Authorization: `${token()}`
                     }
@@ -100,7 +100,7 @@ export const ClientList = () => {
                 message.success('Client mis à jour avec succès');
             } else {
                 // Add new client
-                await axios.post('http://51.38.99.75:4001/api/client/', payload, {
+                await axios.post(`${Endponit()}/api/client/`, payload, {
                     headers: {
                         Authorization: `${token()}`
                     }
@@ -128,7 +128,7 @@ export const ClientList = () => {
             cancelText: 'Non',
             async onOk() {
                 try {
-                    await axios.delete(`http://51.38.99.75:4001/api/client/${record.id}`, {
+                    await axios.delete(`${Endponit()}/api/client/${record.id}`, {
                         headers: {
                             Authorization: `${token()}`
                         }

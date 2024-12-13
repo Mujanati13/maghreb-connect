@@ -30,9 +30,9 @@ import {
   MailOutlined,
   PhoneOutlined,
 } from "@ant-design/icons";
-import { token } from "../../helper/enpoint";
+import { Endponit, token } from "../../helper/enpoint";
 
-const API_URL = "http://51.38.99.75:4001/api/collaborateur/";
+const API_URL = Endponit()+"/api/collaborateur/";
 
 const CollaboratorList = () => {
   const [collaborators, setCollaborators] = useState([]);
@@ -46,7 +46,7 @@ const CollaboratorList = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://51.38.99.75:4001/api/consultants_par_esn/?esn_id=" +
+        Endponit()+"/api/consultants_par_esn/?esn_id=" +
           localStorage.getItem("id"),
         {
           headers: {
@@ -166,24 +166,31 @@ const CollaboratorList = () => {
     const handleEdit = async () => {
       try {
         const values = await editForm.validateFields();
+        
+        // Merge the form values with the existing record data
         const updatedData = {
           ...record,
           ...values,
-          Actif: values.Actif || record.Actif,
+          Actif: values.Actif !== undefined ? values.Actif : record.Actif,
         };
-
-        await axios.put(`${API_URL}${record.ID_collab}`, updatedData, {
+    
+        // Send the updated data to the server
+        await axios.put(API_URL, updatedData, {
           headers: {
-            Authorization: `${token()}`,
+            Authorization: token(), // Ensure token() returns the token string
           },
         });
+    
+        // Notify the user and refresh data
         message.success("Collaborateur mis à jour avec succès");
         fetchCollaborators();
         setIsEditModalVisible(false);
       } catch (error) {
+        console.error("Erreur lors de la mise à jour du collaborateur:", error);
         message.error("Erreur lors de la mise à jour du collaborateur");
       }
     };
+    
 
     return (
       <>
