@@ -3,16 +3,16 @@ from django.db import models
 # Create your models here.
 class Client(models.Model):
     ID_clt = models.AutoField(primary_key=True)
-    raison_sociale = models.CharField(max_length=255, verbose_name="Raison Sociale")
-    siret = models.CharField(max_length=14, unique=True, verbose_name="Numéro SIRET")
+    raison_sociale = models.CharField(max_length=255, verbose_name="Raison Sociale" , blank=True, null=True,)
+    siret = models.CharField(max_length=14, unique=True, verbose_name="Numéro SIRET" , blank=True, null=True,)
     rce = models.CharField(max_length=255, blank=True, null=True, verbose_name="RCE")
-    pays = models.CharField(max_length=100, verbose_name="Pays")
-    adresse = models.CharField(max_length=255, verbose_name="Adresse")
-    cp = models.CharField(max_length=10, verbose_name="CP")
-    ville = models.CharField(max_length=100, verbose_name="Ville")
+    pays = models.CharField(max_length=100, verbose_name="Pays" , blank=True, null=True,)
+    adresse = models.CharField(max_length=255, verbose_name="Adresse" ,blank=True, null=True,)
+    cp = models.CharField(max_length=10, verbose_name="CP" , blank=True, null=True,)
+    ville = models.CharField(max_length=100, verbose_name="Ville" , blank=True, null=True,)
     province = models.CharField(max_length=100, blank=True, null=True, verbose_name="Province")
     mail_contact = models.EmailField(unique=True, verbose_name="Email de Contact")
-    password = models.CharField(max_length=255, verbose_name="Mot de Passe")
+    password = models.CharField(max_length=255, blank=True, null=True, verbose_name="Mot de Passe")
     tel_contact = models.CharField(max_length=20, blank=True, null=True, verbose_name="Téléphone de Contact")
     statut = models.CharField(max_length=50, blank=True, null=True, verbose_name="Statut")
     date_validation = models.DateField(blank=True, null=True, verbose_name="Date de Validation")
@@ -20,6 +20,7 @@ class Client(models.Model):
     iban = models.CharField(max_length=34, blank=True, null=True, verbose_name="IBAN")
     bic = models.CharField(max_length=11, blank=True, null=True, verbose_name="BIC")
     banque = models.CharField(max_length=100, blank=True, null=True, verbose_name="Banque")
+    img_path = models.CharField(max_length=100, blank=True, null=True, verbose_name="img_path")
 
     class Meta:
         
@@ -28,7 +29,7 @@ class Client(models.Model):
 class Doc_clt(models.Model):
     ID_DOC_CLT = models.AutoField(primary_key=True)  # Identifiant unique pour chaque document
     ID_CLT =models.IntegerField()  # Lien vers un client (modèle Client)
-    Doc_URL = models.URLField(max_length=255, verbose_name="URL du Document")  # URL du document
+    Doc_URL = models.CharField(max_length=255, verbose_name="url path")  # URL du document
     Titre = models.CharField(max_length=255, verbose_name="Titre")  # Titre du document
     Date_Valid = models.DateField(verbose_name="Date de Validation", null=True, blank=True)  # Date de validation du document
     Statut = models.CharField(max_length=50, verbose_name="Statut")  # Statut du document
@@ -41,19 +42,19 @@ class Doc_clt(models.Model):
 class ESN(models.Model):
     ID_ESN = models.AutoField(primary_key=True)  # Identifiant unique auto-incrémenté
     Raison_sociale = models.CharField(max_length=255, verbose_name="Raison Sociale")
-    SIRET = models.CharField(max_length=14, unique=True, verbose_name="Numéro SIRET")
+    SIRET = models.CharField(max_length=14, unique=True, verbose_name="Numéro SIRET", blank=True, null=True,)
     RCE = models.CharField(max_length=255, blank=True, null=True, verbose_name="RCE")
     
     # Informations géographiques et de localisation
-    Pays = models.CharField(max_length=100, verbose_name="Pays")
+    Pays = models.CharField(max_length=100, verbose_name="Pays",  blank=True, null=True,)
     Adresse = models.CharField(max_length=255, verbose_name="Adresse")
     CP = models.CharField(max_length=10, verbose_name="Code Postal")
-    Ville = models.CharField(max_length=100, verbose_name="Ville")
+    Ville = models.CharField(max_length=100, verbose_name="Ville" ,  blank=True, null=True,)
     Province = models.CharField(max_length=100, blank=True, null=True, verbose_name="Province")
     
     # Informations de contact
     mail_Contact = models.EmailField(max_length=191, unique=True, verbose_name="Email de Contact")  # Réduit à 191 pour la compatibilité avec les index
-    password = models.CharField(max_length=255, verbose_name="Mot de Passe")  # À stocker sous forme hachée
+    password = models.CharField(max_length=255, verbose_name="Mot de Passe", blank=True, null=True)  # À stocker sous forme hachée
     Tel_Contact = models.CharField(max_length=20, blank=True, null=True, verbose_name="Téléphone de Contact")
     
     # Statut et date de validation
@@ -75,7 +76,7 @@ class ESN(models.Model):
 class DocumentESN(models.Model):
     ID_DOC_ESN = models.AutoField(primary_key=True)  # Identifiant unique pour chaque document
     ID_ESN = models.IntegerField()   # Lien vers le modèle ESN
-    Doc_URL = models.URLField(max_length=255, verbose_name="URL du Document")  # URL du document
+    Doc_URL = models.CharField(max_length=255, verbose_name="URL du Document")  # URL du document
     Titre = models.CharField(max_length=255, verbose_name="Titre")  # Titre du document
     Date_Valid = models.DateField(null=True, blank=True, verbose_name="Date de Validation")  # Date de validation
     Statut = models.CharField(max_length=50, verbose_name="Statut")  # Statut du document
@@ -230,5 +231,3 @@ class Partenariat1(models.Model):
 
     class Meta:
         db_table = 'partenariat1'  # Nom de la table dans la base de données
-
-

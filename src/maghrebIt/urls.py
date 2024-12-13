@@ -121,7 +121,13 @@ urlpatterns = [
     
     path('consultants_par_esn/', views.consultants_par_esn1),
     re_path(r'^consultants_par_esn/([0-9]+)$', views.consultants_par_esn1),
+
+    path('consultants-par-esn-et-projet/', views.consultants_par_esn_et_projet, name='consultants-par-esn-et-projet'),
+    re_path(r'^consultants-par-esn-et-projet/([0-9]+)$', views.consultants_par_esn_et_projet),
     
+    path('get-candidatures/', views.get_candidatures_by_project_and_esn, name='get-candidatures-by-project-and-esn'),
+    path('get-candidatures-by-project-and-client/', views.get_candidatures_by_project_and_client, name='get-candidatures-by-project-and-client'),
+
     path('PartenariatClients/', views.PartenariatClients),
     re_path(r'^PartenariatClients/([0-9]+)$', views.PartenariatClients),
     
@@ -131,8 +137,8 @@ urlpatterns = [
     path('get_candidates/', views.get_candidates),
     re_path(r'^get_candidates/([0-9]+)$', views.get_candidates),
     
-    path('PartenariatESNs/', views.PartenariatESNs),
-    re_path(r'^PartenariatESNs/([0-9]+)$', views.PartenariatESNs),
+    path('PartenariatESNs/', views.get_esn_partenariats),
+    re_path(r'^PartenariatESNs/([0-9]+)$', views.get_esn_partenariats),
     
     path('get_contract/', views.get_contract),
     re_path(r'^get_contract/([0-9]+)$', views.get_contract),

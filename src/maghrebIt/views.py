@@ -3,6 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 from django.shortcuts import get_object_or_404             
+from .models import Candidature
 
 from django.core.files.storage import default_storage
 import random
@@ -235,17 +236,17 @@ def login_esn(request):
         else:
             return JsonResponse({"success": False, "msg": "user not found"}, safe=False)
 # Create your views here.
-@csrf_exempt
+
 def client_view(request, id=0):
     # Fonction pour gérer les opérations CRUD (Create, Read, Update, Delete) sur les clients.
 
-    if checkAuth(request) == False:
-        # Vérifie si l'utilisateur est authentifié à l'aide de la fonction `checkAuth`.
-        return JsonResponse({
-            "status": False,
-            "msg": "Non authentifié"
-        }, safe=False, status=401)
-        # Si l'utilisateur n'est pas authentifié, retourne une réponse JSON avec un statut HTTP 401 (Non autorisé).
+    # if checkAuth(request) == False:
+    #     # Vérifie si l'utilisateur est authentifié à l'aide de la fonction `checkAuth`.
+    #     return JsonResponse({
+    #         "status": False,
+    #         "msg": "Non authentifié"
+    #     }, safe=False, status=401)
+    #     # Si l'utilisateur n'est pas authentifié, retourne une réponse JSON avec un statut HTTP 401 (Non autorisé).
 
     if request.method == 'GET':
         # Gère la récupération des clients (opération READ).
@@ -320,22 +321,22 @@ def client_view(request, id=0):
 
         client = Client.objects.get(ID_clt=client_data["ID_clt"])
         # Récupère le client à mettre à jour en fonction de l'identifiant fourni.
+        client_data["password"] = client.password
+        # # Hash password
+        # password = client_data["password"]
+        # # Récupère le mot de passe fourni dans les données JSON.
 
-        # Hash password
-        password = client_data["password"]
-        # Récupère le mot de passe fourni dans les données JSON.
+        # pwd_utf = password.encode()
+        # # Encode le mot de passe en UTF-8.
 
-        pwd_utf = password.encode()
-        # Encode le mot de passe en UTF-8.
+        # pwd_sh = hashlib.sha1(pwd_utf)
+        # # Calcule le hachage SHA-1 du mot de passe encodé.
 
-        pwd_sh = hashlib.sha1(pwd_utf)
-        # Calcule le hachage SHA-1 du mot de passe encodé.
+        # password_crp = pwd_sh.hexdigest()
+        # # Convertit le hachage en chaîne hexadécimale.
 
-        password_crp = pwd_sh.hexdigest()
-        # Convertit le hachage en chaîne hexadécimale.
-
-        # updated password to hashed password
-        client_data["password"] = password_crp
+        # # updated password to hashed password
+        # client_data["password"] = password_crp
         # Met à jour le mot de passe dans les données du client.
 
         client_serializer = ClientSerializer(client, data=client_data)
@@ -387,12 +388,12 @@ def client_view(request, id=0):
 def Document_view(request, id=0):
     # Vue permettant de gérer les documents des clients avec des opérations CRUD (Create, Read, Update, Delete).
 
-    if checkAuth(request) == False:
-        # Vérifie si l'utilisateur est authentifié en appelant la fonction `checkAuth`.
-        return JsonResponse({
-            "status": False,
-            "msg": "Non authentifié"
-        }, safe=False, status=401)
+    # if checkAuth(request) == False:
+    #     # Vérifie si l'utilisateur est authentifié en appelant la fonction `checkAuth`.
+    #     return JsonResponse({
+    #         "status": False,
+    #         "msg": "Non authentifié"
+    #     }, safe=False, status=401)
         # Si l'utilisateur n'est pas authentifié, retourne une réponse JSON avec un statut 401 (Non autorisé).
 
     if request.method == 'GET':
@@ -511,12 +512,12 @@ def Document_view(request, id=0):
 def esn_view(request, id=0):
     # Vue pour gérer les opérations CRUD (Create, Read, Update, Delete) sur les ESN (Entreprises de Services du Numérique).
 
-    if checkAuth(request) == False:
-        # Vérifie si l'utilisateur est authentifié via la fonction `checkAuth`.
-        return JsonResponse({
-            "status": False,
-            "msg": "Non authentifié"
-        }, safe=False, status=401)
+    # if checkAuth(request) == False:
+    #     # Vérifie si l'utilisateur est authentifié via la fonction `checkAuth`.
+    #     return JsonResponse({
+    #         "status": False,
+    #         "msg": "Non authentifié"
+    #     }, safe=False, status=401)
         # Si l'utilisateur n'est pas authentifié, retourne une réponse JSON avec un statut HTTP 401 (Non autorisé).
 
     if request.method == 'GET':
@@ -597,19 +598,20 @@ def esn_view(request, id=0):
         # Hash password
         password = esn_data["password"]
         # Récupère le mot de passe fourni dans les données JSON.
+        if password != None:
 
-        pwd_utf = password.encode()
-        # Encode le mot de passe en UTF-8 pour le préparer au hachage.
+            pwd_utf = password.encode()
+            # Encode le mot de passe en UTF-8 pour le préparer au hachage.
 
-        pwd_sh = hashlib.sha1(pwd_utf)
-        # Calcule le hachage SHA-1 du mot de passe encodé.
+            pwd_sh = hashlib.sha1(pwd_utf)
+            # Calcule le hachage SHA-1 du mot de passe encodé.
 
-        password_crp = pwd_sh.hexdigest()
-        # Convertit le hachage en chaîne hexadécimale.
+            password_crp = pwd_sh.hexdigest()
+            # Convertit le hachage en chaîne hexadécimale.
 
-        # updated password to hashed password
-        esn_data["password"] = password_crp
-        # Remplace le mot de passe dans les données par le mot de passe haché.
+            # updated password to hashed password
+            esn_data["password"] = password_crp
+            # Remplace le mot de passe dans les données par le mot de passe haché.
 
         esn_serializer = ESNSerializer(esn, data=esn_data)
         # Sérialise les données mises à jour pour les valider.
@@ -670,6 +672,7 @@ def docEsn_view(request, id=0):
         # Si l'utilisateur n'est pas authentifié, retourne une réponse JSON avec un statut 401 (Non autorisé).
 
     if request.method == 'GET':
+        
         # Gère la récupération des documents ESN (opération READ).
 
         docesns = DocumentESN.objects.filter()
@@ -1081,7 +1084,8 @@ def appelOffre_view(request, id=0):
             return JsonResponse({
                 "status": True,
                 "msg": "Added Successfully!!",
-                "errors": col_serializer.errors
+                "errors": col_serializer.errors,
+                "id" : col_serializer.data["id"]
             }, safe=False)
             # Retourne une réponse JSON indiquant que l'appel d'offre a été ajouté avec succès.
 
@@ -1175,11 +1179,14 @@ def candidature_view(request, id=0):
 
             col_serializer.save()
             # Sauvegarde la candidature dans la base de données.
+            # here return the id of the added condidature 
 
             return JsonResponse({
                 "status": True,
                 "msg": "Added Successfully!!",
+                "id": col_serializer.data["id_cd"],
                 "errors": col_serializer.errors
+
             }, safe=False)
             # Retourne une réponse JSON indiquant que la candidature a été ajoutée avec succès.
 
@@ -1695,6 +1702,21 @@ def DocumentESNs(request):
 #             data.append(S)
 #         return JsonResponse({"total": len(data),"data": data}, safe=False)
 @csrf_exempt
+def get_esn_partenariats(request):
+    esn_id = request.GET.get("esn_id")
+    
+    if not esn_id:
+        return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False, status=400)
+
+    # Filtrer les partenariats associés à l'ESN
+    partenariats = Partenariat1.objects.filter(id_esn=esn_id)
+
+    # Sérialiser les données des partenariats
+    partenariat_serializer = PartenariatSerializer(partenariats, many=True)
+
+    return JsonResponse({"status": True, "data": partenariat_serializer.data}, safe=False)
+
+@csrf_exempt
 def PartenariatESNs(request):
     if request.method == 'GET':
         try:
@@ -1782,7 +1804,50 @@ def PartenariatClients(request):
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
 
+
+def get_candidatures_by_project_and_esn(request):
+    esn_id = request.GET.get("esn_id")
+    project_id = request.GET.get("project_id")
     
+    if not esn_id:
+        return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False)
+    
+    if not project_id:
+        return JsonResponse({"status": False, "message": "project_id manquant"}, safe=False)
+
+    # Filtrer les candidatures associées à l'ESN et au projet
+    candidatures = Candidature.objects.filter(esn_id=esn_id, AO_id=project_id)
+
+    # Sérialiser les données des candidatures
+    candidature_serializer = CandidatureSerializer(candidatures, many=True)
+
+    return JsonResponse({"status": True, "data": candidature_serializer.data}, safe=False)
+
+
+def get_candidatures_by_project_and_client(request):
+    project_id = request.GET.get("project_id")
+    client_id = request.GET.get("client_id")
+    
+    if not project_id:
+        return JsonResponse({"status": False, "message": "project_id manquant"}, safe=False)
+    
+    if not client_id:
+        return JsonResponse({"status": False, "message": "client_id manquant"}, safe=False)
+
+    # Filtrer les appels d'offre associés au client
+    appels_offre = AppelOffre.objects.filter(id=project_id, client_id=client_id)
+
+    if not appels_offre.exists():
+        return JsonResponse({"status": False, "message": "Aucun appel d'offre trouvé pour ce client et ce projet"}, safe=False)
+
+    # Filtrer les candidatures associées aux appels d'offre trouvés
+    candidatures = Candidature.objects.filter(AO_id__in=appels_offre)
+
+    # Sérialiser les données des candidatures
+    candidature_serializer = CandidatureSerializer(candidatures, many=True)
+
+    return JsonResponse({"status": True, "data": candidature_serializer.data}, safe=False)
+
 @csrf_exempt
 def clients_par_esn(request):
     if request.method == 'GET':
@@ -1794,16 +1859,16 @@ def clients_par_esn(request):
 
             # Filtrer les candidatures associées à l'ESN
             candidatures = Candidature.objects.filter(esn_id=esn_id)
-            if not candidatures.exists():
-                return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour cet ESN"}, safe=False)
+            # if not candidatures.exists():
+            #     return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour cet ESN"}, safe=False)
 
             # Extraire les IDs des appels d'offres associés
             appels_offres_ids = candidatures.values_list('AO_id', flat=True)
 
             # Filtrer les appels d'offres associés
             appels_offres = AppelOffre.objects.filter(id__in=appels_offres_ids)
-            if not appels_offres.exists():
-                return JsonResponse({"status": False, "message": "Aucun appel d'offre trouvé"}, safe=False)
+            # if not appels_offres.exists():
+            #     return JsonResponse({"status": False, "message": "Aucun appel d'offre trouvé"}, safe=False)
 
             # Extraire les IDs des clients associés
             clients_ids = appels_offres.values_list('client_id', flat=True).distinct()
@@ -1817,6 +1882,18 @@ def clients_par_esn(request):
 
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
+    esn_id = request.GET.get("esn_id")
+    if not esn_id:
+        return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False)
+
+    # Filtrer les candidatures associées à l'ESN
+    candidatures = Candidature.objects.filter(esn_id=esn_id)
+
+    # Sérialiser les données des consultants
+    consultant_serializer = CandidatureSerializer(candidatures, many=True)
+
+    return JsonResponse({"status": True, "consultants": consultant_serializer.data}, safe=False)
 
 @csrf_exempt
 def consultants_par_client(request):
@@ -1886,31 +1963,41 @@ def candidatures_par_client(request):
 @csrf_exempt
 def consultants_par_esn1(request):
     if request.method == 'GET':
-        try:
-            # Récupérer l'identifiant de l'ESN depuis les paramètres GET
             esn_id = request.GET.get("esn_id")
+    
             if not esn_id:
-                return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False)
+                return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False, status=400)
 
             # Filtrer les candidatures associées à l'ESN
-            candidatures = Candidature.objects.filter(esn_id=esn_id)
-            if not candidatures.exists():
-                return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour cet ESN"}, safe=False)
+            candidatures = Collaborateur.objects.filter(ID_ESN=esn_id)
 
-            # Extraire les IDs des consultants associés
-            consultants_ids = candidatures.values_list('id_consultant', flat=True).distinct()
+            # Sérialiser les données des candidatures
+            candidature_serializer = CollaborateurSerializer(candidatures, many=True)
 
-            # Filtrer les consultants associés
-            consultants = Collaborateur.objects.filter(ID_collab__in=consultants_ids)
-            if not consultants.exists():
-                return JsonResponse({"status": False, "message": "Aucun consultant trouvé"}, safe=False)
+            return JsonResponse({"status": True, "data": candidature_serializer.data}, safe=False)
 
-            # Sérialiser les données des consultants
-            consultant_serializer = CollaborateurSerializer(consultants, many=True)
-            return JsonResponse({"total": len(consultant_serializer.data), "data": consultant_serializer.data}, safe=False)
+@csrf_exempt
+def consultants_par_esn_et_projet(request):
+    if request.method == 'GET':
+        esn_id = request.GET.get("esn_id")
+        project_id = request.GET.get("project_id")
+        
+        if not esn_id:
+            return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False, status=400)
+        
+        if not project_id:
+            return JsonResponse({"status": False, "message": "project_id manquant"}, safe=False, status=400)
 
-        except Exception as e:
-            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+        # Obtenir les consultants qui ont déjà soumis une candidature pour ce projet et cet ESN
+        submitted_consultants = Candidature.objects.filter(esn_id=esn_id, AO_id=project_id).values_list('id_consultant', flat=True)
+
+        # Obtenir les consultants qui n'ont pas encore soumis de candidature pour ce projet et cet ESN
+        consultants = Collaborateur.objects.filter(ID_ESN=esn_id).exclude(ID_collab__in=submitted_consultants)
+
+        # Sérialiser les données des consultants
+        consultant_serializer = CollaborateurSerializer(consultants, many=True)
+
+        return JsonResponse({"status": True, "data": consultant_serializer.data}, safe=False)
 
 @csrf_exempt
 def candidatures_par_appel_offre(request):
@@ -2319,9 +2406,12 @@ def notify_new_candidature(request):
     if request.method == 'POST':
         try:
             data = JSONParser().parse(request)
-            client_id = data.get('client_id')  # ID du client destinataire
             appel_offre_id = data.get('appel_offre_id')
             candidature_id = data.get('candidature_id')
+
+            # Get id client base on the appel d'offer 
+            appels_offres = AppelOffre.objects.filter(id=appel_offre_id)
+            client_id = appels_offres.first().client_id
 
             # Validation des paramètres
             if not client_id or not appel_offre_id or not candidature_id:
@@ -2371,20 +2461,27 @@ def notify_candidature_accepted(request):
             categorie="ESN"
         )
         return JsonResponse({"status": True, "message": "Notification envoyée à l'ESN."}, safe=False)
+    
 @csrf_exempt
 def notify_expiration_ao(request):
     if request.method == 'POST':
         try:
             data = JSONParser().parse(request)
-            print(data)  # Afficher les données reçues
 
             ao_id = data.get('ao_id')
             client_id = data.get('client_id')
-            esn_ids = data.get('esn_ids')
+            # esn_ids = data.get('esn_ids')
+            # esn = [3 , 10 , 40]
+            list_esn = []
+            # assume we need to get the list from the database base on the client id 
+            partenaires = Partenariat1.objects.filter(id_client=client_id)
+            for partenaire in partenaires:
+                list_esn.append(partenaire.id_esn)
+            if len(list_esn) == 0:
+                return JsonResponse({"status": True, "message": "Non partenaire découvert"}, safe=False)
 
-            print(f"ao_id: {ao_id}, client_id: {client_id}, esn_ids: {esn_ids}")
-
-            if not all([ao_id, client_id, esn_ids]):
+            print(list_esn)
+            if not all([ao_id, client_id, list_esn]):
                 return JsonResponse({"status": False, "message": "Tous les champs sont requis."}, safe=False)
 
             message_client = f"L'appel d'offre ID={ao_id} est arrivé à expiration."
@@ -2397,7 +2494,7 @@ def notify_expiration_ao(request):
                 categorie="Client"
             )
 
-            for esn_id in esn_ids:
+            for esn_id in list_esn:
                 message_esn = f"L'appel d'offre ID={ao_id} est arrivé à expiration."
                 send_notification(
                     user_id=None,  # Aucun utilisateur spécifique

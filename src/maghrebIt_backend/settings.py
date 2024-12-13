@@ -52,11 +52,10 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
 ]
 
 ROOT_URLCONF = 'maghrebIt_backend.urls'
@@ -87,11 +86,11 @@ DATABASES = {
     'default': {
           # mysql
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': "django_db",
-        'USER': "django_user",
-        'PASSWORD': "django_password",
-        'HOST': "mysql",
-        'PORT': '33066',
+        'NAME': "maghrebit",
+        'USER': "root",
+        'PASSWORD': "simo1234",
+        'HOST': "localhost",
+        'PORT': '3306',
     }
 }
 
@@ -114,7 +113,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3002'
+]
 
+SESSION_COOKIE_SECURE = True
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 

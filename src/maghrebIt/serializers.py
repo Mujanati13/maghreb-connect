@@ -8,6 +8,7 @@ class ClientSerializer(serializers.ModelSerializer):
         fields = (  'ID_clt', 
             'raison_sociale', 
             'siret', 
+            'img_path', 
             'rce', 
             'pays', 
             'adresse', 
