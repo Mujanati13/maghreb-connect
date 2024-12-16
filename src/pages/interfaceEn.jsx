@@ -233,7 +233,7 @@ const InterfaceEn = () => {
             </AutoComplete>
           </div>
           <div className="flex space-x-3 items-center ml-4">
-            <Tag color="blue">Espace de l'ENS</Tag>
+            <Tag color="blue">Espace de l'ESN</Tag>
             <LogoutOutlined
               onClick={() => {
                 logoutEsn();

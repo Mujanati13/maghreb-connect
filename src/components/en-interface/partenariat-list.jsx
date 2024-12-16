@@ -266,20 +266,21 @@ const PartenariatInterface = () => {
               style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
             />
           </Tooltip> */}
-          <Tooltip title="Supprimer">
-            <Popconfirm
-              title="Êtes-vous sûr de vouloir supprimer?"
-              onConfirm={() => handleDelete(record.id_part)}
-              okText="Oui"
-              cancelText="Non"
-            >
-              <Button
-                type="primary"
-                icon={<DeleteOutlined />}
-                danger
-              />
-            </Popconfirm>
-          </Tooltip>
+          <Popconfirm
+  title="Êtes-vous sûr de vouloir supprimer?"
+  onConfirm={() => {
+    console.log('Record to delete:', record);
+    handleDelete(record.id_part);
+  }}
+  okText="Oui"
+  cancelText="Non"
+>
+  <Button
+    type="primary"
+    icon={<DeleteOutlined />}
+    danger
+  />
+</Popconfirm>
         </Space>
       ),
     },

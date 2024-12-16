@@ -34,7 +34,7 @@ const ESNCandidatureInterface = () => {
     setLoading(true);
     try {
       // Fetch missions
-      const missionsRes = await fetch(Endponit() + "/api/appelOffre/");
+      const missionsRes = await fetch(Endponit() + "/api/get-appel-offre-with-candidatures-by-esn/?esn_id="+localStorage.getItem("id"));
       const missionsData = await missionsRes.json();
       const missions = missionsData.data;
       setMissions(missions);

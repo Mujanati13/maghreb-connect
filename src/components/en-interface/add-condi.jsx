@@ -56,14 +56,16 @@ const AppelDOffreInterface = () => {
     setLoading(true);
     try {
       const response = await axios.get(Endponit() + "/api/appelOffre/");
-      setData(response.data.data);
+      setData(response.data.data || []); // Ensure data is always an array
     } catch (error) {
       message.error("Erreur lors du chargement des appels d'offre");
       console.error("Error fetching data:", error);
+      setData([]); // Set to empty array on error
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchData();
