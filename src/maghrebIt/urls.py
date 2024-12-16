@@ -53,6 +53,7 @@ urlpatterns = [
     # Route pour gérer les collaborateurs (exemple : récupération ou ajout de collaborateurs).
     re_path(r'^collaborateur/([0-9]+)$', views.collaborateur_view),
     # Route pour gérer un collaborateur spécifique par son ID.
+    path('get-appel-offre-with-candidatures-by-esn/', views.get_appel_offre_with_candidatures_by_esn, name='get-appel-offre-with-candidatures-by-esn'),
 
     # Gestion des appels d'offres
     path('appelOffre/', views.appelOffre_view),

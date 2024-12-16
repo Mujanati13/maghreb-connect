@@ -1041,6 +1041,20 @@ def admin_view(request, id=0):
         # Retourne une réponse JSON indiquant que l'administrateur a été supprimé avec succès.
 
     
+@csrf_exempt
+def get_appel_offre_with_candidatures_by_esn(request):
+    esn_id = request.GET.get("esn_id")
+    
+    if not esn_id:
+        return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False, status=400)
+
+    # Obtenir les appels d'offres qui ont des candidatures associées à l'ESN
+    appel_offres = AppelOffre.objects.filter(id__in=Candidature.objects.filter(esn_id=esn_id).values_list('AO_id', flat=True)).distinct()
+
+    # Sérialiser les données des appels d'offres
+    appel_offre_serializer = AppelOffreSerializer(appel_offres, many=True)
+
+    return JsonResponse({"status": True, "data": appel_offre_serializer.data}, safe=False)
    
 @csrf_exempt
 def appelOffre_view(request, id=0):
@@ -1712,7 +1726,7 @@ def get_esn_partenariats(request):
     partenariats = Partenariat1.objects.filter(id_esn=esn_id)
 
     # Sérialiser les données des partenariats
-    partenariat_serializer = PartenariatSerializer(partenariats, many=True)
+    partenariat_serializer = Partenariat1Serializer(partenariats, many=True)
 
     return JsonResponse({"status": True, "data": partenariat_serializer.data}, safe=False)
 

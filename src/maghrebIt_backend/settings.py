@@ -113,9 +113,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3002'
-]
+# CSRF_TRUSTED_ORIGINS = [
+#     'http://localhost:3002'
+# ]
 
 SESSION_COOKIE_SECURE = True
 # Internationalization
