@@ -1044,17 +1044,19 @@ def admin_view(request, id=0):
 @csrf_exempt
 def get_appel_offre_with_candidatures_by_esn(request):
     esn_id = request.GET.get("esn_id")
+    print("test")
+    if request.method == 'GET':
     
-    if not esn_id:
-        return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False, status=400)
+        if not esn_id:
+            return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False, status=400)
 
-    # Obtenir les appels d'offres qui ont des candidatures associées à l'ESN
-    appel_offres = AppelOffre.objects.filter(id__in=Candidature.objects.filter(esn_id=esn_id).values_list('AO_id', flat=True)).distinct()
+        # Obtenir les appels d'offres qui ont des candidatures associées à l'ESN
+        appel_offres = AppelOffre.objects.filter(id__in=Candidature.objects.filter(esn_id=esn_id).values_list('AO_id', flat=True)).distinct()
 
-    # Sérialiser les données des appels d'offres
-    appel_offre_serializer = AppelOffreSerializer(appel_offres, many=True)
+        # Sérialiser les données des appels d'offres
+        appel_offre_serializer = AppelOffreSerializer(appel_offres, many=True)
 
-    return JsonResponse({"status": True, "data": appel_offre_serializer.data}, safe=False)
+        return JsonResponse({"status": True, "data": appel_offre_serializer.data}, safe=False)
    
 @csrf_exempt
 def appelOffre_view(request, id=0):
