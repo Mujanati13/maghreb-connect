@@ -640,12 +640,12 @@ const EntrepriseServices = () => {
   const filteredEntreprises = entreprises.filter((entreprise) => {
     const matchSearch =
       searchText === "" ||
-      entreprise.Raison_sociale.toLowerCase().includes(searchText) ||
-      entreprise.Specialites.toLowerCase().includes(searchText);
+      entreprise.Raison_sociale?.toLowerCase().includes(searchText) ||
+      entreprise?.Specialites?.toLowerCase().includes(searchText);
 
     const matchSpecialite =
       !selectedSpecialite ||
-      entreprise.Specialites.split(",")
+      entreprise?.Specialites?.split(",")
         .map((s) => s.trim())
         .includes(selectedSpecialite);
 

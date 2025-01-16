@@ -3,7 +3,6 @@ import {
   Card,
   Button,
   Avatar,
-  Progress,
   Form,
   Input,
   DatePicker,
@@ -11,7 +10,6 @@ import {
   Col,
   Upload,
   message,
-  Tooltip,
   Select,
   Switch,
 } from "antd";
@@ -40,7 +38,6 @@ const { Option } = Select;
 const ClientPlusInfo = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
-  const [profileImage, setProfileImage] = useState(null);
   const [img_path, setimg_path] = useState("");
   const [privacySettings, setPrivacySettings] = useState({
     showEmail: true,
@@ -65,41 +62,36 @@ const ClientPlusInfo = () => {
           clientId: id,
         },
       });
+      
       const client = response.data.data;
 
-      setProfile({
+      const profileData = {
         id: client[0].ID_clt,
         img_path: client[0].img_path,
         raison_sociale: client[0].raison_sociale || "",
         email: client[0].mail_contact,
-        phone: client[0].tel_contact,
-        address: client[0].adresse,
+        phone: client[0].tel_contact || "",
+        address: client[0].adresse || "",
         occupation: client[0].statut || "",
-        birthDate: dayjs(client[0].date_validation || "1990-01-01"),
+        birthDate: client[0].date_validation ? dayjs(client[0].date_validation) : null,
         bio: client[0].rce || "",
-        industry: client[0].pays,
+        industry: client[0].pays || "",
         socialLinks: {
-          linkedin: "",
-          github: "",
-          twitter: "",
-          website: "",
+          linkedin: client[0].linkedin || "",
+          twitter: client[0].twitter || "",
+          website: client[0].website || "",
         },
-        completionStatus: calculateProfileCompletion({
-          raison_sociale: client[0].raison_sociale.split(" ")[0],
-          email: client[0].mail_contact,
-          phone: client[0].tel_contact,
-          address: client[0].adresse,
-          occupation: client[0].statut || "",
-          birthDate: dayjs(client[0].date_validation || "1990-01-01"),
-          bio: client[0].rce || "",
-          industry: client[0].pays,
-        }),
+      };
+
+      setProfile(profileData);
+      form.setFieldsValue({
+        ...profileData,
+        ...profileData.socialLinks,
       });
+      
     } catch (error) {
       console.error("Error fetching client data:", error);
-      message.error(
-        "Une erreur s'est produite lors du chargement des données du client."
-      );
+      message.error("Une erreur s'est produite lors du chargement des données du client.");
     }
   };
 
@@ -108,131 +100,77 @@ const ClientPlusInfo = () => {
       ...prev,
       [setting]: !prev[setting],
     }));
-    message.info(
-      `Visibilité de ${setting
-        .replace(/([A-Z])/g, " $1")
-        .replace(/^./, (str) => str.toUpperCase())} mise à jour`
-    );
+    message.info(`Visibilité de ${setting.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())} mise à jour`);
   };
 
   const handleEdit = useCallback(() => {
     if (isEditing) {
-      form
-        .validateFields()
+      form.validateFields()
         .then(async (values) => {
           const updatedProfile = {
-            ID_clt: profile.ID_clt,
-            raison_sociale: `${values.raison_sociale}`,
+            ID_clt: profile.id,
+            raison_sociale: values.raison_sociale,
             mail_contact: values.email,
-            tel_contact: values.phone,
-            adresse: values.address,
-            statut: values.occupation,
-            date_validation: values.birthDate.format("YYYY-MM-DD"),
-            rce: values.bio,
-            pays: values.industry,
+            tel_contact: values.phone || "",
+            adresse: values.address || "",
+            statut: values.occupation || "",
+            date_validation: values.birthDate ? values.birthDate.format("YYYY-MM-DD") : null,
+            rce: values.bio || "",
+            pays: values.industry || "",
             linkedin: values.linkedin || "",
             twitter: values.twitter || "",
             website: values.website || "",
+            img_path: img_path || profile.img_path,
+            password: null,
           };
 
           try {
             await axios.put(
               `${Endponit()}/api/client/`,
-              {
-                ...updatedProfile,
-                ID_clt: profile.id,
-                password: null,
-                img_path: img_path,
-              }, // Data to be sent in the request body
+              updatedProfile,
               {
                 headers: {
-                  Authorization: `Bearer ${token()}`, // Authorization header
+                  Authorization: `Bearer ${token()}`,
                 },
               }
             );
 
-            setProfile(updatedProfile);
+            setProfile({
+              ...profile,
+              ...updatedProfile,
+              birthDate: values.birthDate,
+              socialLinks: {
+                linkedin: values.linkedin || "",
+                twitter: values.twitter || "",
+                website: values.website || "",
+              },
+            });
+            
             setIsEditing(false);
             message.success("Profil mis à jour avec succès");
           } catch (error) {
             console.error("Error updating client data:", error);
-            message.error(
-              "Une erreur s'est produite lors de la mise à jour du profil."
-            );
+            message.error("Une erreur s'est produite lors de la mise à jour du profil.");
           }
         })
         .catch((error) => {
-          message.error("Veuillez vérifier tous les champs requis");
+          message.error("Veuillez vérifier les champs requis");
         });
     } else {
-      form.setFieldsValue({
-        ...profile,
-        birthDate: profile.birthDate,
-        ...profile.socialLinks,
-      });
       setIsEditing(true);
     }
-  }, [form, isEditing, profile]);
-
-  const calculateProfileCompletion = (values) => {
-    const requiredFields = [
-      "firstName",
-      "lastName",
-      "email",
-      "phone",
-      "address",
-      "occupation",
-      "birthDate",
-      "bio",
-      "industry",
-    ];
-
-    const filledFields = requiredFields.filter((field) => {
-      // Handle different types of values
-      if (field === "birthDate") {
-        // Check if birthDate is a valid dayjs object or date string
-        return (
-          values[field] &&
-          (values[field].isValid ? values[field].isValid() : true)
-        );
-      }
-
-      // For other fields, check if they are non-empty strings
-      return (
-        values[field] &&
-        values[field] !== undefined &&
-        values[field] !== "" &&
-        values[field] !== null
-      );
-    });
-
-    // Calculate completion percentage, ensuring it's between 0 and 100
-    const completionPercentage = Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round((filledFields.length / requiredFields.length) * 100)
-      )
-    );
-
-    return completionPercentage;
-  };
+  }, [form, isEditing, profile, img_path]);
 
   const handleCancelEdit = () => {
-    form.resetFields();
+    form.setFieldsValue({
+      ...profile,
+      ...profile.socialLinks,
+    });
     setIsEditing(false);
   };
 
-  const renderSocialLink = (icon, placeholder, name) => (
-    <Form.Item name={name} label={name.charAt(0).toUpperCase() + name.slice(1)}>
-      <Input prefix={icon} placeholder={placeholder} />
-    </Form.Item>
-  );
-
   const handleProfileImageUpload = async (info) => {
     const file = info.file;
-
-    // Validate file before upload
     const isImage = file.type.startsWith("image/");
     const isLt2M = file.size / 1024 / 1024 < 2;
 
@@ -259,77 +197,18 @@ const ClientPlusInfo = () => {
             "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${token()}`,
           },
-          onUploadProgress: (progressEvent) => {
-            const percent = Math.floor(
-              (progressEvent.loaded / progressEvent.total) * 100
-            );
-            console.log(`Upload Progress: ${percent}%`);
-          },
         }
       );
 
       const imagePath = uploadResponse.data.path;
-      console.log("Upload Response Path:", imagePath);
-
-      if (imagePath) {
-        // Update profile with the new image path
-        await axios.put(
-          `${Endponit()}/api/client/`,
-          {
-            ID_clt: profile.id,
-            password: null,
-            img_path: imagePath, // Ensure image path is included
-            raison_sociale: profile.raison_sociale,
-            mail_contact: profile.email,
-            tel_contact: profile.phone,
-            adresse: profile.address,
-            statut: profile.occupation,
-            date_validation: profile.birthDate.format("YYYY-MM-DD"),
-            rce: profile.bio,
-            pays: profile.industry,
-            linkedin: profile.socialLinks?.linkedin || "",
-            twitter: profile.socialLinks?.twitter || "",
-            website: profile.socialLinks?.website || "",
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token()}`,
-            },
-          }
-        );
-
-        // Update local state
-        setimg_path(imagePath);
-        setProfile((prevProfile) => ({
-          ...prevProfile,
-          img_path: imagePath,
-        }));
-
-        // message.success("Image de profil mise à jour avec succès");
-      }
+      setimg_path(imagePath);
+      setProfile(prev => ({ ...prev, img_path: imagePath }));
     } catch (error) {
-      console.error("Detailed Upload Error:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: error.config,
-      });
-
-      // More detailed error message
-      if (error.response) {
-        message.error(
-          `Échec du téléchargement: ${
-            error.response.data?.message || "Erreur serveur"
-          }`
-        );
-      } else if (error.request) {
-        message.error("Aucune réponse reçue du serveur");
-      } else {
-        message.error("Erreur lors de la préparation du téléchargement");
-      }
+      console.error("Upload Error:", error);
+      message.error("Erreur lors du téléchargement de l'image");
     }
   };
-
+  
   return profile ? (
     <div className="w-full mx-auto p-6 bg-gradient-to-br from-blue-50 to-blue-100">
       <Card
@@ -469,7 +348,6 @@ const ClientPlusInfo = () => {
               form={form}
               layout="vertical"
               disabled={!isEditing}
-              initialValues={profile}
               className="space-y-4"
             >
               <Row gutter={16}>
@@ -480,7 +358,7 @@ const ClientPlusInfo = () => {
                     rules={[
                       {
                         required: true,
-                        message: "Veuillez entrer votre prénom",
+                        message: "Veuillez entrer votre raison sociale",
                       },
                     ]}
                   >
@@ -491,24 +369,6 @@ const ClientPlusInfo = () => {
                     />
                   </Form.Item>
                 </Col>
-                {/* <Col xs={24} md={12}>
-                  <Form.Item
-                    name="lastName"
-                    label="Nom de Famille"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Veuillez entrer votre nom de famille",
-                      },
-                    ]}
-                  >
-                    <Input
-                      prefix={<UserOutlined />}
-                      placeholder="Nom de Famille"
-                      className="rounded-lg"
-                    />
-                  </Form.Item>
-                </Col> */}
               </Row>
 
               <Form.Item
@@ -529,16 +389,7 @@ const ClientPlusInfo = () => {
                 />
               </Form.Item>
 
-              <Form.Item
-                name="phone"
-                label="Téléphone"
-                rules={[
-                  {
-                    required: true,
-                    message: "Veuillez entrer votre numéro de téléphone",
-                  },
-                ]}
-              >
+              <Form.Item name="phone" label="Téléphone">
                 <Input
                   prefix={<PhoneOutlined />}
                   placeholder="Numéro de Téléphone"
@@ -546,13 +397,7 @@ const ClientPlusInfo = () => {
                 />
               </Form.Item>
 
-              <Form.Item
-                name="address"
-                label="Adresse"
-                rules={[
-                  { required: true, message: "Veuillez entrer votre adresse" },
-                ]}
-              >
+              <Form.Item name="address" label="Adresse">
                 <Input
                   prefix={<HomeOutlined />}
                   placeholder="Adresse"
@@ -562,16 +407,7 @@ const ClientPlusInfo = () => {
 
               <Row gutter={16}>
                 <Col xs={24} md={12}>
-                  <Form.Item
-                    name="occupation"
-                    label="Profession"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Veuillez entrer votre profession",
-                      },
-                    ]}
-                  >
+                  <Form.Item name="occupation" label="Profession">
                     <Input
                       prefix={<BankOutlined />}
                       placeholder="Profession"
@@ -580,16 +416,7 @@ const ClientPlusInfo = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
-                  <Form.Item
-                    name="industry"
-                    label="Secteur d'Activité"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Veuillez sélectionner un secteur",
-                      },
-                    ]}
-                  >
+                  <Form.Item name="industry" label="Secteur d'Activité">
                     <Select
                       placeholder="Sélectionner un Secteur"
                       className="w-full"
@@ -604,16 +431,7 @@ const ClientPlusInfo = () => {
                 </Col>
               </Row>
 
-              <Form.Item
-                name="birthDate"
-                label="Date de Naissance"
-                rules={[
-                  {
-                    required: true,
-                    message: "Veuillez sélectionner votre date de naissance",
-                  },
-                ]}
-              >
+              <Form.Item name="birthDate" label="Date de Naissance">
                 <DatePicker
                   style={{ width: "100%" }}
                   format="YYYY-MM-DD"
@@ -622,22 +440,39 @@ const ClientPlusInfo = () => {
                 />
               </Form.Item>
 
-              <Form.Item
-                name="bio"
-                label="Biographie"
-                rules={[
-                  {
-                    required: true,
-                    message: "Veuillez entrer votre biographie",
-                  },
-                ]}
-              >
+              <Form.Item name="bio" label="Biographie">
                 <TextArea
                   rows={4}
                   placeholder="Parlez-nous de vous"
                   className="rounded-lg"
                 />
               </Form.Item>
+
+              <div className="space-y-4">
+                <Form.Item name="linkedin" label="LinkedIn">
+                  <Input
+                    prefix={<LinkedinOutlined />}
+                    placeholder="URL LinkedIn"
+                    className="rounded-lg"
+                  />
+                </Form.Item>
+
+                <Form.Item name="twitter" label="Twitter">
+                  <Input
+                    prefix={<TwitterOutlined />}
+                    placeholder="URL Twitter"
+                    className="rounded-lg"
+                  />
+                </Form.Item>
+
+                <Form.Item name="website" label="Site Web">
+                  <Input
+                    prefix={<GlobalOutlined />}
+                    placeholder="URL Site Web"
+                    className="rounded-lg"
+                  />
+                </Form.Item>
+              </div>
             </Form>
           </Col>
         </Row>

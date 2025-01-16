@@ -32,7 +32,7 @@ import {
 } from "@ant-design/icons";
 import { Endponit, token } from "../../helper/enpoint";
 
-const API_URL = Endponit()+"/api/collaborateur/";
+const API_URL = Endponit() + "/api/collaborateur/";
 
 const CollaboratorList = () => {
   const [collaborators, setCollaborators] = useState([]);
@@ -46,7 +46,8 @@ const CollaboratorList = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        Endponit()+"/api/consultants_par_esn/?esn_id=" +
+        Endponit() +
+          "/api/consultants_par_esn/?esn_id=" +
           localStorage.getItem("id"),
         {
           headers: {
@@ -166,21 +167,21 @@ const CollaboratorList = () => {
     const handleEdit = async () => {
       try {
         const values = await editForm.validateFields();
-        
+
         // Merge the form values with the existing record data
         const updatedData = {
           ...record,
           ...values,
           Actif: values.Actif !== undefined ? values.Actif : record.Actif,
         };
-    
+
         // Send the updated data to the server
         await axios.put(API_URL, updatedData, {
           headers: {
             Authorization: token(), // Ensure token() returns the token string
           },
         });
-    
+
         // Notify the user and refresh data
         message.success("Collaborateur mis à jour avec succès");
         fetchCollaborators();
@@ -190,7 +191,6 @@ const CollaboratorList = () => {
         message.error("Erreur lors de la mise à jour du collaborateur");
       }
     };
-    
 
     return (
       <>
@@ -267,7 +267,10 @@ const CollaboratorList = () => {
               label="Poste"
               rules={[{ required: true, message: "Veuillez saisir le poste" }]}
             >
-              <Input />
+              <Select placeholder="Sélectionnez un poste">
+                <Select.Option value="consultant">Consultant</Select.Option>
+                <Select.Option value="commercial">Commercial</Select.Option>
+              </Select>
             </Form.Item>
             <Form.Item name="Actif" label="Statut">
               <Select>
@@ -338,7 +341,7 @@ const CollaboratorList = () => {
       try {
         const values = await form.validateFields();
         const newCollaborator = {
-          ID_ESN:localStorage.getItem("id"),
+          ID_ESN: localStorage.getItem("id"),
           ...values,
           Actif: true,
           date_debut_activ: new Date().toISOString().split("T")[0],
@@ -411,7 +414,10 @@ const CollaboratorList = () => {
                 },
               ]}
             >
-              <Input />
+              <Select placeholder="Sélectionnez un poste">
+                <Select.Option value="consultant">Consultant</Select.Option>
+                <Select.Option value="commercial">Commercial</Select.Option>
+              </Select>
             </Form.Item>
             <Form.Item label="Mobilité" name="Mobilité">
               <Select>

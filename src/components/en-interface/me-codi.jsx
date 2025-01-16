@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   Collapse,
   Card,
-  Button,
   Modal,
   Descriptions,
   Tag,
@@ -11,9 +10,6 @@ import {
   message,
 } from "antd";
 import {
-  DownloadOutlined,
-  CheckOutlined,
-  CloseOutlined,
   LoadingOutlined,
 } from "@ant-design/icons";
 import { Endponit } from "../../helper/enpoint";

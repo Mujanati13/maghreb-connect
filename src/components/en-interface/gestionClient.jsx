@@ -48,14 +48,14 @@ export const ClientList = () => {
         try {
             const response = await axios.get(Endponit()+'/api/clients_par_esn/?esn_id=3');
             const formattedData = response.data.data.map((client, index) => ({
-                key: client.id.toString(),
-                id: client.id,
-                name: client.nom,
+                key: client.ID_clt.toString(),
+                id: client.ID_clt,
+                name: client.raison_sociale,
                 email: client.email,
-                phone: client.telephone,
+                phone: client.tel_contact,
                 status: client.actif ? 'active' : 'inactive',
                 address: client.adresse || 'Non spécifié',
-                created: client.date_creation || new Date().toISOString().split('T')[0],
+                // created: client.date_creation || new Date().toISOString().split('T')[0],
             }));
             setClients(formattedData);
         } catch (error) {
@@ -148,7 +148,7 @@ export const ClientList = () => {
 
     const ActionButtons = ({ record, handleDelete }) => (
         <Space size="middle">
-            <Tooltip title="Modifier">
+            {/* <Tooltip title="Modifier">
                 <Button
                     type="text"
                     icon={<EditOutlined />}
@@ -162,7 +162,7 @@ export const ClientList = () => {
                     icon={<DeleteOutlined />}
                     onClick={() => handleDelete(record)}
                 />
-            </Tooltip>
+            </Tooltip> */}
             <Dropdown
                 menu={{
                     items: [

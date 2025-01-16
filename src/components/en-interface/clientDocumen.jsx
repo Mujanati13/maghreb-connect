@@ -79,11 +79,11 @@ const ClientDocumentManagement = () => {
 
   // Add Document Handler
   const handleAddDocument = async (values) => {
-    const id = localStorage.getItem("id")
+    const id = localStorage.getItem("id");
     try {
       const response = await axios.post(
         Endponit() + "/api/docEsn/",
-        { ...values, ID_ESN: id  , Doc_URL : uploadedFileUrl},
+        { ...values, ID_ESN: id, Doc_URL: uploadedFileUrl },
         {
           headers: {
             Authorization: `${token()}`,
@@ -101,10 +101,18 @@ const ClientDocumentManagement = () => {
 
   // Edit Document Handler
   const handleEditDocument = async (values) => {
+    console.log("====================================");
+    console.log(selectedDocument);
+    console.log("====================================");
     try {
       await axios.put(
         `${Endponit()}/api/docEsn/${selectedDocument.ID_DOC_ESN}`,
-        values,
+        {
+          ...values,
+          ID_DOC_ESN: selectedDocument.ID_DOC_ESN,
+          ID_ESN: selectedDocument.ID_ESN,
+          Doc_URL: selectedDocument.Doc_URL,
+        },
         {
           headers: {
             Authorization: `${token()}`,
@@ -218,10 +226,7 @@ const ClientDocumentManagement = () => {
     customRequest: async ({ file, onSuccess, onError, onProgress }) => {
       const formData = new FormData();
       formData.append("uploadedFile", file);
-      formData.append(
-        "path",
-        "./upload"
-      ); // Add path in form-data
+      formData.append("path", "./upload"); // Add path in form-data
 
       try {
         // First API call - Save the document file
@@ -416,18 +421,21 @@ const ClientDocumentManagement = () => {
           <Form.Item name="Description" label="Description">
             <Input.TextArea rows={3} />
           </Form.Item>
-
-          <Form.Item label="Document">
-            <Dragger {...uploadProps}>
-              <p className="ant-upload-drag-icon">
-                <InboxOutlined />
-              </p>
-              <p className="ant-upload-text">
-                Cliquez ou déposez un fichier ici
-              </p>
-              <p className="ant-upload-hint">Taille maximale: 10MB</p>
-            </Dragger>
-          </Form.Item>
+          {!handleEditDocument ? (
+            <Form.Item label="Document">
+              <Dragger {...uploadProps}>
+                <p className="ant-upload-drag-icon">
+                  <InboxOutlined />
+                </p>
+                <p className="ant-upload-text">
+                  Cliquez ou déposez un fichier ici
+                </p>
+                <p className="ant-upload-hint">Taille maximale: 10MB</p>
+              </Dragger>
+            </Form.Item>
+          ) : (
+            ""
+          )}
 
           {/* <Form.Item
                         name="Doc_URL"

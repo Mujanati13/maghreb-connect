@@ -28,42 +28,47 @@ import {
   ReloadOutlined,
   UserOutlined,
   MailOutlined,
-  PhoneOutlined
+  PhoneOutlined,
+  LinkedinOutlined,
+  FileOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
+import dayjs from 'dayjs';
 import { Endponit } from '../../helper/enpoint';
 
 const ConsultantManagement = () => {
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [viewMode, setViewMode] = useState('table'); // Default to table view
-  const [consultantData, setConsultantData] = useState([]);
+  const [viewMode, setViewMode] = useState('table');
+  const [consultants, setConsultants] = useState([]);
 
-  const fetchConsultantData = async () => {
+  const fetchConsultants = async () => {
     const id = localStorage.getItem("id");
+    setLoading(true);
     try {
-      const response = await axios.get(Endponit()+'/api/consultants_par_client/?client_id=' + id);
-      setConsultantData(response.data.data);
+      const response = await axios.get(`${Endponit()}/api/consultants_par_client/?client_id=${id}`);
+      setConsultants(response.data.data);
     } catch (error) {
-      console.error('Error fetching consultant data:', error);
-      message.error('Failed to fetch consultant data');
+      console.error('Error fetching consultants:', error);
+      message.error('Failed to fetch consultants');
+    } finally {
+      setLoading(false);
     }
   };
 
   React.useEffect(() => {
-    fetchConsultantData();
+    fetchConsultants();
   }, []);
 
   const handleSearch = (value) => {
     setSearchText(value);
-    // Add search logic here
   };
 
   const handleDelete = (record) => {
     Modal.confirm({
       title: 'Êtes-vous sûr de vouloir supprimer ce consultant ?',
-      content: `Cette action supprimera définitivement ${record.responsable_compte}.`,
+      content: `Cette action supprimera définitivement ${record.Nom} ${record.Prenom}.`,
       okText: 'Oui',
       okType: 'danger',
       cancelText: 'Non',
@@ -74,33 +79,31 @@ const ConsultantManagement = () => {
   };
 
   const handleRefresh = () => {
-    setLoading(true);
-    fetchConsultantData().then(() => {
-      setLoading(false);
-      message.success('Données actualisées');
-    });
+    fetchConsultants();
+    message.success('Données actualisées');
   };
 
   const columns = [
     {
       title: 'Nom',
       dataIndex: 'Nom',
-      key: 'responsable_compte',
-      sorter: (a, b) => a.responsable_compte.localeCompare(b.responsable_compte),
+      key: 'Nom',
+      sorter: (a, b) => a.Nom.localeCompare(b.Nom),
       filteredValue: searchText ? [searchText] : null,
       onFilter: (value, record) =>
-        record.responsable_compte.toLowerCase().includes(value.toLowerCase()),
+        record.Nom.toLowerCase().includes(value.toLowerCase()),
     },
     {
-      title: 'Prenom',
+      title: 'Prénom',
       dataIndex: 'Prenom',
-      key: 'poste',
+      key: 'Prenom',
+      sorter: (a, b) => a.Prenom.localeCompare(b.Prenom),
     },
     {
-      title: 'Date naissance',
+      title: 'Date de naissance',
       dataIndex: 'Date_naissance',
-      key: 'tjm',
-      sorter: (a, b) => parseFloat(a.tjm) - parseFloat(b.tjm),
+      key: 'Date_naissance',
+      render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : 'Non renseigné',
     },
     {
       title: 'Poste',
@@ -108,19 +111,24 @@ const ConsultantManagement = () => {
       key: 'Poste',
     },
     {
-      title: 'Statut',
-      dataIndex: 'statut',
-      key: 'statut',
-      render: (status) => (
-        <Tag color={status === 'Disponible' ? 'geekblue' : 'volcano'}>
-          {status}
+      title: 'Mobilité',
+      dataIndex: 'Mobilité',
+      key: 'Mobilité',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'Actif',
+      key: 'Actif',
+      render: (actif) => (
+        <Tag color={actif ? 'green' : 'red'}>
+          {actif ? 'Actif' : 'Inactif'}
         </Tag>
       ),
       filters: [
-        { text: 'Disponible', value: 'Disponible' },
-        { text: 'Non Disponible', value: 'Non Disponible' },
+        { text: 'Actif', value: true },
+        { text: 'Inactif', value: false },
       ],
-      onFilter: (value, record) => record.statut === value,
+      onFilter: (value, record) => record.Actif === value,
     },
     {
       title: 'Actions',
@@ -134,33 +142,28 @@ const ConsultantManagement = () => {
 
   const ActionButtons = ({ record, handleDelete }) => (
     <Space size="middle">
-      {/* <Tooltip title="Modifier">
-        <Button
-          type="text"
-          icon={<EditOutlined />}
-          onClick={() => message.info(`Modifier ${record.responsable_compte}`)}
-        />
-      </Tooltip> */}
-      {/* <Tooltip title="Supprimer">
-        <Button
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => handleDelete(record)}
-        />
-      </Tooltip> */}
       <Dropdown
         menu={{
           items: [
             {
               key: '1',
               label: 'Voir détails',
-              onClick: () => message.info(`Voir détails de ${record.responsable_compte}`),
+              icon: <UserOutlined />,
+              onClick: () => message.info(`Voir détails de ${record.Nom}`),
             },
             {
               key: '2',
-              label: 'Historique',
-              onClick: () => message.info(`Historique de ${record.responsable_compte}`),
+              label: 'CV',
+              icon: <FileOutlined />,
+              onClick: () => window.open(record.CV, '_blank'),
+              disabled: !record.CV,
+            },
+            {
+              key: '3',
+              label: 'LinkedIn',
+              icon: <LinkedinOutlined />,
+              onClick: () => window.open(record.LinkedIN, '_blank'),
+              disabled: !record.LinkedIN,
             },
           ]
         }}
@@ -173,32 +176,36 @@ const ConsultantManagement = () => {
   const CardView = ({ data, handleDelete }) => (
     <Row gutter={[16, 16]}>
       {data.map(consultant => (
-        <Col xs={24} sm={12} md={8} lg={6} key={consultant.id_consultant}>
+        <Col xs={24} sm={12} md={8} lg={6} key={consultant.ID_collab}>
           <Card
             hoverable
             actions={[
-              // <EditOutlined key="edit" onClick={() => message.info(`Modifier ${consultant.responsable_compte}`)} />,
-              // <DeleteOutlined key="delete" onClick={() => handleDelete(consultant)} />,
               <MoreOutlined key="more" onClick={() => message.info('Plus d\'options')} />
             ]}
           >
             <Card.Meta
               avatar={<Avatar icon={<UserOutlined />} size={64} />}
-              title={consultant.responsable_compte}
+              title={`${consultant.Nom} ${consultant.Prenom}`}
               description={
                 <Space direction="vertical" size="small">
-                  <Tag color={consultant.statut === 'Disponible' ? 'geekblue' : 'volcano'}>
-                    {consultant.statut}
+                  <Tag color={consultant.Actif ? 'green' : 'red'}>
+                    {consultant.Actif ? 'Actif' : 'Inactif'}
                   </Tag>
-                  <Space>
-                    <MailOutlined /> {consultant.email || 'N/A'}
-                  </Space>
-                  <Space>
-                    <PhoneOutlined /> {consultant.telephone || 'N/A'}
-                  </Space>
-                  <Space>
-                    {consultant.poste}
-                  </Space>
+                  {consultant.Poste && (
+                    <div>
+                      <strong>Poste:</strong> {consultant.Poste}
+                    </div>
+                  )}
+                  {consultant.Mobilité && (
+                    <div>
+                      <strong>Mobilité:</strong> {consultant.Mobilité}
+                    </div>
+                  )}
+                  {consultant.date_debut_activ && (
+                    <div>
+                      <strong>Début d'activité:</strong> {dayjs(consultant.date_debut_activ).format('DD/MM/YYYY')}
+                    </div>
+                  )}
                 </Space>
               }
             />
@@ -211,11 +218,6 @@ const ConsultantManagement = () => {
   const rowSelection = {
     selectedRowKeys,
     onChange: (keys) => setSelectedRowKeys(keys),
-  };
-
-  const handleAddConsultant = (values) => {
-    // Implement add consultant functionality
-    console.log('New consultant:', values);
   };
 
   return (
@@ -238,7 +240,6 @@ const ConsultantManagement = () => {
           />
         </div>
         <div className='flex flex-row items-center space-x-5'>
-          <AddConsultantModal onAdd={handleAddConsultant} />
           <Button
             icon={<ExportOutlined />}
             onClick={() => message.info('Exporter les données')}
@@ -249,6 +250,7 @@ const ConsultantManagement = () => {
             <Button
               icon={<ReloadOutlined />}
               onClick={handleRefresh}
+              loading={loading}
             />
           </Tooltip>
         </div>
@@ -258,11 +260,12 @@ const ConsultantManagement = () => {
         <>
           <Table
             columns={columns}
-            dataSource={consultantData&&consultantData}
+            dataSource={consultants}
             rowSelection={rowSelection}
             loading={loading}
+            rowKey="ID_collab"
             pagination={{
-              total: consultantData&&consultantData.length,
+              total: consultants.length,
               pageSize: 10,
               showTotal: (total) => `Total ${total} Consultants`,
               showSizeChanger: true,
@@ -285,109 +288,9 @@ const ConsultantManagement = () => {
           </div>
         </>
       ) : (
-        <CardView data={consultantData&&consultantData} handleDelete={handleDelete} />
+        <CardView data={consultants} handleDelete={handleDelete} />
       )}
     </Card>
-  );
-};
-
-const AddConsultantModal = ({ onAdd }) => {
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
-
-  const showModal = () => {
-    setIsModalVisible(true);
-  };
-
-  const handleOk = () => {
-    form.validateFields().then((values) => {
-      onAdd(values);
-      setIsModalVisible(false);
-      form.resetFields();
-      message.success('Nouveau consultant ajouté avec succès');
-    }).catch((info) => {
-      console.log('Validate Failed:', info);
-    });
-  };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);
-    form.resetFields();
-  };
-
-  return (
-    <>
-      {/* <Button type="primary" onClick={showModal} icon={<PlusOutlined />}>
-        Nouveau Consultant
-      </Button> */}
-      <Modal
-        title="Ajouter un Consultant"
-        visible={isModalVisible}
-        onOk={handleOk}
-        onCancel={handleCancel}
-        okText="Ajouter"
-        cancelText="Annuler"
-      >
-        <Form form={form} layout="vertical" name="add_consultant">
-          <Form.Item
-            label="Nom Responsable"
-            name="responsable_compte"
-            rules={[{ required: true, message: 'Veuillez saisir le nom du responsable' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="Poste"
-            name="poste"
-            rules={[{ required: true, message: 'Veuillez saisir le poste' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[{ 
-              required: true, 
-              message: 'Veuillez saisir l\'email',
-              type: 'email' 
-            }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="Téléphone"
-            name="telephone"
-            rules={[{ required: true, message: 'Veuillez saisir le numéro de téléphone' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="TJM"
-            name="tjm"
-            rules={[{ required: true, message: 'Veuillez saisir le TJM' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="Date Disponibilité"
-            name="date_disponibilite"
-            rules={[{ required: true, message: 'Veuillez saisir la date de disponibilité' }]}
-          >
-            <DatePicker className='w-full' />
-          </Form.Item>
-          <Form.Item
-            label="Statut"
-            name="statut"
-            rules={[{ required: true, message: 'Veuillez saisir le statut' }]}
-          >
-            <Select>
-              <Select.Option value="Actif">Actif</Select.Option>
-              <Select.Option value="Inactif">Inactif</Select.Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </>
   );
 };
 
