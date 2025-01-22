@@ -34,7 +34,11 @@ import {
   HomeOutlined,
   GlobalOutlined,
 } from "@ant-design/icons";
+
+import * as XLSX from "xlsx";
 import { Endponit, token } from "../../helper/enpoint";
+
+const { Option } = Select;
 
 const CollaboratorList = () => {
   const [searchText, setSearchText] = useState("");
@@ -43,16 +47,28 @@ const CollaboratorList = () => {
   const [viewMode, setViewMode] = useState("table");
   const [collaborators, setCollaborators] = useState([]);
   const [editingCollaborator, setEditingCollaborator] = useState(null);
+  const [cityOptions, setCityOptions] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [selectedCollaborator, setSelectedCollaborator] = useState(null);
 
-  const API_BASE_URL = Endponit()+"/api/ESN/";
+  const API_BASE_URL = Endponit() + "/api/ESN/";
 
-  // Fetch Collaborators
-  const fetchCollaborators = async () => {
+  // City data mapping (simplified - expand based on your needs)
+  const cityData = {
+    France: ["Paris", "Lyon", "Marseille", "Bordeaux", "Lille"],
+    Belgique: ["Bruxelles", "Anvers", "Gand", "Liège", "Bruges"],
+    Suisse: ["Genève", "Zurich", "Bâle", "Lausanne", "Berne"],
+  };
+
+  // Fetch Collaborators with password verification
+  const fetchCollaborators = async (password) => {
     setLoading(true);
     try {
       const response = await axios.get(API_BASE_URL, {
         headers: {
           Authorization: `${token()}`,
+          // "X-Password": password, // Add password to headers
         },
       });
       const formattedData = response.data.data.map((item) => ({
@@ -61,7 +77,7 @@ const CollaboratorList = () => {
         nom: item.Raison_sociale,
         email: item.mail_Contact,
         phone: item.Tel_Contact,
-        poste: "N/A", // Add appropriate field if available
+        poste: "N/A",
         status: item.Statut,
         Raison_sociale: item.Raison_sociale,
         SIRET: item.SIRET,
@@ -75,7 +91,6 @@ const CollaboratorList = () => {
         Banque: item.Banque,
       }));
       setCollaborators(formattedData);
-      // message.success('Données chargées avec succès');
     } catch (error) {
       message.error("Erreur lors du chargement des données");
       console.error("Fetch error:", error);
@@ -84,15 +99,117 @@ const CollaboratorList = () => {
     }
   };
 
+  // Password prompt modal
+  const showPasswordPrompt = () => {
+    fetchCollaborators();
+  };
+
+  // Export to Excel
+  const handleExport = () => {
+    const dataToExport = collaborators.map((item) => ({
+      ID: item.id,
+      "Raison Sociale": item.nom,
+      Email: item.email,
+      Téléphone: item.phone,
+      Status: item.status,
+      SIRET: item.SIRET,
+      Pays: item.Pays,
+      Ville: item.Ville,
+      Adresse: item.Adresse,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "ESN Data");
+    XLSX.writeFile(wb, "esn_export.xlsx");
+  };
+
+  // Details Modal
+  const DetailsModal = ({ visible, collaborator, onClose }) => (
+    <Modal
+      title="Détails du collaborateur"
+      visible={visible}
+      onCancel={onClose}
+      footer={[
+        <Button key="close" onClick={onClose}>
+          Fermer
+        </Button>,
+      ]}
+      width={800}
+    >
+      {collaborator && (
+        <div className="space-y-4">
+          <Row gutter={[16, 16]}>
+            <Col span={12}>
+              <div className="font-semibold">Raison Sociale</div>
+              <div>{collaborator.nom}</div>
+            </Col>
+            <Col span={12}>
+              <div className="font-semibold">SIRET</div>
+              <div>{collaborator.SIRET}</div>
+            </Col>
+          </Row>
+          <Divider />
+          <Row gutter={[16, 16]}>
+            <Col span={8}>
+              <div className="font-semibold">Email</div>
+              <div>{collaborator.email}</div>
+            </Col>
+            <Col span={8}>
+              <div className="font-semibold">Téléphone</div>
+              <div>{collaborator.phone}</div>
+            </Col>
+            <Col span={8}>
+              <div className="font-semibold">Status</div>
+              <Tag color={collaborator.status === "actif" ? "green" : "red"}>
+                {collaborator.status === "actif" ? "Actif" : "Inactif"}
+              </Tag>
+            </Col>
+          </Row>
+          <Divider />
+          <Row gutter={[16, 16]}>
+            <Col span={24}>
+              <div className="font-semibold">Adresse</div>
+              <div>{`${collaborator.Adresse}, ${collaborator.CP} ${collaborator.Ville}, ${collaborator.Pays}`}</div>
+            </Col>
+          </Row>
+          <Divider />
+          <Row gutter={[16, 16]}>
+            <Col span={8}>
+              <div className="font-semibold">Banque</div>
+              <div>{collaborator.Banque}</div>
+            </Col>
+            <Col span={8}>
+              <div className="font-semibold">IBAN</div>
+              <div>{collaborator.IBAN}</div>
+            </Col>
+            <Col span={8}>
+              <div className="font-semibold">BIC</div>
+              <div>{collaborator.BIC}</div>
+            </Col>
+          </Row>
+        </div>
+      )}
+    </Modal>
+  );
+
+  const handlePostError = (response) => {
+    const errors = response?.data?.errors;
+    
+    if (errors) {
+      if (errors.SIRET) {
+        message.error('Ce numéro SIRET est déjà utilisé');
+      }
+      if (errors.mail_Contact) {
+        message.error('Cette adresse email est déjà utilisée');
+      }
+    }
+  };
   // Add Collaborator
   const handleAddCollaborator = async (values) => {
-    console.log(values);
-    console.log(editingCollaborator);
-
     try {
       const payload = {
         ...values,
-        // password : ed
       };
 
       const response = await axios.post(API_BASE_URL, payload, {
@@ -100,8 +217,13 @@ const CollaboratorList = () => {
           Authorization: `${token()}`,
         },
       });
-      message.success("ENS ajouté avec succès");
-      fetchCollaborators();
+      if (response.data.status === true) {
+        message.success("ESN créé avec succès");
+        showPasswordPrompt(); // Refresh with password
+      } else {
+        console.log(response);
+        handlePostError(response);
+      } // showPasswordPrompt(); // Refresh with password
     } catch (error) {
       message.error("Erreur lors de l'ajout du ENS");
       console.error("Add error:", error);
@@ -114,7 +236,7 @@ const CollaboratorList = () => {
       const payload = {
         ...values,
         ID_ESN: editingCollaborator.id,
-        // Adresse : editingCollaborator.adresse
+        password: null,
       };
 
       const response = await axios.put(`${API_BASE_URL}`, payload, {
@@ -123,7 +245,7 @@ const CollaboratorList = () => {
         },
       });
       message.success("Collaborateur mis à jour avec succès");
-      fetchCollaborators();
+      // showPasswordPrompt(); // Refresh with password
       setEditingCollaborator(null);
     } catch (error) {
       message.error("Erreur lors de la mise à jour du collaborateur");
@@ -141,14 +263,14 @@ const CollaboratorList = () => {
       cancelText: "Non",
       async onOk() {
         try {
-          await axios.delete(`${API_BASE_URL}`, {
-            data: record, // Pass record here
+          await axios.delete(`${API_BASE_URL}` + record.id, {
+            data: record,
             headers: {
               Authorization: `${token()}`,
             },
           });
           message.success("ENS supprimé avec succès");
-          fetchCollaborators();
+          showPasswordPrompt(); // Refresh with password
         } catch (error) {
           message.error("Erreur lors de la suppression du ENS");
           console.error("Delete error:", error);
@@ -157,9 +279,8 @@ const CollaboratorList = () => {
     });
   };
 
-  // Initial data fetch
   useEffect(() => {
-    fetchCollaborators();
+    showPasswordPrompt();
   }, []);
 
   const handleSearch = (value) => {
@@ -167,7 +288,7 @@ const CollaboratorList = () => {
   };
 
   const handleRefresh = () => {
-    fetchCollaborators();
+    showPasswordPrompt();
   };
 
   const columns = [
@@ -227,12 +348,16 @@ const CollaboratorList = () => {
           record={record}
           handleDelete={handleDelete}
           onEdit={() => setEditingCollaborator(record)}
+          onViewDetails={() => {
+            setSelectedCollaborator(record);
+            setDetailsModalVisible(true);
+          }}
         />
       ),
     },
   ];
 
-  const ActionButtons = ({ record, handleDelete, onEdit }) => (
+  const ActionButtons = ({ record, handleDelete, onEdit, onViewDetails }) => (
     <Space size="middle">
       <Tooltip title="Modifier">
         <Button type="text" icon={<EditOutlined />} onClick={onEdit} />
@@ -251,13 +376,8 @@ const CollaboratorList = () => {
             {
               key: "1",
               label: "Voir détails",
-              onClick: () => message.info(`Voir détails de ${record.nom}`),
+              onClick: onViewDetails,
             },
-            // {
-            //   key: '2',
-            //   label: 'Historique',
-            //   onClick: () => message.info(`Historique de ${record.nom}`)
-            // }
           ],
         }}
       >
@@ -266,24 +386,21 @@ const CollaboratorList = () => {
     </Space>
   );
 
-  const CardView = ({ data, handleDelete }) => (
+  const CardView = ({ data, handleDelete, onEdit, onViewDetails }) => (
     <Row gutter={[16, 16]}>
       {data.map((collaborator) => (
         <Col xs={24} sm={12} md={8} lg={6} key={collaborator.key}>
           <Card
             hoverable
             actions={[
-              <EditOutlined
-                key="edit"
-                onClick={() => setEditingCollaborator(collaborator)}
-              />,
+              <EditOutlined key="edit" onClick={() => onEdit(collaborator)} />,
               <DeleteOutlined
                 key="delete"
                 onClick={() => handleDelete(collaborator)}
               />,
               <MoreOutlined
                 key="more"
-                onClick={() => message.info("Plus d'options")}
+                onClick={() => onViewDetails(collaborator)}
               />,
             ]}
           >
@@ -343,11 +460,9 @@ const CollaboratorList = () => {
             editingCollaborator={editingCollaborator}
             onUpdate={handleUpdateCollaborator}
             onCancel={() => setEditingCollaborator(null)}
+            cityData={cityData}
           />
-          <Button
-            icon={<ExportOutlined />}
-            onClick={() => message.info("Exporter les données")}
-          >
+          <Button icon={<ExportOutlined />} onClick={handleExport}>
             Exporter
           </Button>
           <Tooltip title="Actualiser">
@@ -382,8 +497,25 @@ const CollaboratorList = () => {
           </div>
         </>
       ) : (
-        <CardView data={collaborators} handleDelete={handleDelete} />
+        <CardView
+          data={collaborators}
+          handleDelete={handleDelete}
+          onEdit={setEditingCollaborator}
+          onViewDetails={(collaborator) => {
+            setSelectedCollaborator(collaborator);
+            setDetailsModalVisible(true);
+          }}
+        />
       )}
+
+      <DetailsModal
+        visible={detailsModalVisible}
+        collaborator={selectedCollaborator}
+        onClose={() => {
+          setDetailsModalVisible(false);
+          setSelectedCollaborator(null);
+        }}
+      />
     </Card>
   );
 };
@@ -393,14 +525,15 @@ const AddCollaboratorModal = ({
   editingCollaborator,
   onUpdate,
   onCancel,
+  cityData,
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [cities, setCities] = useState([]);
 
   useEffect(() => {
     if (editingCollaborator) {
-      console.log(editingCollaborator);
-
       setIsModalVisible(true);
       form.setFieldsValue({
         nom: editingCollaborator.nom,
@@ -420,12 +553,30 @@ const AddCollaboratorModal = ({
         banque: editingCollaborator.banque,
         password: editingCollaborator.password,
       });
+
+      // Set selected country and update cities
+      setSelectedCountry(editingCollaborator.Pays);
+      if (editingCollaborator.Pays && cityData[editingCollaborator.Pays]) {
+        setCities(cityData[editingCollaborator.Pays]);
+      }
     }
-  }, [editingCollaborator, form]);
+  }, [editingCollaborator, form, cityData]);
+
+  const handleCountryChange = (value) => {
+    setSelectedCountry(value);
+    form.setFieldValue("Ville", undefined); // Reset city when country changes
+    if (cityData[value]) {
+      setCities(cityData[value]);
+    } else {
+      setCities([]);
+    }
+  };
 
   const showModal = () => {
     setIsModalVisible(true);
     form.resetFields();
+    setSelectedCountry(null);
+    setCities([]);
   };
 
   const handleOk = () => {
@@ -458,6 +609,8 @@ const AddCollaboratorModal = ({
         }
         setIsModalVisible(false);
         form.resetFields();
+        setSelectedCountry(null);
+        setCities([]);
       })
       .catch((info) => {
         console.log("Validate Failed:", info);
@@ -467,6 +620,8 @@ const AddCollaboratorModal = ({
   const handleCancel = () => {
     setIsModalVisible(false);
     form.resetFields();
+    setSelectedCountry(null);
+    setCities([]);
     onCancel && onCancel();
   };
 
@@ -565,13 +720,14 @@ const AddCollaboratorModal = ({
                 >
                   <Select
                     placeholder="Sélectionner un pays"
-                    prefix={<GlobalOutlined className="text-gray-400" />}
+                    onChange={handleCountryChange}
                     className="w-full"
                   >
-                    <Option value="France">France</Option>
-                    <Option value="Belgique">Belgique</Option>
-                    <Option value="Suisse">Suisse</Option>
-                    {/* Add more countries as needed */}
+                    {Object.keys(cityData).map((country) => (
+                      <Option key={country} value={country}>
+                        {country}
+                      </Option>
+                    ))}
                   </Select>
                 </Form.Item>
               </Col>
@@ -585,7 +741,17 @@ const AddCollaboratorModal = ({
                     { required: true, message: "Veuillez saisir la ville" },
                   ]}
                 >
-                  <Input placeholder="Nom de la ville" className="rounded-md" />
+                  <Select
+                    placeholder="Sélectionner une ville"
+                    disabled={!selectedCountry}
+                    className="w-full"
+                  >
+                    {cities.map((city) => (
+                      <Option key={city} value={city}>
+                        {city}
+                      </Option>
+                    ))}
+                  </Select>
                 </Form.Item>
               </Col>
               <Col span={8}>
@@ -647,27 +813,35 @@ const AddCollaboratorModal = ({
                   />
                 </Form.Item>
               </Col>
-              <Col span={8}>
-                <Form.Item
-                  label={
-                    <span className="font-medium text-gray-700">
-                      Mot de passe
-                    </span>
-                  }
-                  name="password"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Veuillez saisir le mot de passe",
-                    },
-                  ]}
-                >
-                  <Input placeholder="Mot de passe" className="rounded-md" />
-                </Form.Item>
-              </Col>
+              {!editingCollaborator ? (
+                <Col span={8}>
+                  <Form.Item
+                    label={
+                      <span className="font-medium text-gray-700">
+                        Mot de passe
+                      </span>
+                    }
+                    name="password"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Veuillez saisir le mot de passe",
+                      },
+                    ]}
+                  >
+                    <Input
+                      // prefix={<Pass className="text-gray-400" />}
+                      placeholder="Mot de passe"
+                      className="rounded-md"
+                    />
+                  </Form.Item>
+                </Col>
+              ) : (
+                ""
+              )}
             </Row>
 
-            {/* Additional Financial and Contact Information */}
+            {/* Additional Financial Information */}
             <Divider orientation="left" className="my-4">
               <span className="text-gray-600">Informations financières</span>
             </Divider>

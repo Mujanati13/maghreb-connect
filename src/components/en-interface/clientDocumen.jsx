@@ -421,7 +421,7 @@ const ClientDocumentManagement = () => {
           <Form.Item name="Description" label="Description">
             <Input.TextArea rows={3} />
           </Form.Item>
-          {!handleEditDocument ? (
+          {true ? (
             <Form.Item label="Document">
               <Dragger {...uploadProps}>
                 <p className="ant-upload-drag-icon">
@@ -451,12 +451,6 @@ const ClientDocumentManagement = () => {
           <Form.Item
             name="Date_Valid"
             label="Date de Validité"
-            rules={[
-              {
-                required: true,
-                message: "Veuillez saisir la date de validité",
-              },
-            ]}
           >
             <Input type="date" />
           </Form.Item>

@@ -414,43 +414,33 @@ const DocumentManagement = () => {
           </Form.Item>
 
           <Form.Item label="Document">
-            {selectedDocument?.ID_DOC_CLT && (
+            {
               <p>
                 Document actuel:{" "}
                 <a
-                  href={Endponit()+"/media/"+selectedDocument.Doc_URL}
+                  href={Endponit() + "/media/" + selectedDocument.Doc_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   Voir le document
                 </a>
               </p>
-            )}
-            {!selectedDocument?.ID_DOC_CLT && (
-              <Dragger {...uploadProps}>
-                <p className="ant-upload-drag-icon">
-                  <InboxOutlined />
-                </p>
-                <p className="ant-upload-text">
-                  {selectedDocument?.ID_DOC_CLT
-                    ? "Déposez un nouveau fichier pour remplacer l'actuel (optionnel)"
-                    : "Cliquez ou déposez un fichier ici"}
-                </p>
-                <p className="ant-upload-hint">Taille maximale: 10MB</p>
-              </Dragger>
-            )}
+            }
+
+            <Dragger {...uploadProps}>
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">
+                {selectedDocument?.ID_DOC_CLT
+                  ? "Déposez un nouveau fichier pour remplacer l'actuel (optionnel)"
+                  : "Cliquez ou déposez un fichier ici"}
+              </p>
+              <p className="ant-upload-hint">Taille maximale: 10MB</p>
+            </Dragger>
           </Form.Item>
 
-          <Form.Item
-            name="Date_Valid"
-            label="Date de Validité"
-            rules={[
-              {
-                required: true,
-                message: "Veuillez saisir la date de validité",
-              },
-            ]}
-          >
+          <Form.Item name="Date_Valid" label="Date de Validité">
             <Input type="date" />
           </Form.Item>
 

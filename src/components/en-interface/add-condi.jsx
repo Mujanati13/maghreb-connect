@@ -276,7 +276,7 @@ const AppelDOffreInterface = () => {
             >
               {consultants &&
                 consultants.map((consultant) =>
-                  consultant.Poste === "commercail" ? (
+                  consultant.Poste === "commercial" ? (
                     <Select.Option
                       key={consultant.ID_collab}
                       value={`${consultant.Nom} ${consultant.Prenom}`} // Adjusted value format

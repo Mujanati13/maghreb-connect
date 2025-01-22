@@ -349,13 +349,13 @@ const ESNProfilePageFrancais = () => {
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
+      <div className="min-h-screen p-6">
         <Row gutter={[16, 16]}>
           <Col span={24} className="text-center">
             <Avatar
               size={100}
               icon={<BuildOutlined />}
-              className="border-8 border-white shadow-2xl bg-blue-500 transform hover:rotate-6 transition-transform duration-300"
+              className="border-8 transform hover:rotate-6 transition-transform duration-300"
             />
             <div className="mt-6">
               <Tag
@@ -479,7 +479,7 @@ const ESNProfilePageFrancais = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
+    <div className="min-h-screen p-6">
       <Card
         className="max-w-6xl mx-auto rounded-3xl overflow-hidden transform transition-all duration-300 hover:scale-[1.01]"
         extra={

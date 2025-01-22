@@ -22,7 +22,7 @@ export const isClientLoggedIn = () => {
         const userType = localStorage.getItem('userType');
         const esnId = localStorage.getItem('id');
 
-        return !!(token && userType === 'societe' && esnId);
+        return !!(token && userType === 'client' && esnId);
     } catch (error) {
         return false;
     }

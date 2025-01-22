@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect , useMemo  } from "react";
 import {
   LogoutOutlined,
   MacCommandOutlined,
@@ -13,8 +13,13 @@ import {
   SearchOutlined,
   FileDoneOutlined,
   UserSwitchOutlined,
+  SettingOutlined,
+  SolutionOutlined,
+  BankOutlined,
+  ProjectOutlined,
+  
 } from "@ant-design/icons";
-import { Menu, Tag, AutoComplete, Input } from "antd";
+import { Menu, Tag, AutoComplete, Input, Breadcrumb } from "antd";
 import { ClientList } from "../components/en-interface/gestionClient";
 import EmployeeManagement from "../components/en-interface/collaborateur";
 import ClientDocumentManagement from "../components/en-interface/clientDocumen";
@@ -31,16 +36,15 @@ import ESNProfilePageFrancais from "../components/en-interface/profile";
 const InterfaceEn = () => {
   const [current, setCurrent] = useState("dashboard");
   const [searchValue, setSearchValue] = useState("");
+  const [breadcrumbItems, setBreadcrumbItems] = useState(["Tableau de Bord"]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    {
-      const auth = isEsnLoggedIn();
-      if (auth == false) {
-        navigate("/Login");
-      }
+    const auth = isEsnLoggedIn();
+    if (auth === false) {
+      navigate("/Login");
     }
-  }, []);
+  }, [navigate]);
 
   const menuItems = [
     {
@@ -49,38 +53,56 @@ const InterfaceEn = () => {
       icon: <DashboardOutlined />,
     },
     {
-      label: "Gestion Clients",
-      key: "client-management",
-      icon: <TeamOutlined />,
+      label: "Administration",
+      key: "administration",
+      icon: <SettingOutlined />,
       children: [
         {
-          label: "Profile",
+          label: "Mon Profil ESN",
           key: "Profile",
           icon: <UserOutlined />,
         },
         {
-          label: "Liste des Clients",
-          key: "Liste-des-Clients",
-          icon: <UserOutlined />,
-        },
-        {
-          label: "Collaborateurs",
+          label: "Gestion des Collaborateurs",
           key: "collaborateur",
           icon: <UsergroupAddOutlined />,
         },
       ],
     },
     {
-      label: "Appels d'Offres",
-      key: "offers-management",
+      label: "Gestion Client",
+      key: "client-management",
+      icon: <TeamOutlined />,
+      children: [
+        {
+          label: "Répertoire Clients",
+          key: "Liste-des-Clients",
+          icon: <SolutionOutlined />,
+        },
+        {
+          label: "Partenariats",
+          key: "Partenariat",
+          icon: <BankOutlined />,
+        },
+      ],
+    },
+    {
+      label: "Gestion Commerciale",
+      key: "commercial-management",
       icon: <ShoppingCartOutlined />,
       children: [
         {
-          label: "Liste des Appels d'Offres",
+          label: "Appels d'Offres",
           key: "Liste-des-Appels-d'Offres",
+          icon: <ProjectOutlined />,
         },
         {
-          label: "Bon de Commande",
+          label: "Mes Candidatures",
+          key: "Mes-condidateur",
+          icon: <UserSwitchOutlined />,
+        },
+        {
+          label: "Bons de Commande",
           key: "Bon-de-Commande",
           icon: <MacCommandOutlined />,
         },
@@ -89,27 +111,17 @@ const InterfaceEn = () => {
           key: "Contart",
           icon: <FileDoneOutlined />,
         },
-        {
-          label: "Mes Candidatures",
-          key: "Mes-condidateur",
-          icon: <UserSwitchOutlined />,
-        },
       ],
     },
     {
-      label: "Ressources",
-      key: "resources",
+      label: "Documentation",
+      key: "documentation",
       icon: <FileOutlined />,
       children: [
         {
-          label: "Documents",
+          label: "Documents Clients",
           key: "documents",
           icon: <FileTextOutlined />,
-        },
-        {
-          label: "Partenariat",
-          key: "Partenariat",
-          icon: <FileOutlined />,
         },
       ],
     },
@@ -120,7 +132,38 @@ const InterfaceEn = () => {
     },
   ];
 
-  // Flatten menu items for search options
+   const groupedMenuItems = useMemo(() => {
+      const mainItems = menuItems.filter(item => !item.group);
+      const groupedItems = menuItems.reduce((acc, item) => {
+        if (item.group && !acc.find(i => i.label === item.group)) {
+          acc.push({
+            label: item.group,
+            key: item.group.toLowerCase().replace(/\s+/g, '-'),
+            children: menuItems.filter(i => i.group === item.group).map(i => ({
+              ...i,
+              group: undefined // Remove group property from children
+            }))
+          });
+        }
+        return acc;
+      }, []);
+      
+      return [...mainItems, ...groupedItems];
+    }, []);
+
+  const findMenuPath = (key, items, path = []) => {
+    for (const item of items) {
+      if (item.key === key) {
+        return [...path, item.label];
+      }
+      if (item.children) {
+        const result = findMenuPath(key, item.children, [...path, item.label]);
+        if (result) return result;
+      }
+    }
+    return null;
+  };
+
   const flattenMenuItems = (items) => {
     return items.reduce((acc, item) => {
       if (item.children) {
@@ -130,19 +173,23 @@ const InterfaceEn = () => {
     }, []);
   };
 
-  // Get search options based on input
   const getSearchOptions = (searchText) => {
     if (!searchText) return [];
-
     const search = searchText.toLowerCase();
     const flatItems = flattenMenuItems(menuItems);
-
     return flatItems
       .filter((item) => item.label.toLowerCase().includes(search))
       .map((item) => ({
         value: item.key,
         label: (
-          <div className="flex items-center gap-2 py-2">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 0",
+            }}
+          >
             {item.icon}
             <span>{item.label}</span>
           </div>
@@ -157,22 +204,17 @@ const InterfaceEn = () => {
   const handleSelect = (value) => {
     setCurrent(value);
     setSearchValue("");
+    const path = findMenuPath(value, menuItems);
+    if (path) {
+      setBreadcrumbItems(path);
+    }
   };
 
   const handleMenuClick = (e) => {
     setCurrent(e.key);
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && searchValue) {
-      const flatItems = flattenMenuItems(menuItems);
-      const matchingItem = flatItems.find((item) =>
-        item.label.toLowerCase().includes(searchValue.toLowerCase())
-      );
-      if (matchingItem) {
-        setCurrent(matchingItem.key);
-        setSearchValue("");
-      }
+    const path = findMenuPath(e.key, menuItems);
+    if (path) {
+      setBreadcrumbItems(path);
     }
   };
 
@@ -214,26 +256,25 @@ const InterfaceEn = () => {
               onClick={handleMenuClick}
               selectedKeys={[current]}
               mode="horizontal"
-              items={menuItems}
-              className="flex-grow border-none mr-4"
+              items={groupedMenuItems}
+              className="flex-grow border-none"
             />
             <AutoComplete
               value={searchValue}
               options={getSearchOptions(searchValue)}
               onSelect={handleSelect}
               onChange={handleSearch}
-              onKeyPress={handleKeyPress}
               className="w-64"
             >
               <Input
-                className="w-full rounded-lg border border-gray-200 focus:outline-none focus:border-blue-500"
+                className="w-32 rounded-lg border border-gray-200 focus:outline-none focus:border-blue-500"
                 placeholder="Rechercher dans le menu..."
                 suffix={<SearchOutlined className="text-gray-400" />}
               />
             </AutoComplete>
           </div>
           <div className="flex space-x-3 items-center ml-4">
-            <Tag color="blue">Espace de l'ESN</Tag>
+            {/* <Tag color="blue">ESN</Tag> */}
             <LogoutOutlined
               onClick={() => {
                 logoutEsn();
@@ -246,10 +287,11 @@ const InterfaceEn = () => {
         </div>
       </div>
       <div className="pt-20 px-5 mt-5">
-        <div className="p-1 text-sm">
-          {current.replaceAll("-", " ").charAt(0).toUpperCase() +
-            current.replaceAll("-", " ").slice(1)}
-        </div>
+        <Breadcrumb className="mb-4">
+          {breadcrumbItems.map((item, index) => (
+            <Breadcrumb.Item key={index}>{item}</Breadcrumb.Item>
+          ))}
+        </Breadcrumb>
         <div className="mt-3">{renderComponent()}</div>
       </div>
     </div>

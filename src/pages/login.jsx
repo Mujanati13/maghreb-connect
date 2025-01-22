@@ -13,7 +13,7 @@ import {
 } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { isEsnLoggedIn } from "../helper/db";
+import { isClientLoggedIn, isEsnLoggedIn } from "../helper/db";
 import { Endponit } from "../helper/enpoint";
 
 const { Title, Text, Link } = Typography;
@@ -26,8 +26,11 @@ const LoginPage = () => {
   useEffect(() => {
     {
       const auth = isEsnLoggedIn();
+      const auth2 = isClientLoggedIn();
       if (auth == true) {
         navigate("/interface-en");
+      } else if (auth2 == true) {
+        navigate("/interface-cl");
       }
     }
   }, []);
@@ -38,8 +41,8 @@ const LoginPage = () => {
     try {
       const endpoint =
         userType === "client"
-          ? Endponit()+"/api/login_client/"
-          : Endponit()+"/api/login_esn/";
+          ? Endponit() + "/api/login_client/"
+          : Endponit() + "/api/login_esn/";
 
       const response = await fetch(endpoint, {
         method: "POST",

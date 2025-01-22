@@ -265,7 +265,7 @@ const ConsultantManagement = () => {
             loading={loading}
             rowKey="ID_collab"
             pagination={{
-              total: consultants.length,
+              total: consultants?.length,
               pageSize: 10,
               showTotal: (total) => `Total ${total} Consultants`,
               showSizeChanger: true,
