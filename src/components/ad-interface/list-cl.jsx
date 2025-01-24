@@ -90,7 +90,7 @@ export const ClientList = () => {
   // Fetch countries
   const fetchCountries = async () => {
     try {
-      const response = await axios.get(`${Endponit()}/api/countries`);
+      const response = await axios.get(`http://51.38.99.75:3100/api/countries`);
       setCountries(response.data);
     } catch (error) {
       console.error("Error fetching countries:", error);
@@ -100,7 +100,7 @@ export const ClientList = () => {
   // Fetch cities based on country
   const fetchCities = async (countryId) => {
     try {
-      const response = await axios.get(`${Endponit()}/api/cities/${countryId}`);
+      const response = await axios.get(`http://51.38.99.75:3100/api/cities/${countryId}`);
       setCities(response.data);
     } catch (error) {
       console.error("Error fetching cities:", error);
