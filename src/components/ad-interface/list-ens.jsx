@@ -835,7 +835,30 @@ const AddCollaboratorModal = ({
                 </Form.Item>
               </Col>
             </Row>
-
+            <Row gutter={16}>
+                  <Col span={8}>
+                    <Form.Item
+                      label={
+                        <span className="font-medium text-gray-700">
+                          Téléphone
+                        </span>
+                      }
+                      name="phone"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Veuillez saisir le numéro de téléphone",
+                        },
+                      ]}
+                    >
+                      <Input
+                        prefix={<PhoneOutlined className="text-gray-400" />}
+                        placeholder="Numéro de téléphone"
+                        className="rounded-md"
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
             <Row gutter={16}>
               <Col span={16}>
                 <Form.Item
@@ -874,30 +897,7 @@ const AddCollaboratorModal = ({
                     className="rounded-md"
                   />
                 </Form.Item>
-                <Row gutter={16}>
-                  <Col span={8}>
-                    <Form.Item
-                      label={
-                        <span className="font-medium text-gray-700">
-                          Téléphone
-                        </span>
-                      }
-                      name="phone"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Veuillez saisir le numéro de téléphone",
-                        },
-                      ]}
-                    >
-                      <Input
-                        prefix={<PhoneOutlined className="text-gray-400" />}
-                        placeholder="Numéro de téléphone"
-                        className="rounded-md"
-                      />
-                    </Form.Item>
-                  </Col>
-                </Row>
+               
               </Col>
               {!editingCollaborator ? (
                 <Col span={8}>
