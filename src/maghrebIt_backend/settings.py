@@ -82,29 +82,29 @@ WSGI_APPLICATION = 'maghrebIt_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#           # mysql
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': "maghrebit",
-#         'USER': "root",
-#         'PASSWORD': "simo1234",
-#         'HOST': "localhost",
-#         'PORT': '3306',
-#     }
-# }
-
 DATABASES = {
     'default': {
           # mysql
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': "django_db",
-        'USER': "django_user",
-        'PASSWORD': "django_password",
-        'HOST': "mysql",
+        'NAME': "maghrebit",
+        'USER': "root",
+        'PASSWORD': "simo1234",
+        'HOST': "localhost",
         'PORT': '3306',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#           # mysql
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': "django_db",
+#         'USER': "django_user",
+#         'PASSWORD': "django_password",
+#         'HOST': "mysql",
+#         'PORT': '3306',
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -151,5 +151,17 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# settings.py
+EMAIL_BACKEND = 'django_mailjet.backends.MailjetBackend'
+
+MAILJET_API_KEY = 'ac28c95489f874cca796354ec4b1b578'
+MAILJET_API_SECRET = '2edef62d62140c9d53049aeb7078243f'
 
 
+# Additional email settings
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST = 'in-v3.mailjet.com'
+EMAIL_HOST_USER = MAILJET_API_KEY
+EMAIL_HOST_PASSWORD = MAILJET_API_SECRET
+# DEFAULT_FROM_EMAIL = 'your-email@example.com'  # Replace with your email
