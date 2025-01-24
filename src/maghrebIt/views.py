@@ -4,6 +4,8 @@ from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 from django.shortcuts import get_object_or_404             
 from .models import Candidature
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import check_password
 
 from django.core.files.storage import default_storage
 import random
@@ -14,9 +16,14 @@ from .models import *
 from .serializers import *
 from rest_framework import status
 
+from .models import Admin
+from .serializers import AdminSerializer
 
 import hashlib
 import jwt
+
+from django.core.mail import send_mail
+from django.urls import reverse
 
 def checkAuth(request):
     token = request.META.get('HTTP_AUTHORIZATION')
@@ -71,7 +78,6 @@ def save_doc(request):
         # Capture les erreurs potentielles et renvoie un message d'erreur JSON avec un statut HTTP 500
         return JsonResponse({"status": False, "msg": str(e)}, status=500)
 
-
 # Login view
 @csrf_exempt
 def login(request):
@@ -107,7 +113,7 @@ def login(request):
 
             password_crp = pwd_sh.hexdigest()
             # Convertit le hachage en chaîne hexadécimale.
-
+            
             if user.mdp == password_crp:
                 # Compare le mot de passe haché fourni avec le mot de passe haché stocké dans la base de données.
 
@@ -138,7 +144,62 @@ def login(request):
             return JsonResponse({"success": False, "msg": "user not found"}, safe=False)
             # Retourne une erreur si aucun utilisateur avec cet email n'a été trouvé.
 
-        
+@csrf_exempt
+def admin_login(request):
+    if request.method == "POST":
+        data = JSONParser().parse(request)
+        username = data["username"]
+        password = data["mdp"]
+
+        users = Admin.objects.filter(Mail=username)
+
+        if users.exists():
+            user = users.first()
+
+            if check_password(password, user.mdp):
+                client_serializer = AdminSerializer(users, many=True)
+                payload = {
+                    'id': user.ID_Admin,
+                    'email': user.Mail,
+                }
+                token = jwt.encode(payload, 'maghrebIt', algorithm='HS256')
+
+                response = JsonResponse({"success": True, "token": token, "data": client_serializer.data}, safe=False)
+                response.set_cookie(key='jwt', value=token, max_age=86400)  # 24h (86,400s)
+
+                return response
+            return JsonResponse({"success": False, "msg": "Password not valid for this user"}, safe=False)
+        else:
+            return JsonResponse({"success": False, "msg": "user not found"}, safe=False)
+
+@csrf_exempt
+def create_admin_account(request):
+    if request.method == "POST":
+        data = JSONParser().parse(request)
+        username = data["username"]
+        mdp = data["mdp"]
+
+        if Admin.objects.filter(Mail=username).exists():
+            return JsonResponse({"success": False, "msg": "User already exists"}, safe=False)
+
+        hashed_password = make_password(mdp)
+
+        admin_data = {
+            "Mail": username,
+            "mdp": hashed_password,
+            "is_staff": True
+        }
+
+        admin_serializer = AdminSerializer(data=admin_data)
+
+        if admin_serializer.is_valid():
+            admin_serializer.save()
+            return JsonResponse({"success": True, "msg": "Admin account created successfully"}, safe=False)
+
+        return JsonResponse({"success": False, "msg": "Failed to create admin account", "errors": admin_serializer.errors}, safe=False)
+
+    return JsonResponse({"success": False, "msg": "Only POST method is allowed"}, safe=False, status=405)
+
 @csrf_exempt
 def login_client(request):
     # Fonction pour authentifier un client à partir de son email et de son mot de passe.
@@ -303,16 +364,15 @@ def client_view(request, id=0):
                 "status": True,
                 "msg": "Added Successfully!!e",
                 "errors": client_serializer.errors
-            }, safe=False)
+            }, safe=False, status=200)
             # Retourne une réponse JSON indiquant que le client a été ajouté avec succès.
 
         return JsonResponse({
             "status": False,
             "msg": "Failed to Add",
             "errors": client_serializer.errors
-        }, safe=False)
-        # Retourne une réponse JSON avec les erreurs de validation si l'ajout échoue.
-
+        }, safe=False, status=400)
+        # Retourne une réponse JSON indiquant que l'ajout du client a échoué.
     if request.method == 'PUT':
         # Gère la mise à jour des informations d'un client existant (opération UPDATE).
 
@@ -657,6 +717,8 @@ def esn_view(request, id=0):
                 "msg": "esn n'existe pas"
             }, safe=False)
             # Retourne une réponse JSON avec un message d'erreur.
+
+
 
 # Document view
 @csrf_exempt

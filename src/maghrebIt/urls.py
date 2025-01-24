@@ -21,6 +21,8 @@ urlpatterns = [
     # Route pour gérer les ESN (opérations globales comme GET tous les ESN ou POST pour ajouter une ESN).
     re_path(r'^ESN/([0-9]+)$', views.esn_view),
     # Route pour gérer une ESN spécifique par son ID.
+    path('admin/login/', views.admin_login, name='admin_login'),
+    path('admin/create/', views.create_admin_account, name='create_admin_account'),
 
     # Gestion des documents des ESN
     path('docEsn/', views.docEsn_view),
