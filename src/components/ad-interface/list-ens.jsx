@@ -538,7 +538,7 @@ const AddCollaboratorModal = ({
   // Fetch Countries
   const fetchCountries = async () => {
     try {
-      const response = await axios.get("http://localhost:3100/api/countries");
+      const response = await axios.get("http://51.38.99.75:3100/api/countries");
       console.log(response);
 
       setCountries(response.data.data);
@@ -552,7 +552,7 @@ const AddCollaboratorModal = ({
   const fetchCities = async (countryName) => {
     try {
       const response = await axios.get(
-        `http://localhost:3100/api/cities/${countryName}`
+        `http://51.38.99.75:3100/api/cities/${countryName}`
       );
       setCities(response.data.data);
     } catch (error) {
@@ -657,10 +657,16 @@ const AddCollaboratorModal = ({
         // Highlight specific fields with errors
         const errorFields = [];
         if (errors.SIRET) {
-          errorFields.push({ name: "SIRET", errors: ["Ce numéro SIRET est déjà utilisé"] });
+          errorFields.push({
+            name: "SIRET",
+            errors: ["Ce numéro SIRET est déjà utilisé"],
+          });
         }
         if (errors.mail_Contact) {
-          errorFields.push({ name: "email", errors: ["Cette adresse email est déjà utilisée"] });
+          errorFields.push({
+            name: "email",
+            errors: ["Cette adresse email est déjà utilisée"],
+          });
         }
 
         form.setFields(errorFields);
@@ -868,6 +874,30 @@ const AddCollaboratorModal = ({
                     className="rounded-md"
                   />
                 </Form.Item>
+                <Row gutter={16}>
+                  <Col span={8}>
+                    <Form.Item
+                      label={
+                        <span className="font-medium text-gray-700">
+                          Téléphone
+                        </span>
+                      }
+                      name="phone"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Veuillez saisir le numéro de téléphone",
+                        },
+                      ]}
+                    >
+                      <Input
+                        prefix={<PhoneOutlined className="text-gray-400" />}
+                        placeholder="Numéro de téléphone"
+                        className="rounded-md"
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
               </Col>
               {!editingCollaborator ? (
                 <Col span={8}>
