@@ -28,6 +28,16 @@ export const isClientLoggedIn = () => {
     }
 };
 
+export const isAdminLoggedIn = () => {
+    try {
+        const token = localStorage.getItem('adminToken');
+        const esnId = localStorage.getItem('adminId');
+
+        return !!(token && esnId);
+    } catch (error) {
+        return false;
+    }
+};
 
 export const logoutEsn = () => {
     try {

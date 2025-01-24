@@ -123,9 +123,10 @@ export const ClientList = () => {
 
   const handlePostError = (response) => {
     const errors = response?.data?.errors;
-
+    console.log("Errors:", errors);
+    
     if (errors) {
-      if (errors.SIRET) {
+      if (errors.SIRET || errors.siret) {
         message.error("Ce numéro SIRET est déjà utilisé");
       }
       if (errors.mail_Contact) {
@@ -161,12 +162,13 @@ export const ClientList = () => {
       setIsModalVisible(false);
       setEditingClient(null);
     } catch (error) {
-      message.error(
-        editingClient
-          ? "Erreur lors de la mise à jour du client"
-          : "Erreur lors de l'ajout du client"
-      );
-      console.error("Client action error:", error);
+      // message.error(
+      //   editingClient
+      //     ? "Erreur lors de la mise à jour du client"
+      //     : "Erreur lors de l'ajout du client"
+      // );
+      handlePostError(error.response);
+      console.error("Client action error:", error.response.data.data);
     }
   };
 

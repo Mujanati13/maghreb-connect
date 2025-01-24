@@ -47,8 +47,6 @@ const CollaboratorList = () => {
   const [viewMode, setViewMode] = useState("table");
   const [collaborators, setCollaborators] = useState([]);
   const [editingCollaborator, setEditingCollaborator] = useState(null);
-  const [cityOptions, setCityOptions] = useState([]);
-  const [selectedCountry, setSelectedCountry] = useState(null);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [selectedCollaborator, setSelectedCollaborator] = useState(null);
 
@@ -195,38 +193,37 @@ const CollaboratorList = () => {
 
   const handlePostError = (response) => {
     const errors = response?.data?.errors;
-    
-    if (errors) {
-      if (errors.SIRET) {
-        message.error('Ce numéro SIRET est déjà utilisé');
-      }
-      if (errors.mail_Contact) {
-        message.error('Cette adresse email est déjà utilisée');
-      }
+    console.log(errors.SIRET[0].length > 0);
+    if (errors.SIRET[0].length > 0) {
+      message.error("Ce numéro SIRET est déjà utilisé");
+    }
+    if (errors.mail_Contact) {
+      message.error("Cette adresse email est déjà utilisée");
     }
   };
   // Add Collaborator
+  // Add Collaborator
   const handleAddCollaborator = async (values) => {
     try {
-      const payload = {
-        ...values,
-      };
-
-      const response = await axios.post(API_BASE_URL, payload, {
+      const response = await axios.post(API_BASE_URL, values, {
         headers: {
           Authorization: `${token()}`,
         },
       });
-      if (response.data.status === true) {
+      console.log(response.data.status);
+
+      if (response.data.status == true) {
         message.success("ESN créé avec succès");
         showPasswordPrompt(); // Refresh with password
       } else {
-        console.log(response);
         handlePostError(response);
-      } // showPasswordPrompt(); // Refresh with password
+      }
+
+      return response;
     } catch (error) {
       message.error("Erreur lors de l'ajout du ENS");
       console.error("Add error:", error);
+      throw error;
     }
   };
 
@@ -244,12 +241,16 @@ const CollaboratorList = () => {
           Authorization: `${token()}`,
         },
       });
+
       message.success("Collaborateur mis à jour avec succès");
-      // showPasswordPrompt(); // Refresh with password
       setEditingCollaborator(null);
+      showPasswordPrompt(); // Refresh with password
+
+      return response;
     } catch (error) {
       message.error("Erreur lors de la mise à jour du collaborateur");
       console.error("Update error:", error);
+      throw error;
     }
   };
 
@@ -531,6 +532,44 @@ const AddCollaboratorModal = ({
   const [form] = Form.useForm();
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [cities, setCities] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [serverErrors, setServerErrors] = useState({});
+
+  // Fetch Countries
+  const fetchCountries = async () => {
+    try {
+      const response = await axios.get("http://localhost:3100/api/countries");
+      console.log(response);
+
+      setCountries(response.data.data);
+    } catch (error) {
+      message.error("Erreur lors du chargement des pays");
+      console.error("Countries fetch error:", error);
+    }
+  };
+
+  // Fetch Cities for a specific country
+  const fetchCities = async (countryName) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3100/api/cities/${countryName}`
+      );
+      setCities(response.data.data);
+    } catch (error) {
+      message.error("Erreur lors du chargement des villes");
+      console.error("Cities fetch error:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCountries();
+  }, []);
+
+  const handleCountryChange = (value) => {
+    setSelectedCountry(value);
+    form.setFieldValue("Ville", undefined);
+    fetchCities(value);
+  };
 
   useEffect(() => {
     if (editingCollaborator) {
@@ -562,16 +601,6 @@ const AddCollaboratorModal = ({
     }
   }, [editingCollaborator, form, cityData]);
 
-  const handleCountryChange = (value) => {
-    setSelectedCountry(value);
-    form.setFieldValue("Ville", undefined); // Reset city when country changes
-    if (cityData[value]) {
-      setCities(cityData[value]);
-    } else {
-      setCities([]);
-    }
-  };
-
   const showModal = () => {
     setIsModalVisible(true);
     form.resetFields();
@@ -579,42 +608,69 @@ const AddCollaboratorModal = ({
     setCities([]);
   };
 
-  const handleOk = () => {
-    form
-      .validateFields()
-      .then((values) => {
-        const formattedValues = {
-          Raison_sociale: values.nom,
-          SIRET: values.SIRET,
-          RCE: values.rce,
-          Pays: values.Pays,
-          Adresse: values.Adresse,
-          CP: values.CP,
-          Ville: values.Ville,
-          Province: values.province,
-          mail_Contact: values.email,
-          Tel_Contact: values.phone,
-          Statut: values.status || "En attente",
-          N_TVA: values.tva,
-          IBAN: values.iban,
-          BIC: values.bic,
-          Banque: values.banque,
-          password: values.password,
-        };
+  const handleOk = async () => {
+    try {
+      // Reset previous server errors
+      setServerErrors({});
 
-        if (editingCollaborator) {
-          onUpdate({ ...formattedValues, id: editingCollaborator.id });
-        } else {
-          onAdd(formattedValues);
-        }
+      const values = await form.validateFields();
+      const formattedValues = {
+        Raison_sociale: values.nom,
+        SIRET: values.SIRET,
+        RCE: values.rce,
+        Pays: values.Pays,
+        Adresse: values.Adresse,
+        CP: values.CP,
+        Ville: values.Ville,
+        Province: values.province,
+        mail_Contact: values.email,
+        Tel_Contact: values.phone,
+        Statut: values.status || "En attente",
+        N_TVA: values.tva,
+        IBAN: values.iban,
+        BIC: values.bic,
+        Banque: values.banque,
+        password: values.password,
+      };
+
+      let response;
+      if (editingCollaborator) {
+        response = await onUpdate({
+          ...formattedValues,
+          id: editingCollaborator.id,
+        });
+      } else {
+        response = await onAdd(formattedValues);
+      }
+
+      // Check if the response indicates a successful operation
+      if (response && response.data && response.data.status === true) {
         setIsModalVisible(false);
         form.resetFields();
         setSelectedCountry(null);
         setCities([]);
-      })
-      .catch((info) => {
-        console.log("Validate Failed:", info);
-      });
+      } else {
+        // Handle server-side validation errors
+        const errors = response?.data?.errors || {};
+        setServerErrors(errors);
+
+        // Highlight specific fields with errors
+        const errorFields = [];
+        if (errors.SIRET) {
+          errorFields.push({ name: "SIRET", errors: ["Ce numéro SIRET est déjà utilisé"] });
+        }
+        if (errors.mail_Contact) {
+          errorFields.push({ name: "email", errors: ["Cette adresse email est déjà utilisée"] });
+        }
+
+        form.setFields(errorFields);
+      }
+    } catch (error) {
+      console.log("Validate Failed:", error);
+      message.error(
+        "Erreur de validation. Veuillez vérifier vos informations."
+      );
+    }
   };
 
   const handleCancel = () => {
@@ -723,7 +779,7 @@ const AddCollaboratorModal = ({
                     onChange={handleCountryChange}
                     className="w-full"
                   >
-                    {Object.keys(cityData).map((country) => (
+                    {countries?.map((country) => (
                       <Option key={country} value={country}>
                         {country}
                       </Option>

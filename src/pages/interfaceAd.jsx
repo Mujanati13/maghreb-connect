@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState , useEffect} from "react";
 import {
   AppstoreOutlined,
   RiseOutlined,
@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { ClientList } from "../components/ad-interface/list-cl";
 import ClientDocument from "../components/cl-interface/document";
 import CollaboratorList from "../components/ad-interface/list-ens";
+import { isAdminLoggedIn } from "../helper/db";
 
 const items = [
   {
@@ -37,6 +38,13 @@ const items = [
 const InterfaceAd = () => {
   const [current, setCurrent] = useState("dashboard");
   const navigate = useNavigate();
+
+  useEffect(() => {
+      const auth = isAdminLoggedIn();
+      if (auth === false) {
+        navigate("/LoginAdmin");
+      }
+    }, [navigate]);
 
   const onClick = (e) => {
     console.log("click ", e);

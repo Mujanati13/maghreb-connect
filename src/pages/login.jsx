@@ -70,8 +70,8 @@ const LoginPage = () => {
         } else {
           // For ESN users
           localStorage.setItem("id", data.data[0].ID_ESN);
-          localStorage.setItem("esnName", data.data[0].Nom_ESN);
-          localStorage.setItem("siret", data.data[0].SIRET);
+          // localStorage.setItem("esnName", data.data[0].Nom_ESN);
+          // localStorage.setItem("siret", data.data[0].SIRET);
           navigate("/interface-en"); // Adjust this route as needed
         }
       } else {
