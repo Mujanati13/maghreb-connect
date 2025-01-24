@@ -1,18 +1,15 @@
-
 version: '3'
 
 services:
- 
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: maghibit_phpmyadmin
     environment:
-      PMA_HOST: mysql # The MySQL hostname
+      PMA_HOST: mysql
       MYSQL_ROOT_PASSWORD: rootpassword
-      PMA_PORT: 33066
+      PMA_PORT: 3306
     ports:
       - "8080:80"
-  
     depends_on:
       - mysql
     networks:
@@ -31,7 +28,7 @@ services:
     depends_on:
       - mysql
     environment:
-      DATABASE_HOST: db
+      DATABASE_HOST: mysql
       DATABASE_NAME: django_db
       DATABASE_USER: django_user
       DATABASE_PASSWORD: django_password
@@ -39,6 +36,7 @@ services:
       MYSQLCLIENT_LDFLAGS: "-L/usr/lib/x86_64-linux-gnu"
     networks:
       - maghrebIt_network
+
   mysql:
     image: mysql:8.0
     container_name: maghrebIt_db_v2
@@ -48,7 +46,7 @@ services:
       MYSQL_DATABASE: django_db
       MYSQL_USER: django_user
       MYSQL_PASSWORD: django_password
-      MYSQL_TCP_PORT: 33066
+      MYSQL_TCP_PORT: 3306
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/entrypoint/maghrebit_connect.sql:/docker-entrypoint-initdb.d/maghrebit_connect.sql
@@ -56,10 +54,10 @@ services:
       - "33066:3306"
     networks:
       - maghrebIt_network
+
 volumes:
   mysql_data:
 
 networks:
   maghrebIt_network:
     driver: bridge
-
