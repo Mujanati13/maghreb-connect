@@ -27,7 +27,6 @@ from django.urls import reverse
 
 def checkAuth(request):
     token = request.META.get('HTTP_AUTHORIZATION')
-    print(token)
     if token == None:
         print("Non authentifié 1")
         return False
@@ -1106,20 +1105,20 @@ def admin_view(request, id=0):
 @csrf_exempt
 def get_appel_offre_with_candidatures_by_esn(request):
     esn_id = request.GET.get("esn_id")
-    print("test")
     if request.method == 'GET':
     
         if not esn_id:
             return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False, status=400)
 
-        # Obtenir les appels d'offres qui ont des candidatures associées à l'ESN
-        appel_offres = AppelOffre.objects.filter(id__in=Candidature.objects.filter(esn_id=esn_id).values_list('AO_id', flat=True)).distinct()
+        appel_offres = AppelOffre.objects.filter(
+            id__in=Candidature.objects.filter(esn_id=esn_id).values_list('AO_id', flat=True)
+        ).distinct().order_by('-id')
 
         # Sérialiser les données des appels d'offres
         appel_offre_serializer = AppelOffreSerializer(appel_offres, many=True)
+        data = appel_offre_serializer.data  # No need to iterate manually
 
-        return JsonResponse({"status": True, "data": appel_offre_serializer.data}, safe=False)
-   
+        return JsonResponse({"status": True, "data": data}, safe=False)   
 @csrf_exempt
 def appelOffre_view(request, id=0):
     # Vue permettant de gérer les appels d'offres avec des opérations CRUD (Create, Read, Update, Delete).
@@ -1158,12 +1157,15 @@ def appelOffre_view(request, id=0):
 
             col_serializer.save()
             # Sauvegarde l'appel d'offre dans la base de données.
+            esn_tokens = list(ESN.objects.values_list('token', flat=True))
 
             return JsonResponse({
                 "status": True,
                 "msg": "Added Successfully!!",
                 "errors": col_serializer.errors,
-                "id" : col_serializer.data["id"]
+                "id" : col_serializer.data["id"],
+                "data" : col_serializer.data,
+                "esn_tokens": esn_tokens
             }, safe=False)
             # Retourne une réponse JSON indiquant que l'appel d'offre a été ajouté avec succès.
 
@@ -1245,7 +1247,6 @@ def candidature_view(request, id=0):
 
     if request.method == 'POST':
         # Gère la création d'une nouvelle candidature (opération CREATE).
-
         Collaborateur_data = JSONParser().parse(request)
         # Parse les données JSON envoyées dans la requête POST.
 
@@ -1257,16 +1258,31 @@ def candidature_view(request, id=0):
 
             col_serializer.save()
             # Sauvegarde la candidature dans la base de données.
-            # here return the id of the added condidature 
+
+            # Fetch the project and client token
+            token = None
+
+        # Fetch the project and client token
+            try:
+                project = AppelOffre.objects.get(id=Collaborateur_data["AO_id"])
+                client = Client.objects.get(ID_clt=project.client_id)
+                token = client.token
+
+            except AppelOffre.DoesNotExist:
+                return JsonResponse({
+                    "status": False,
+                    "msg": "Appel d'offre not found"
+                }, safe=False)    
+            except Client.DoesNotExist:
+                token = None
 
             return JsonResponse({
                 "status": True,
                 "msg": "Added Successfully!!",
                 "id": col_serializer.data["id_cd"],
-                "errors": col_serializer.errors
-
-            }, safe=False)
-            # Retourne une réponse JSON indiquant que la candidature a été ajoutée avec succès.
+                "errors": col_serializer.errors,
+                "token": token
+            }, safe=False)        # Retourne une réponse JSON indiquant que la candidature a été ajoutée avec succès.
 
         return JsonResponse({
             "status": False,
@@ -1318,6 +1334,45 @@ def candidature_view(request, id=0):
 
         return JsonResponse("Deleted Successfully!!", safe=False)
         # Retourne une réponse JSON indiquant que la candidature a été supprimée avec succès.
+
+
+@csrf_exempt
+def update_candidature_status(request):
+    if request.method == 'PUT':
+        # Parse the JSON data from the request
+        data = JSONParser().parse(request)
+
+        # Check if 'id' and 'status' are in the data
+        if 'id_cd' not in data or 'statut' not in data:
+            return JsonResponse({
+                "status": False,
+                "msg": "Missing 'id' or 'status' in request data"
+            }, safe=False)
+
+        # Update the status of the candidature
+        id = data['id_cd']
+        statut = data['statut']
+
+        try:
+            candidature = Candidature.objects.get(id_cd=id)
+            candidature.statut = statut
+            candidature.save()
+
+            return JsonResponse({
+                "status": True,
+                "msg": "Status updated successfully"
+            }, safe=False)
+        except Candidature.DoesNotExist:
+            return JsonResponse({
+                "status": False,
+                "msg": "Candidature not found"
+            }, safe=False)
+
+    return JsonResponse({
+        "status": False,
+        "msg": "Invalid request method"
+    }, safe=False)
+
 
     
 @csrf_exempt
@@ -1382,6 +1437,14 @@ def notification_view(request, id=0):
         col = Notification.objects.get(id=col_data["id"])
         # Récupère la notification à mettre à jour en fonction de l'identifiant fourni.
 
+        if 'status' in col_data:
+            col.status = col_data['status']
+        # Met à jour le champ status dans la notification.
+
+        if 'event_id' not in col_data:
+            col_data['event_id'] = col.event_id
+        # Assure que l'event_id n'est pas nul.
+
         col_serializer = NotificationSerializer(col, data=col_data)
         # Sérialise les données mises à jour pour les valider.
 
@@ -1403,6 +1466,19 @@ def notification_view(request, id=0):
             "msg": "Failed to update",
             "errors": col_serializer.errors
         }, safe=False)
+        # Retourne une réponse JSON indiquant que la mise à jour a échoué.
+
+        return JsonResponse({
+            "status": False,
+            "msg": "Failed to update",
+            "errors": col_serializer.errors
+        }, safe=False)
+        # Retourne une réponse JSON indiquant que la mise à jour a échoué.
+        return JsonResponse({
+            "status": False,
+            "msg": "Failed to update",
+            "errors": col_serializer.errors
+        }, safe=False)
         # Retourne une réponse JSON contenant les erreurs si la validation échoue.
 
     if request.method == 'DELETE':
@@ -1416,6 +1492,56 @@ def notification_view(request, id=0):
 
         return JsonResponse("Deleted Successfully!!", safe=False)
         # Retourne une réponse JSON indiquant que la notification a été supprimée avec succès.
+
+@csrf_exempt
+def update_token(request):
+    if request.method == 'PUT':
+        # Parse the JSON data from the request
+        data = JSONParser().parse(request)
+        # Check if 'type', 'id', and 'token' are in the data
+        if 'type' not in data or 'id' not in data or 'token' not in data:
+            return JsonResponse({
+                "status": False,
+                "msg": "Missing 'type', 'id' or 'token' in request data"
+            }, safe=False)
+
+        # Update the token based on the type and id
+        type = data['type']
+        id = data['id']
+        token = data['token']
+
+        try:
+            if type == 'esn':
+                esn = ESN.objects.get(ID_ESN=id)
+                esn.token = token
+                esn.save()
+            elif type == 'client':
+                client = Client.objects.get(ID_clt=id)
+                client.token = token
+                client.save()
+            else:
+                return JsonResponse({
+                    "status": False,
+                    "msg": "Invalid type"
+                }, safe=False)
+
+            return JsonResponse({
+                "status": True,
+                "msg": "Token updated successfully"
+            }, safe=False)
+        except (Esn.DoesNotExist, Client.DoesNotExist):
+            return JsonResponse({
+                "status": False,
+                "msg": f"{type.capitalize()} not found"
+            }, safe=False)
+
+    return JsonResponse({
+        "status": False,
+        "msg": "Invalid request method"
+    }, safe=False)
+
+
+
 
 @csrf_exempt
 def Bondecommande_view(request, id=0):
@@ -1459,7 +1585,8 @@ def Bondecommande_view(request, id=0):
             return JsonResponse({
                 "status": True,
                 "msg": "Added Successfully!!",
-                "errors": col_serializer.errors
+                "errors": col_serializer.errors,
+                "id": col_serializer.data["id_bdc"],  # Include the ID of the created Bondecommande
             }, safe=False)
             # Retourne une réponse JSON indiquant que le bon de commande a été ajouté avec succès.
 
@@ -1735,15 +1862,22 @@ def apprlOffre_by_idClient(request):
 @csrf_exempt
 def notification_by_type(request):
     if request.method == 'GET':
-        type = request.GET["type"]
-        notif = Notification.objects.filter(categorie=type)
-       
+        notif_type = request.GET.get("type")  # Use `get` to avoid potential `KeyError`
+        user_id = request.GET.get("id")
+
+        if not notif_type or not user_id:  # Validate input
+            return JsonResponse({"error": "Both 'type' and 'id' are required."}, status=400)
+
+        # Filter notifications by type and destination ID
+        notif = Notification.objects.filter(categorie=notif_type, dest_id=user_id).order_by('-id')
         notif_serializer = NotificationSerializer(notif, many=True)
-        data = []
-        for S in notif_serializer.data:
-            data.append(S)
-        return JsonResponse({"total": len(data),"data": data}, safe=False)
+        data = notif_serializer.data  # No need to iterate manually
+
+        return JsonResponse({"total": len(data), "data": data}, safe=False)
     
+    # Handle unsupported methods
+    return JsonResponse({"error": "Only GET method is allowed."}, status=405)
+
 @csrf_exempt
 def DocumentClient(request):
     if request.method == 'GET':
@@ -1895,13 +2029,13 @@ def get_candidatures_by_project_and_esn(request):
 
     # Filtrer les candidatures associées à l'ESN et au projet
     candidatures = Candidature.objects.filter(esn_id=esn_id, AO_id=project_id)
-
     # Sérialiser les données des candidatures
     candidature_serializer = CandidatureSerializer(candidatures, many=True)
 
     return JsonResponse({"status": True, "data": candidature_serializer.data}, safe=False)
 
 
+@csrf_exempt
 def get_candidatures_by_project_and_client(request):
     project_id = request.GET.get("project_id")
     client_id = request.GET.get("client_id")
@@ -1912,14 +2046,17 @@ def get_candidatures_by_project_and_client(request):
     if not client_id:
         return JsonResponse({"status": False, "message": "client_id manquant"}, safe=False)
 
-    # Filtrer les appels d'offre associés au client
+    # Filtrer les appels d'offre associés au client et au projet
     appels_offre = AppelOffre.objects.filter(id=project_id, client_id=client_id)
 
     if not appels_offre.exists():
         return JsonResponse({"status": False, "message": "Aucun appel d'offre trouvé pour ce client et ce projet"}, safe=False)
 
     # Filtrer les candidatures associées aux appels d'offre trouvés
-    candidatures = Candidature.objects.filter(AO_id__in=appels_offre)
+    candidatures = Candidature.objects.all().filter(AO_id=project_id)
+
+    if not candidatures.exists():
+        return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour ce client et ce projet"}, safe=False)
 
     # Sérialiser les données des candidatures
     candidature_serializer = CandidatureSerializer(candidatures, many=True)
@@ -2333,8 +2470,11 @@ def notify_bon_de_commande(request):
             if not esn_id or not client_id or not bon_de_commande_id:
                 return JsonResponse({"status": False, "message": "esn_id, client_id, et bon_de_commande_id requis"}, safe=False)
 
-            message = f"L'ESN {esn_id} a généré un bon de commande {bon_de_commande_id}."
-            send_notification(user_id=client_id, message=message, categorie="Bon de Commande")
+            message = f"Le Client {client_id} a généré un bon de commande {bon_de_commande_id}."
+            event = "Bon de Commande"
+            event_id = bon_de_commande_id
+            send_notification(user_id=client_id, dest_id=esn_id, message=message, categorie="ESN", event=event, event_id=event_id)
+            send_notification(user_id=client_id, dest_id=client_id, message=message, categorie="Client", event=event, event_id=event_id)
 
             return JsonResponse({"status": True, "message": "Notification envoyée au client."}, safe=False)
 
@@ -2485,8 +2625,7 @@ def notify_new_candidature(request):
         try:
             data = JSONParser().parse(request)
             appel_offre_id = data.get('appel_offre_id')
-            candidature_id = data.get('candidature_id')
-
+            candidature_id = data.get('condidature_id')
             # Get id client base on the appel d'offer 
             appels_offres = AppelOffre.objects.filter(id=appel_offre_id)
             client_id = appels_offres.first().client_id
@@ -2529,6 +2668,10 @@ def notify_candidature_accepted(request):
         if not all([candidature_id, esn_id]):
             return JsonResponse({"status": False, "message": "Tous les champs sont requis."}, safe=False)
 
+        token = ESN.objects.filter(ID_ESN=esn_id).values_list('token', flat=True).first()
+
+        if token is None:
+            return JsonResponse({"status": False, "message": "Token not found for the given ESN ID"}, safe=False)        
         message = f"Votre candidature ID={candidature_id} a été acceptée."
         send_notification(
             user_id=None,
@@ -2538,7 +2681,7 @@ def notify_candidature_accepted(request):
             message=message,
             categorie="ESN"
         )
-        return JsonResponse({"status": True, "message": "Notification envoyée à l'ESN."}, safe=False)
+        return JsonResponse({"status": True, "data": token}, safe=False)
     
 @csrf_exempt
 def notify_expiration_ao(request):
@@ -2548,17 +2691,15 @@ def notify_expiration_ao(request):
 
             ao_id = data.get('ao_id')
             client_id = data.get('client_id')
-            # esn_ids = data.get('esn_ids')
-            # esn = [3 , 10 , 40]
+
             list_esn = []
             # assume we need to get the list from the database base on the client id 
-            partenaires = Partenariat1.objects.filter(id_client=client_id)
+            partenaires = ESN.objects.all()
             for partenaire in partenaires:
-                list_esn.append(partenaire.id_esn)
+                list_esn.append(partenaire.ID_ESN)
             if len(list_esn) == 0:
                 return JsonResponse({"status": True, "message": "Non partenaire découvert"}, safe=False)
-
-            print(list_esn)
+            
             if not all([ao_id, client_id, list_esn]):
                 return JsonResponse({"status": False, "message": "Tous les champs sont requis."}, safe=False)
 

@@ -21,6 +21,7 @@ class Client(models.Model):
     bic = models.CharField(max_length=11, blank=True, null=True, verbose_name="BIC")
     banque = models.CharField(max_length=100, blank=True, null=True, verbose_name="Banque")
     img_path = models.CharField(max_length=100, blank=True, null=True, verbose_name="img_path")
+    token = models.TextField(blank=True, null=True, verbose_name="token")
 
     class Meta:
         
@@ -60,6 +61,7 @@ class ESN(models.Model):
     # Statut et date de validation
     Statut = models.CharField(max_length=50, blank=True, null=True, verbose_name="Statut")
     Date_validation = models.DateField(blank=True, null=True, verbose_name="Date de Validation")
+    token = models.TextField(blank=True, null=True, verbose_name="token")
     
     # Informations bancaires
     N_TVA = models.CharField(max_length=20, blank=True, null=True, verbose_name="Numéro de TVA")

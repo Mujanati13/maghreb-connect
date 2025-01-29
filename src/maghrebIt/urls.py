@@ -69,6 +69,8 @@ urlpatterns = [
     re_path(r'^notification/([0-9]+)$', views.notification_view),
     # Route pour gérer une notification spécifique par son ID.
 
+    path('update-token/', views.update_token, name='update-token'),
+
     # Gestion des bons de commande
     path('Bondecommande/', views.Bondecommande_view),
     # Route pour gérer les bons de commande (exemple : récupération ou création de bons de commande).
@@ -86,6 +88,7 @@ urlpatterns = [
     # Route pour gérer les candidatures (exemple : récupération ou création de candidatures).
     re_path(r'^candidature/([0-9]+)$', views.candidature_view),
     # Route pour gérer une candidature spécifique par son ID.
+    path('update-candidature-status/', views.update_candidature_status, name='update-candidature-status'),
 
     # Gestion des partenariats
     path('partenariats/', views.partenariats_view),
