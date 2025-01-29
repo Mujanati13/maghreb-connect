@@ -1,4 +1,4 @@
-import React, { useState, useEffect , useMemo  } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   LogoutOutlined,
   MacCommandOutlined,
@@ -17,14 +17,25 @@ import {
   SolutionOutlined,
   BankOutlined,
   ProjectOutlined,
-  
+  CheckOutlined,
 } from "@ant-design/icons";
-import { Menu, Tag, AutoComplete, Input, Breadcrumb } from "antd";
+import {
+  Menu,
+  Badge,
+  AutoComplete,
+  Input,
+  Breadcrumb,
+  List,
+  Button,
+  message,
+} from "antd";
+
+import { Endponit } from "../helper/enpoint";
+
 import { ClientList } from "../components/en-interface/gestionClient";
 import EmployeeManagement from "../components/en-interface/collaborateur";
 import ClientDocumentManagement from "../components/en-interface/clientDocumen";
 import AppelDOffreInterface from "../components/en-interface/add-condi";
-import NotificationInterface from "../components/en-interface/noti-list";
 import BonDeCommandeInterface from "../components/en-interface/bdc-list";
 import ClientPartenariatInterface from "../components/en-interface/partenariat-list";
 import ContractList from "../components/en-interface/contart-en";
@@ -32,19 +43,281 @@ import { isEsnLoggedIn, logoutEsn } from "../helper/db";
 import { useNavigate } from "react-router-dom";
 import ESNCandidatureInterface from "../components/en-interface/me-codi";
 import ESNProfilePageFrancais from "../components/en-interface/profile";
+import { messaging } from "../helper/firebase/config";
+import { onMessage, getToken } from "firebase/messaging";
+
+const NotificationInterface = ({
+  notifications,
+  onNotificationsUpdate,
+  setupdate,
+}) => {
+  const [loading, setLoading] = useState(false);
+
+  const markAsRead = async (notificationId) => {
+    // setLoading(true);
+    try {
+      const response = await fetch(
+        Endponit() + "/api/notification/" + notificationId.id,
+        {
+          method: "put",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...notificationId,
+            status: "Read",
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update notification status");
+      }
+
+      const updatedNotifications = notifications.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, read: true }
+          : notification
+      );
+
+      onNotificationsUpdate(updatedNotifications);
+      setupdate(Math.random() * 100);
+      message.success("Notification marked as read");
+    } catch (error) {
+      console.error("Error updating notification status:", error);
+      message.error("Impossible de marquer la notification comme lue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    // setLoading(true);
+    try {
+      const unreadNotifications = notifications.filter((n) => !n.read);
+      const updatePromises = unreadNotifications.map((notification) =>
+        fetch(Endponit() + "/api/updateNotificationStatus", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notificationId: notification.id,
+            status: "Read",
+          }),
+        })
+      );
+
+      await Promise.all(updatePromises);
+
+      const updatedNotifications = notifications.map((notification) => ({
+        ...notification,
+        read: true,
+      }));
+
+      onNotificationsUpdate(updatedNotifications);
+      message.success("All notifications marked as read");
+      setupdate(Math.random() * 100);
+    } catch (error) {
+      console.error("Error updating notification statuses:", error);
+      message.error("Failed to mark all notifications as read");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="p-2">
+      <div className="flex justify-between items-center mb-4">
+        {/* <h2 className="text-2xl font-semibold">Notifications</h2> */}
+        <Button
+          type="primary"
+          onClick={markAllAsRead}
+          loading={loading}
+          disabled={!notifications.some((n) => !n.read)}
+        >
+          Marquer tout comme lu
+        </Button>
+      </div>
+      <List
+        itemLayout="horizontal"
+        dataSource={notifications}
+        renderItem={(item) => (
+          <List.Item
+            className={`rounded-lg mb-2 p-4 ${
+              item.read ? "bg-gray-50" : "bg-blue-50"
+            }`}
+            actions={[
+              !item.read && (
+                <Button
+                  key="mark-read"
+                  type="text"
+                  icon={<CheckOutlined />}
+                  onClick={() => markAsRead(item)}
+                  loading={loading}
+                >
+                  Marquer comme lu
+                </Button>
+              ),
+            ]}
+          >
+            <List.Item.Meta
+              className="pl-4"
+              title={
+                <div className="flex items-center">
+                  {!item.read && (
+                    <Badge
+                      style={{ opacity: 0.5 }}
+                      status="processing"
+                      className="mr-2"
+                    />
+                  )}
+                  <span>{item.title}</span>
+                </div>
+              }
+              description={
+                <div className="">
+                  <p>{item.content}</p>
+                  <small className="text-gray-500">
+                    {new Date(item.timestamp).toLocaleString()}
+                  </small>
+                </div>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    </div>
+  );
+};
 
 const InterfaceEn = () => {
   const [current, setCurrent] = useState("dashboard");
   const [searchValue, setSearchValue] = useState("");
   const [breadcrumbItems, setBreadcrumbItems] = useState(["Tableau de Bord"]);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [update, setupdate] = useState([]);
   const navigate = useNavigate();
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch(
+        Endponit() +
+          "/api/getNotifications/?type=esn&id=" +
+          localStorage.getItem("id")
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch notifications");
+      }
+      const data = await response.json();
+      const transformedNotifications = data.data.map((notification) => ({
+        id: notification.id,
+        type: notification.categorie.toLowerCase(),
+        title: notification.categorie,
+        content: notification.message,
+        timestamp: notification.created_at,
+        read: notification.status === "Read",
+        dest_id: notification.dest_id,
+        event_id: notification.event_id,
+      }));
+      setNotifications(transformedNotifications);
+
+      const unreadCount = transformedNotifications.filter(
+        (n) => !n.read
+      ).length;
+      setUnreadNotificationsCount(unreadCount);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    }
+  };
+
+  const retrieveFCMToken = async () => {
+    try {
+      // const messaging = getMessaging(firebaseApp);
+
+      // Request permission for notifications
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        // Get the FCM token
+        const currentToken = await getToken(messaging, {
+          vapidKey:
+            "BNr1YPHHD-jYLHyQcJUduQyVZA7BWGIx1q6e8m-bU442LV7Hu28P80AJyJNL998WF563PHdD97BLtZNpYJW-sSw", // Replace with your VAPID key
+        });
+
+        if (currentToken) {
+          console.log("FCM Token:", currentToken);
+
+          // Send the token to your backend server
+          await fetch(
+            Endponit() +
+              "/api/update-token/?id=" +
+              localStorage.getItem("id") +
+              "&token=" +
+              currentToken +
+              "&type=esn",
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                id: localStorage.getItem("id"), // Replace with the user's ID
+                token: currentToken,
+                type: "esn",
+                Esn: "esn",
+              }),
+            }
+          );
+
+          console.log("FCM token sent to the server.");
+        } else {
+          console.log("No registration token available.");
+        }
+      } else {
+        console.log("Permission denied for notifications.");
+      }
+    } catch (error) {
+      console.error("Error retrieving FCM token:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [update]);
 
   useEffect(() => {
     const auth = isEsnLoggedIn();
     if (auth === false) {
       navigate("/Login");
     }
+
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log("Message received:", payload);
+
+      const newNotification = {
+        id: Date.now(),
+        type: "system",
+        title: payload.notification?.title || "New Notification",
+        content: payload.notification?.body || "You have a new notification",
+        timestamp: new Date().toISOString(),
+        read: false,
+      };
+
+      setNotifications((prev) => [newNotification, ...prev]);
+      setUnreadNotificationsCount((prev) => prev + 1);
+    });
+    retrieveFCMToken();
+    return () => {
+      unsubscribe();
+    };
   }, [navigate]);
+
+  const handleNotificationsUpdate = (updatedNotifications) => {
+    setNotifications(updatedNotifications);
+    const unreadCount = updatedNotifications.filter((n) => !n.read).length;
+    setUnreadNotificationsCount(unreadCount);
+  };
 
   const menuItems = [
     {
@@ -126,30 +399,40 @@ const InterfaceEn = () => {
       ],
     },
     {
-      label: "Notifications",
+      label: (
+        <Badge
+          style={{ opacity: 1, position: "relative", left: 0 }}
+          count={unreadNotificationsCount}
+          overflowCount={9}
+        >
+          Notifications
+        </Badge>
+      ),
       key: "notification",
       icon: <NotificationOutlined />,
     },
   ];
 
-   const groupedMenuItems = useMemo(() => {
-      const mainItems = menuItems.filter(item => !item.group);
-      const groupedItems = menuItems.reduce((acc, item) => {
-        if (item.group && !acc.find(i => i.label === item.group)) {
-          acc.push({
-            label: item.group,
-            key: item.group.toLowerCase().replace(/\s+/g, '-'),
-            children: menuItems.filter(i => i.group === item.group).map(i => ({
+  const groupedMenuItems = useMemo(() => {
+    const mainItems = menuItems.filter((item) => !item.group);
+    const groupedItems = menuItems.reduce((acc, item) => {
+      if (item.group && !acc.find((i) => i.label === item.group)) {
+        acc.push({
+          label: item.group,
+          key: item.group.toLowerCase().replace(/\s+/g, "-"),
+          children: menuItems
+            .filter((i) => i.group === item.group)
+            .map((i) => ({
               ...i,
-              group: undefined // Remove group property from children
-            }))
-          });
-        }
-        return acc;
-      }, []);
-      
-      return [...mainItems, ...groupedItems];
+              group: undefined,
+            })),
+        });
+      }
+      return acc;
     }, []);
+
+    return [...mainItems, ...groupedItems];
+  }, [menuItems]);
 
   const findMenuPath = (key, items, path = []) => {
     for (const item of items) {
@@ -231,7 +514,13 @@ const InterfaceEn = () => {
       case "documents":
         return <ClientDocumentManagement />;
       case "notification":
-        return <NotificationInterface />;
+        return (
+          <NotificationInterface
+            notifications={notifications}
+            onNotificationsUpdate={handleNotificationsUpdate}
+            setupdate={setupdate}
+          />
+        );
       case "Mes-condidateur":
         return <ESNCandidatureInterface />;
       case "Bon-de-Commande":
@@ -274,7 +563,6 @@ const InterfaceEn = () => {
             </AutoComplete>
           </div>
           <div className="flex space-x-3 items-center ml-4">
-            {/* <Tag color="blue">ESN</Tag> */}
             <LogoutOutlined
               onClick={() => {
                 logoutEsn();

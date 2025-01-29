@@ -10,7 +10,8 @@ import InterfaceAd from './pages/interfaceAd';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
+  
+  
   const handleLogin = () => {
     setIsAuthenticated(true);
   };

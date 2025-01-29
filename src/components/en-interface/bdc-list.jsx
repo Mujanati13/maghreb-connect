@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { 
   Card,
   Input,
@@ -12,7 +14,9 @@ import {
   Select,
   Divider,
   Typography,
-  Steps
+  Steps,
+  Space,
+  Tooltip
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -22,7 +26,8 @@ import {
   FileDoneOutlined,
   SendOutlined,
   DollarOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -39,6 +44,7 @@ const BonDeCommandeInterface = () => {
   const [currentPurchaseOrder, setCurrentPurchaseOrder] = useState(null);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState({});
 
   useEffect(() => {
     fetchPurchaseOrders();
@@ -48,12 +54,79 @@ const BonDeCommandeInterface = () => {
     setLoading(true);
     try {
       const clientId = localStorage.getItem('id');
-      const response = await axios.get(`${Endponit()}/api/get_bon_de_commande_by_client/?client_id=${clientId}`);
+      const response = await axios.get(`${Endponit()}/api/get_bon_de_commande_by_esn/?esn_id=${clientId}`);
       setPurchaseOrders(response.data.data);
     } catch (error) {
       message.error('Échec de la récupération des bons de commande');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    const statusMap = {
+      'pending_esn': 'En attente de validation ESN',
+      'accepted_esn': 'Accepté ESN',
+      'rejected_esn': 'Rejeté ESN'
+    };
+    return statusMap[status] || status;
+  };
+
+  const generatePDF = (record) => {
+    const doc = new jsPDF();
+    
+    // Add header
+    doc.setFontSize(20);
+    doc.text('Bon de Commande', 105, 20, { align: 'center' });
+    
+    // Add company info
+    doc.setFontSize(12);
+    doc.text('Numéro BDC:', 20, 40);
+    doc.text(record.numero_bdc, 80, 40);
+    
+    doc.text('Date de création:', 20, 50);
+    doc.text(format(new Date(record.date_creation), 'dd MMMM yyyy', { locale: fr }), 80, 50);
+    
+    doc.text('Statut:', 20, 60);
+    doc.text(getStatusLabel(record.statut), 80, 60);
+    
+    doc.text('Montant total:', 20, 70);
+    doc.text(`${record.montant_total.toFixed(2)} €`, 80, 70);
+    
+    // Add description
+    if (record.description) {
+      doc.text('Description:', 20, 90);
+      const splitDescription = doc.splitTextToSize(record.description, 170);
+      doc.text(splitDescription, 20, 100);
+    }
+
+    // Add footer with page numbers
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(10);
+      doc.text(
+        `Page ${i} sur ${pageCount}`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 10,
+        { align: 'center' }
+      );
+    }
+
+    return doc;
+  };
+
+  const handleDownload = async (record) => {
+    setDownloadLoading(prev => ({ ...prev, [record.id_bdc]: true }));
+    try {
+      const doc = generatePDF(record);
+      doc.save(`BDC_${record.numero_bdc}.pdf`);
+      message.success('Bon de commande téléchargé avec succès');
+    } catch (error) {
+      message.error('Échec du téléchargement du bon de commande');
+      console.error('Download error:', error);
+    } finally {
+      setDownloadLoading(prev => ({ ...prev, [record.id_bdc]: false }));
     }
   };
 
@@ -114,7 +187,14 @@ const BonDeCommandeInterface = () => {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <div className="flex space-x-2">
+        <Space size="small">
+          <Tooltip title="Télécharger">
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={() => handleDownload(record)}
+              loading={downloadLoading[record.id_bdc]}
+            />
+          </Tooltip>
           <Button 
             type="primary" 
             icon={<EditOutlined />} 
@@ -135,7 +215,7 @@ const BonDeCommandeInterface = () => {
             disabled={record.statut === 'accepted_esn'}
             title="Supprimer"
           />
-        </div>
+        </Space>
       )
     }
   ];
@@ -162,7 +242,7 @@ const BonDeCommandeInterface = () => {
   const handleEdit = (record) => {
     form.setFieldsValue({
       ...record,
-      date_creation: new moment(record.date_creation)
+      date_creation: moment(record.date_creation)
     });
     setCurrentPurchaseOrder(record);
     setIsModalVisible(true);
@@ -184,7 +264,7 @@ const BonDeCommandeInterface = () => {
       const formattedValues = {
         ...values,
         date_creation: values.date_creation.toISOString(),
-        candidature_id: 1, // Adding required field from API structure
+        candidature_id: 1,
         client_id: clientId
       };
 
@@ -221,9 +301,6 @@ const BonDeCommandeInterface = () => {
             prefix={<SearchOutlined />}
             className="w-64"
           />
-          {/* <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-            Créer un bon de commande
-          </Button> */}
         </div>
       </div>
 

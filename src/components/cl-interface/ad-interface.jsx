@@ -123,6 +123,24 @@ const AppelDOffreInterface = () => {
           client_id: localStorage.getItem("id"),
           // esn_list
         });
+        res_data.data.esn_tokens.forEach(async (token) => {
+          if (token != null) {
+            try {
+              await axios.post("http://51.38.99.75:3006/send-notification", {
+                deviceToken: token,
+                messagePayload: {
+                  title: "Un nouvel appel",
+                  body: "Un nouvel appel d'offres est arrivé. Rafraîchissez pour voir",
+                },
+              });
+            } catch (error) {
+              console.error(
+                `Failed to send notification to token ${token}:`,
+                error
+              );
+            }
+          }
+        });
         message.success("Appel d'offre créé avec succès");
       }
 
@@ -258,6 +276,8 @@ const AppelDOffreInterface = () => {
         width={800}
       >
         <Form form={form} onFinish={onFinish} layout="vertical">
+          {/* </Form.Item> */}
+
           <Form.Item
             name="title"
             label="Titre"
@@ -318,8 +338,8 @@ const AppelDOffreInterface = () => {
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item
-                name="deadline"
-                label="Date limite"
+                name="start_date"
+                label="Date de début"
                 rules={[
                   { required: true, message: "Veuillez sélectionner une date" },
                 ]}
@@ -329,8 +349,8 @@ const AppelDOffreInterface = () => {
             </Col>
             <Col span={8}>
               <Form.Item
-                name="start_date"
-                label="Date de début"
+                name="deadline"
+                label="Date limite"
                 rules={[
                   { required: true, message: "Veuillez sélectionner une date" },
                 ]}

@@ -66,7 +66,6 @@ const AppelDOffreInterface = () => {
     }
   };
 
-
   useEffect(() => {
     fetchData();
     // fetchConsultants();
@@ -120,10 +119,28 @@ const AppelDOffreInterface = () => {
         formData
       );
       await axios.post(Endponit() + "/api/notify_new_candidature/", {
-        condidature_id: res_data.data.id_cd,
+        condidature_id: res_data.data.id,
         appel_offre_id: currentOffer.id,
         client_id: currentOffer.id_client,
       });
+
+      const tokenClient = res_data.data.token;
+      if (tokenClient != null) {
+        try {
+          await axios.post("http://51.38.99.75:3006/send-notification", {
+            deviceToken: tokenClient,
+            messagePayload: {
+              title: "une nouvelle candidature",
+              body: "Vous avez reçu une nouvelle candidature",
+            },
+          });
+        } catch (error) {
+          console.error(
+            `Failed to send notification to token ${token}:`,
+            error
+          );
+        }
+      }
 
       message.success("Votre candidature a été soumise avec succès !");
 

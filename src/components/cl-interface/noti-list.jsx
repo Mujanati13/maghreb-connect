@@ -13,7 +13,6 @@ import {
   SearchOutlined,
   BellOutlined,
   MailOutlined,
-  DownOutlined,
 } from "@ant-design/icons";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -25,21 +24,17 @@ const { Title, Text } = Typography;
 const NotificationInterfaceClient = () => {
   const [searchText, setSearchText] = useState("");
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchNotifications = async () => {
     try {
-      setLoading(true);
       const response = await fetch(
-        Endponit()+"/api/getNotifications/?type=client",
-
+        Endponit() + "/api/getNotifications/?type=client&id=" + localStorage.getItem("id")
       );
       if (!response.ok) {
-        throw new Error("Failed to fetch notifications");
+        throw new Error("Échec du chargement des notifications");
       }
       const data = await response.json();
-      // Transform the API data to match our component's structure
       const transformedNotifications = data.data.map((notification) => ({
         id: notification.id,
         type: notification.categorie.toLowerCase(),
@@ -51,8 +46,6 @@ const NotificationInterfaceClient = () => {
       setNotifications(transformedNotifications);
     } catch (err) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -68,28 +61,84 @@ const NotificationInterfaceClient = () => {
   });
 
   const handleMarkAsRead = async (id) => {
-    // Here you would typically make an API call to update the notification status
-    // For now, we'll just update the local state
-    const updatedNotifications = notifications.map((notification) => {
-      if (notification.id === id) {
-        return { ...notification, read: true };
+    try {
+      const response = await fetch(
+        `${Endponit()}/api/markNotificationAsRead/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Échec de la mise à jour de la notification");
       }
-      return notification;
-    });
-    setNotifications(updatedNotifications);
+
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) =>
+          notification.id === id ? { ...notification, read: true } : notification
+        )
+      );
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
   };
 
   const handleMarkAllRead = async () => {
-    // Here you would typically make an API call to mark all as read
-    const updatedNotifications = notifications.map((notification) => ({
-      ...notification,
-      read: true,
-    }));
-    setNotifications(updatedNotifications);
+    try {
+      const response = await fetch(
+        `${Endponit()}/api/markAllNotificationsAsRead`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            clientId: localStorage.getItem("id")
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Échec de la mise à jour des notifications");
+      }
+
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) => ({
+          ...notification,
+          read: true,
+        }))
+      );
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
   };
 
-  const handleClearAll = () => {
-    setNotifications([]);
+  const handleClearAll = async () => {
+    try {
+      const response = await fetch(
+        `${Endponit()}/api/clearAllNotifications`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            clientId: localStorage.getItem("id")
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Échec de la suppression des notifications");
+      }
+
+      setNotifications([]);
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
   };
 
   const menu = (
@@ -98,18 +147,10 @@ const NotificationInterfaceClient = () => {
         Marquer tout comme lu
       </Menu.Item>
       <Menu.Item key="clear-all" onClick={handleClearAll}>
-        Effacer toutes les notifications
+        Supprimer toutes les notifications
       </Menu.Item>
     </Menu>
   );
-
-  if (loading) {
-    return (
-      <Card>
-        <div>Chargement des notifications...</div>
-      </Card>
-    );
-  }
 
   if (error) {
     return (
@@ -143,81 +184,50 @@ const NotificationInterfaceClient = () => {
         </div>
       </div>
       <Tabs defaultActiveKey="all">
-        <TabPane tab="Tout" key="all">
-          {filteredNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`flex items-center justify-between p-4 border-b ${
-                notification.read ? "bg-gray-100" : "bg-blue-100"
-              }`}
-            >
-              <div className="flex items-center space-x-4">
-                {notification.type === "candidature" && <BellOutlined />}
-                {notification.type === "system" && <MailOutlined />}
-                <div>
-                  <Title level={5}>{notification.title}</Title>
-                  <Text>{notification.content}</Text>
+        <TabPane tab="Toutes" key="all">
+          {filteredNotifications.length === 0 ? (
+            <div className="text-center p-4">
+              Aucune notification
+            </div>
+          ) : (
+            filteredNotifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`flex items-center justify-between p-4 border-b ${
+                  notification.read ? "bg-gray-50" : "bg-blue-50"
+                }`}
+              >
+                <div className="flex items-center space-x-4">
+                  {notification.type === "candidature" && <BellOutlined />}
+                  {notification.type === "system" && <MailOutlined />}
                   <div>
-                    <Text type="secondary">
-                      {format(
-                        new Date(notification.timestamp),
-                        "dd MMMM yyyy HH:mm",
-                        { locale: fr }
-                      )}
-                    </Text>
+                    <Title level={5}>{notification.title}</Title>
+                    <Text>{notification.content}</Text>
+                    <div>
+                      <Text type="secondary">
+                        {format(
+                          new Date(notification.timestamp),
+                          "dd MMMM yyyy HH:mm",
+                          { locale: fr }
+                        )}
+                      </Text>
+                    </div>
                   </div>
                 </div>
+                <div className="flex items-center">
+                  {!notification.read && <Badge count={1} className="mr-2" />}
+                  <Tag
+                    color={notification.read ? "default" : "blue"}
+                    onClick={() => handleMarkAsRead(notification.id)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {notification.read ? "Lu" : "Non lu"}
+                  </Tag>
+                </div>
               </div>
-              <div className="flex items-center">
-                {!notification.read && <Badge count={1} className="mr-2" />}
-                <Tag
-                  color={notification.read ? "gray" : "blue"}
-                  onClick={() => handleMarkAsRead(notification.id)}
-                  style={{ cursor: "pointer" }}
-                >
-                  {notification.read ? "Lu" : "Non lu"}
-                </Tag>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </TabPane>
-        {/* <TabPane tab="Candidature" key="candidature">
-                    {filteredNotifications
-                        .filter((notification) => notification.type === 'candidature')
-                        .map((notification) => (
-                            <div
-                                key={notification.id}
-                                className={`flex items-center justify-between p-4 border-b ${
-                                    notification.read ? 'bg-gray-100' : 'bg-blue-100'
-                                }`}
-                            >
-                                <div className="flex items-center space-x-4">
-                                    <BellOutlined />
-                                    <div>
-                                        <Title level={5}>{notification.title}</Title>
-                                        <Text>{notification.content}</Text>
-                                        <div>
-                                            <Text type="secondary">
-                                                {format(new Date(notification.timestamp), 'dd MMMM yyyy HH:mm', { locale: fr })}
-                                            </Text>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center">
-                                    {!notification.read && (
-                                        <Badge count={1} className="mr-2" />
-                                    )}
-                                    <Tag 
-                                        color={notification.read ? 'gray' : 'blue'} 
-                                        onClick={() => handleMarkAsRead(notification.id)}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        {notification.read ? 'Lu' : 'Non lu'}
-                                    </Tag>
-                                </div>
-                            </div>
-                        ))}
-                </TabPane> */}
         <TabPane tab="Système" key="system">
           {filteredNotifications
             .filter((notification) => notification.type === "system")
@@ -225,7 +235,7 @@ const NotificationInterfaceClient = () => {
               <div
                 key={notification.id}
                 className={`flex items-center justify-between p-4 border-b ${
-                  notification.read ? "bg-gray-100" : "bg-blue-100"
+                  notification.read ? "bg-gray-50" : "bg-blue-50"
                 }`}
               >
                 <div className="flex items-center space-x-4">
@@ -247,7 +257,7 @@ const NotificationInterfaceClient = () => {
                 <div className="flex items-center">
                   {!notification.read && <Badge count={1} className="mr-2" />}
                   <Tag
-                    color={notification.read ? "gray" : "blue"}
+                    color={notification.read ? "default" : "blue"}
                     onClick={() => handleMarkAsRead(notification.id)}
                     style={{ cursor: "pointer" }}
                   >

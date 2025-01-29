@@ -118,8 +118,8 @@ const DocumentManagement = () => {
       const documentData = {
         ...values,
         ID_CLT: localStorage.getItem("id"),
-        ID_DOC_CLT: selectedDocument.ID_DOC_CLT,
-        Doc_URL: isFileUploaded ? uploadedFileUrl : selectedDocument.Doc_URL, // Use new URL only if file was uploaded
+        ID_DOC_CLT: selectedDocument?.ID_DOC_CLT,
+        Doc_URL: isFileUploaded ? uploadedFileUrl : selectedDocument?.Doc_URL, // Use new URL only if file was uploaded
       };
 
       const response = await axios.put(
@@ -418,7 +418,7 @@ const DocumentManagement = () => {
               <p>
                 Document actuel:{" "}
                 <a
-                  href={Endponit() + "/media/" + selectedDocument.Doc_URL}
+                  href={Endponit() + "/media/" + selectedDocument?.Doc_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

@@ -10,17 +10,26 @@ import {
   Table,
   message,
   Empty,
+  Space,
+  Spin,
+  Row,
+  Col,
+  Badge,
 } from "antd";
 import {
-  DownloadOutlined,
-  CheckOutlined,
-  CloseOutlined,
-  LoadingOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  CalendarOutlined,
+  DollarOutlined,
+  UserOutlined,
+  ClockCircleOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
+import axios from "axios";
 import { Endponit } from "../../helper/enpoint";
 
 const { Panel } = Collapse;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const CandidatureInterface = () => {
   const [appelsOffre, setAppelsOffre] = useState([]);
@@ -28,51 +37,37 @@ const CandidatureInterface = () => {
   const [loading, setLoading] = useState(false);
   const [currentCandidate, setCurrentCandidate] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Fetch data from APIs
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Get client ID from local storage
       const clientId = localStorage.getItem("id");
       if (!clientId) {
-        throw new Error("Client ID not found in local storage");
+        throw new Error("Client ID not found");
       }
 
-      // First, fetch Appel d'Offre data
-      const appelsOffreRes = await fetch(Endponit() + "/api/appelOffre/");
+      const appelsOffreRes = await fetch(
+        `${Endponit()}/api/getAppelOffre/?clientId=${clientId}`
+      );
       const appelsOffreData = await appelsOffreRes.json();
       setAppelsOffre(appelsOffreData.data);
 
-      // Fetch candidates for each Appel d'Offre
       const candidatesPromises = appelsOffreData.data.map(async (offre) => {
-        try {
-          const candidatesRes = await fetch(
-            `${Endponit()}/api/get-candidatures-by-project-and-client/?project_id=${
-              offre.id
-            }&client_id=${clientId}`
-          );
-          const candidatesData = await candidatesRes.json();
-
-          // Return candidates data if available
-          return candidatesData.data || [];
-        } catch (error) {
-          console.error(
-            `Error fetching candidates for offre ${offre.id}:`,
-            error
-          );
-          return []; // Return empty array in case of error
-        }
+        const candidatesRes = await fetch(
+          `${Endponit()}/api/get-candidatures-by-project-and-client/?project_id=${
+            offre.id
+          }&client_id=${clientId}`
+        );
+        const candidatesData = await candidatesRes.json();
+        return candidatesData.data || [];
       });
 
       const candidatesResults = await Promise.all(candidatesPromises);
-
-      // Flatten and combine candidates from all Appel d'Offre
-      const allCandidates = candidatesResults.flatMap((result) => result);
-      setCandidates(allCandidates);
+      setCandidates(candidatesResults.flat());
     } catch (error) {
       message.error("Erreur lors du chargement des données");
-      console.error("Error fetching data:", error);
+      console.error("Error:", error);
     } finally {
       setLoading(false);
     }
@@ -82,194 +77,483 @@ const CandidatureInterface = () => {
     fetchData();
   }, []);
 
-  const handleViewCandidate = (candidate) => {
-    setCurrentCandidate(candidate);
-    setIsModalVisible(true);
-  };
-
-  const handleAccept = async (candidate) => {
+  const createBonDeCommande = async (candidate) => {
     try {
-      const response = await fetch(`${Endponit()}/api/get_candidates/`, {
-        method: "PUT",
+      const selectedProject = appelsOffre.find(
+        (ao) => ao.id === candidate.AO_id
+      );
+      if (!selectedProject) {
+        throw new Error("Project not found");
+      }
+
+      // Calculate the duration in days between project start and end dates
+      const startDate = new Date(selectedProject.date_debut);
+      const endDate = new Date(selectedProject.date_limite);
+      const durationInDays = Math.ceil(
+        (endDate - startDate) / (1000 * 60 * 60 * 24)
+      );
+      const workingDays = Math.min(durationInDays * 0.7, 20);
+
+      const bonDeCommandeData = {
+        candidature_id: candidate.id_cd,
+        numero_bdc: `BDC-${Date.now()}`,
+        montant_total: candidate.tjm * workingDays,
+        statut: "accepted_esn",
+        description: `Bon de commande pour ${selectedProject.titre} - Candidat: ${candidate.responsable_compte}
+        Durée: ${workingDays} jours
+        TJM: ${candidate.tjm}€`,
+      };
+
+      const response = await fetch(`${Endponit()}/api/Bondecommande/`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...candidate,
-          statut: "Accepté",
-        }),
+        body: JSON.stringify(bonDeCommandeData),
       });
 
-      if (response.ok) {
-        message.success("Candidature acceptée avec succès");
-        fetchData();
-      } else {
-        throw new Error("Failed to update candidature");
+      if (!response.ok) {
+        throw new Error("Failed to create Bon de commande");
       }
+
+      const bonDeCommandeResponse = await response.json();
+      const clientId = localStorage.getItem("id");
+
+      // Send notification for bon de commande
+      const notificationResponse = await axios.post(
+        `${Endponit()}/api/notify_bon_de_commande/`,
+        {
+          esn_id: candidate.esn_id,
+          client_id: clientId,
+          bon_de_commande_id: bonDeCommandeResponse.id,
+        }
+      );
+
+      // if (notificationResponse.data.data) {
+      //   try {
+      //     await axios.post("http://http://51.38.99.75:3006/send-notification", {
+      //       deviceToken: notificationResponse.data.data,
+      //       messagePayload: {
+      //         title: "Nouveau bon de commande",
+      //         body: `Un bon de commande a été créé pour le projet ${selectedProject.titre}`,
+      //       },
+      //     });
+      //   } catch (error) {
+      //     console.error("Failed to send notification:", error);
+      //   }
+      // }
+
+      return bonDeCommandeResponse;
     } catch (error) {
-      message.error("Erreur lors de la mise à jour du statut");
-      console.error("Error updating candidature:", error);
+      console.error("Error creating bon de commande:", error);
+      throw error;
     }
   };
 
-  const handleReject = async (candidate) => {
+  const getCandidateStats = (projectId) => {
+    const projectCandidates = candidates.filter(
+      (candidate) => candidate.AO_id === projectId
+    );
+
+    return {
+      total: projectCandidates.length,
+      accepted: projectCandidates.filter(
+        (c) => c.statut.toLowerCase() === "accepté"
+      ).length,
+      rejected: projectCandidates.filter(
+        (c) => c.statut.toLowerCase() === "refusé"
+      ).length,
+      pending: projectCandidates.filter(
+        (c) => c.statut.toLowerCase() === "en cours"
+      ).length,
+    };
+  };
+
+  const checkIfProjectHasAcceptedCandidate = (projectId) => {
+    return candidates.some(
+      (candidate) =>
+        candidate.AO_id === projectId &&
+        candidate.statut.toLowerCase() === "accepté"
+    );
+  };
+
+  const updateCandidatureStatus = async (candidate, newStatus) => {
+    setActionLoading(true);
     try {
-      const response = await fetch(`${Endponit()}/api/get_candidates/`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...candidate,
-          statut: "Refusé",
-        }),
-      });
+      if (newStatus.toLowerCase() === "accepté") {
+        // if (checkIfProjectHasAcceptedCandidate(candidate.AO_id)) {
+        //   message.error(
+        //     "Ce projet a déjà un candidat accepté. Vous ne pouvez pas accepter plus d'un candidat par projet."
+        //   );
+        //   return;
+        // }
 
-      if (response.ok) {
-        message.success("Candidature refusée");
-        fetchData();
-      } else {
-        throw new Error("Failed to update candidature");
+        // Create Bon de commande when accepting a candidate
+        try {
+          const bonDeCommande = await createBonDeCommande(candidate);
+          message.success("Bon de commande créé avec succès");
+        } catch (error) {
+          message.error("Erreur lors de la création du bon de commande");
+          return;
+        }
       }
+
+      const response = await fetch(
+        `${Endponit()}/api/update-candidature-status/`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...candidate,
+            statut: newStatus,
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to update status");
+
+      if (newStatus.toLowerCase() === "accepté") {
+        const otherCandidates = candidates.filter(
+          (c) =>
+            c.AO_id === candidate.AO_id &&
+            c.id_cd !== candidate.id_cd &&
+            c.statut.toLowerCase() === "en cours"
+        );
+
+        for (const otherCandidate of otherCandidates) {
+          await fetch(`${Endponit()}/api/update-candidature-status/`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              ...otherCandidate,
+              statut: "Refusé",
+            }),
+          });
+        }
+
+        const token = await axios.post(
+          `${Endponit()}/api/notify_candidature_accepted/`,
+          {
+            candidature_id: candidate.id_cd,
+            esn_id: candidate.esn_id,
+          }
+        );
+
+        if (token.data.data != null) {
+          try {
+            await axios.post("http://51.38.99.75:3006/send-notification", {
+              deviceToken: token.data.data,
+              messagePayload: {
+                title: "Votre candidature a été acceptée.",
+                body: "",
+              },
+            });
+          } catch (error) {
+            console.error(
+              `Failed to send notification to token ${token}:`,
+              error
+            );
+          }
+        }
+      }
+
+      message.success(`Candidature ${newStatus.toLowerCase()}e avec succès`);
+      await fetchData();
+      setIsModalVisible(false);
     } catch (error) {
       message.error("Erreur lors de la mise à jour du statut");
-      console.error("Error updating candidature:", error);
+      console.error("Error:", error);
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "accepté":
-        return "success";
-      case "refusé":
-        return "error";
-      case "en cours":
-        return "processing";
-      default:
-        return "default";
-    }
+  const getStatusTag = (status) => {
+    const statusConfig = {
+      accepté: {
+        color: "success",
+        icon: <CheckCircleOutlined />,
+      },
+      refusé: {
+        color: "error",
+        icon: <CloseCircleOutlined />,
+      },
+      "en cours": {
+        color: "processing",
+        icon: <ClockCircleOutlined />,
+      },
+    };
+
+    const config = statusConfig[status?.toLowerCase()] || {
+      color: "default",
+      icon: <ClockCircleOutlined />,
+    };
+
+    return (
+      <Tag color={config.color} icon={config.icon}>
+        {status}
+      </Tag>
+    );
   };
+
+  const columns = [
+    {
+      title: "Candidat",
+      dataIndex: "responsable_compte",
+      key: "nom",
+      render: (text) => (
+        <Space>
+          <UserOutlined />
+          {text}
+        </Space>
+      ),
+    },
+    {
+      title: "TJM Proposé",
+      dataIndex: "tjm",
+      key: "tjm",
+      render: (tjm) => (
+        <Space>
+          <DollarOutlined />
+          {`${tjm} €`}
+        </Space>
+      ),
+    },
+    {
+      title: "Date Candidature",
+      dataIndex: "date_candidature",
+      key: "dateCandidature",
+      render: (date) => (
+        <Space>
+          <CalendarOutlined />
+          {new Date(date).toLocaleDateString()}
+        </Space>
+      ),
+    },
+    {
+      title: "Disponibilité",
+      dataIndex: "date_disponibilite",
+      key: "dateDisponibilite",
+      render: (date) => (
+        <Space>
+          <ClockCircleOutlined />
+          {new Date(date).toLocaleDateString()}
+        </Space>
+      ),
+    },
+    {
+      title: "Statut",
+      dataIndex: "statut",
+      key: "statut",
+      render: (statut) => getStatusTag(statut),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => {
+        const hasAcceptedCandidate = checkIfProjectHasAcceptedCandidate(
+          record.AO_id
+        );
+        const isCurrentCandidateAccepted =
+          record.statut.toLowerCase() === "accepté";
+
+        return (
+          <Space>
+            <Button
+              type="primary"
+              icon={<EyeOutlined />}
+              onClick={() => {
+                setCurrentCandidate(record);
+                setIsModalVisible(true);
+              }}
+            >
+              Voir
+            </Button>
+            {record.statut.toLowerCase() === "en cours" && (
+              <>
+                <Button
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => updateCandidatureStatus(record, "Accepté")}
+                  disabled={actionLoading}
+                >
+                  Accepter
+                </Button>
+                <Button
+                  danger
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => updateCandidatureStatus(record, "Refusé")}
+                  disabled={actionLoading}
+                >
+                  Refuser
+                </Button>
+              </>
+            )}
+          </Space>
+        );
+      },
+    },
+  ];
+
+  const renderCandidateDetails = () => (
+    <Card>
+      <Descriptions bordered column={1}>
+        <Descriptions.Item
+          label={
+            <Space>
+              <UserOutlined /> Nom complet
+            </Space>
+          }
+        >
+          {`${currentCandidate?.nom} ${currentCandidate?.prenom}`}
+        </Descriptions.Item>
+        <Descriptions.Item
+          label={
+            <Space>
+              <DollarOutlined /> TJM Proposé
+            </Space>
+          }
+        >
+          {`${currentCandidate?.tjm} €`}
+        </Descriptions.Item>
+        <Descriptions.Item
+          label={
+            <Space>
+              <CalendarOutlined /> Date de candidature
+            </Space>
+          }
+        >
+          {currentCandidate?.date_candidature &&
+            new Date(currentCandidate.date_candidature).toLocaleDateString()}
+        </Descriptions.Item>
+        <Descriptions.Item
+          label={
+            <Space>
+              <ClockCircleOutlined /> Disponibilité
+            </Space>
+          }
+        >
+          {currentCandidate?.date_disponibilite &&
+            new Date(currentCandidate.date_disponibilite).toLocaleDateString()}
+        </Descriptions.Item>
+        <Descriptions.Item label="Statut">
+          {getStatusTag(currentCandidate?.statut)}
+        </Descriptions.Item>
+      </Descriptions>
+
+      {currentCandidate?.statut.toLowerCase() === "en cours" && (
+        <Row justify="end" style={{ marginTop: 16 }}>
+          <Space>
+            <Button
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() =>
+                updateCandidatureStatus(currentCandidate, "Accepté")
+              }
+              disabled={actionLoading}
+            >
+              Accepter
+            </Button>
+            <Button
+              danger
+              icon={<CloseCircleOutlined />}
+              onClick={() =>
+                updateCandidatureStatus(currentCandidate, "Refusé")
+              }
+              disabled={actionLoading}
+            >
+              Refuser
+            </Button>
+          </Space>
+        </Row>
+      )}
+    </Card>
+  );
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <LoadingOutlined style={{ fontSize: 24 }} spin />
+        <Spin size="large" />
       </div>
     );
   }
 
   return (
-    <div>
-      <Collapse accordion>
+    <div className="p-2">
+      <Collapse accordion className="mb-4">
         {appelsOffre.map((offre) => {
           const relatedCandidates = candidates.filter(
-            (candidate) => candidate.appelOffreId === offre.AO_id
+            (candidate) => candidate.AO_id === offre.id
           );
+          const stats = getCandidateStats(offre.id);
 
           return (
             <Panel
               header={
-                <div>
-                  <div>{offre.titre}</div>
-                  <Text type="secondary">{offre.description}</Text>
-                </div>
+                <Row justify="space-between" align="middle">
+                  <Col flex="auto">
+                    <div className="font-medium" style={{ margin: 0 }}>
+                      {offre.titre}
+                    </div>
+                    <Text type="secondary">{offre.description}</Text>
+                    <div style={{ marginTop: 8 }}>
+                      <Space size="middle">
+                        <Badge count={stats.total} showZero>
+                          <Tag>Total Candidats</Tag>
+                        </Badge>
+                        <Badge count={stats.accepted} showZero color="#52c41a">
+                          <Tag color="success">Acceptés</Tag>
+                        </Badge>
+                        <Badge count={stats.rejected} showZero color="#f5222d">
+                          <Tag color="error">Refusés</Tag>
+                        </Badge>
+                        <Badge count={stats.pending} showZero color="#1890ff">
+                          <Tag color="processing">En Cours</Tag>
+                        </Badge>
+                      </Space>
+                    </div>
+                  </Col>
+                  <Col>
+                    <Space direction="vertical" align="end">
+                      <Tag color="blue">{`TJM: ${offre.tjm_min} - ${offre.tjm_max} €`}</Tag>
+                      <Tag color={offre.statut === "1" ? "green" : "red"}>
+                        {offre.statut === "1" ? "Actif" : "Inactif"}
+                      </Tag>
+                    </Space>
+                  </Col>
+                </Row>
               }
               key={offre.id}
             >
               <Card>
-                <div className="flex justify-between items-center mb-4">
-                  <div>
-                    <Text type="secondary">TJM:</Text>
-                    <Text>{`${offre.tjm_min} - ${offre.tjm_max} €`}</Text>
-                  </div>
-                  <div>
-                    <Text type="secondary">Statut:</Text>
-                    <Text>{offre.statut === "1" ? "Actif" : "Inactif"}</Text>
-                  </div>
-                  <div>
-                    <Text type="secondary">Date limite:</Text>
-                    <Text>
+                <Row gutter={[16, 16]} className="mb-4">
+                  <Col span={12}>
+                    <Text type="secondary">
+                      <CalendarOutlined /> Date limite:{" "}
                       {new Date(offre.date_limite).toLocaleDateString()}
                     </Text>
-                  </div>
-                  <div>
-                    <Text type="secondary">Date début:</Text>
-                    <Text>
+                  </Col>
+                  <Col span={12}>
+                    <Text type="secondary">
+                      <CalendarOutlined /> Date début:{" "}
                       {new Date(offre.date_debut).toLocaleDateString()}
                     </Text>
-                  </div>
-                </div>
+                  </Col>
+                </Row>
 
                 {relatedCandidates.length > 0 ? (
                   <Table
                     dataSource={relatedCandidates}
-                    rowKey="id"
-                    columns={[
-                      {
-                        title: "Nom",
-                        dataIndex: "responsable_compte",
-                        key: "nom",
-                      },
-
-                      {
-                        title: "TJM Proposé",
-                        dataIndex: "tjm",
-                        key: "tjm",
-                        render: (tjm) => `${tjm} €`,
-                      },
-                      {
-                        title: "Date Candidature",
-                        dataIndex: "date_candidature",
-                        key: "dateCandidature",
-                        render: (date) => new Date(date).toLocaleDateString(),
-                      },
-                      {
-                        title: "Disponibilité",
-                        dataIndex: "date_disponibilite",
-                        key: "date_disponibilite",
-                        render: (date) => new Date(date).toLocaleDateString(),
-                      },
-                      {
-                        title: "Statut",
-                        dataIndex: "statut",
-                        key: "statut",
-                        render: (statut) => (
-                          <Tag color={getStatusColor(statut)}>{statut}</Tag>
-                        ),
-                      },
-                      {
-                        title: "Actions",
-                        key: "actions",
-                        render: (_, record) => (
-                          <div>
-                            <Button
-                              type="primary"
-                              shape="circle"
-                              icon={<CheckOutlined />}
-                              onClick={() => handleAccept(record)}
-                              disabled={record.statut !== "En cours"}
-                            />
-                            <Button
-                              type="danger"
-                              shape="circle"
-                              icon={<CloseOutlined />}
-                              style={{ marginLeft: 8 }}
-                              onClick={() => handleReject(record)}
-                              disabled={record.statut !== "En cours"}
-                            />
-                          </div>
-                        ),
-                      },
-                    ]}
-                    onRow={(record) => ({
-                      onClick: () => handleViewCandidate(record),
-                    })}
+                    columns={columns}
+                    rowKey="id_cd"
+                    pagination={{ pageSize: 5 }}
                   />
                 ) : (
-                  <Empty
-                    description="Aucun candidat pour cet appel d'offre"
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  />
+                  <Empty description="Aucun candidat pour cet appel d'offre" />
                 )}
               </Card>
             </Panel>
@@ -278,35 +562,13 @@ const CandidatureInterface = () => {
       </Collapse>
 
       <Modal
-        title={`Candidature - ${currentCandidate?.nom} ${currentCandidate?.prenom}`}
+        title="Détails de la candidature"
         visible={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
+        width={700}
       >
-        <Descriptions bordered>
-          <Descriptions.Item label="Nom" span={3}>
-            {currentCandidate?.nom}
-          </Descriptions.Item>
-          <Descriptions.Item label="Prénom" span={3}>
-            {currentCandidate?.prenom}
-          </Descriptions.Item>
-          <Descriptions.Item label="TJM Proposé" span={3}>
-            {currentCandidate?.tjm} €
-          </Descriptions.Item>
-          <Descriptions.Item label="Date de candidature" span={3}>
-            {currentCandidate?.dateCandidature &&
-              new Date(currentCandidate.dateCandidature).toLocaleDateString()}
-          </Descriptions.Item>
-          <Descriptions.Item label="Date de disponibilité" span={3}>
-            {currentCandidate?.dateDisponibilite &&
-              new Date(currentCandidate.dateDisponibilite).toLocaleDateString()}
-          </Descriptions.Item>
-          <Descriptions.Item label="Statut" span={3}>
-            <Tag color={getStatusColor(currentCandidate?.statut)}>
-              {currentCandidate?.statut}
-            </Tag>
-          </Descriptions.Item>
-        </Descriptions>
+        {currentCandidate && renderCandidateDetails()}
       </Modal>
     </div>
   );

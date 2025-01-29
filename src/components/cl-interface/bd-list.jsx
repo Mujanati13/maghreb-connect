@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import {
   Card,
   Input,
@@ -23,7 +25,8 @@ import {
   ClockCircleOutlined,
   CheckOutlined,
   CloseOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -38,6 +41,7 @@ const PurchaseOrderInterface = () => {
   const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false);
   const [selectedPO, setSelectedPO] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloadLoading, setDownloadLoading] = useState({});
 
   useEffect(() => {
     fetchPurchaseOrders();
@@ -59,6 +63,65 @@ const PurchaseOrderInterface = () => {
       message.error('Échec de la récupération des bons de commande');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generatePDF = (record) => {
+    const doc = new jsPDF();
+    
+    // Add company logo or header
+    doc.setFontSize(20);
+    doc.text('Bon de Commande', 105, 20, { align: 'center' });
+    
+    // Add purchase order details
+    doc.setFontSize(12);
+    doc.text(`Numéro BDC: ${record.numero_bdc}`, 20, 40);
+    doc.text(`Date de création: ${format(new Date(record.date_creation), 'dd MMMM yyyy', { locale: fr })}`, 20, 50);
+    doc.text(`Montant total: ${record.montant_total.toFixed(2)} €`, 20, 60);
+    doc.text(`Statut: ${getStatusLabel(record.statut)}`, 20, 70);
+
+    if (record.description) {
+      doc.text('Description:', 20, 90);
+      const splitDescription = doc.splitTextToSize(record.description, 170);
+      doc.text(splitDescription, 20, 100);
+    }
+
+    // Add footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(10);
+      doc.text(
+        `Page ${i} sur ${pageCount}`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 10,
+        { align: 'center' }
+      );
+    }
+
+    return doc;
+  };
+
+  const getStatusLabel = (status) => {
+    const statusMap = {
+      'pending_esn': 'En attente ESN',
+      'accepted_esn': 'Accepté ESN',
+      'rejected_esn': 'Refusé ESN'
+    };
+    return statusMap[status] || status;
+  };
+
+  const handleDownload = async (record) => {
+    setDownloadLoading(prev => ({ ...prev, [record.id_bdc]: true }));
+    try {
+      const doc = generatePDF(record);
+      doc.save(`BDC_${record.numero_bdc}.pdf`);
+      message.success('Bon de commande téléchargé avec succès');
+    } catch (error) {
+      message.error('Échec du téléchargement du bon de commande');
+      console.error('Download error:', error);
+    } finally {
+      setDownloadLoading(prev => ({ ...prev, [record.id_bdc]: false }));
     }
   };
 
@@ -174,6 +237,13 @@ const PurchaseOrderInterface = () => {
               onClick={() => showDetails(record)}
             />
           </Tooltip>
+          <Tooltip title="Télécharger">
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={() => handleDownload(record)}
+              loading={downloadLoading[record.id_bdc]}
+            />
+          </Tooltip>
           {record.statut === 'pending_esn' && (
             <>
               <Tooltip title="Accepter">
@@ -264,6 +334,14 @@ const PurchaseOrderInterface = () => {
         open={isDetailsModalVisible}
         onCancel={() => setIsDetailsModalVisible(false)}
         footer={[
+          <Button 
+            key="download"
+            icon={<DownloadOutlined />}
+            onClick={() => handleDownload(selectedPO)}
+            loading={downloadLoading[selectedPO?.id_bdc]}
+          >
+            Télécharger
+          </Button>,
           <Button key="close" onClick={() => setIsDetailsModalVisible(false)}>
             Fermer
           </Button>,
