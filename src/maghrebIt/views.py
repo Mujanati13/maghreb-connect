@@ -1679,11 +1679,20 @@ def Contrat_view(request, id=0):
 
             col_serializer.save()
             # Sauvegarde le contrat dans la base de données.
+            candidature_id = col_serializer.data["candidature_id"]
+            esn_id = None
+            try:
+                candidature = Candidature.objects.get(id_cd=candidature_id)
+                esn_id = candidature.esn_id
+            except Candidature.DoesNotExist:
+                esn_id = None
 
             return JsonResponse({
                 "status": True,
                 "msg": "Added Successfully!!",
-                "errors": col_serializer.errors
+                "errors": col_serializer.errors,
+                "id_contrat": col_serializer.data["id_contrat"],
+                "esn_id" : esn_id
             }, safe=False)
             # Retourne une réponse JSON indiquant que le contrat a été ajouté avec succès.
 
@@ -2515,11 +2524,11 @@ def notify_signature_contrat(request):
 
             # Notification pour le client
             message_client = f"Le contrat {contrat_id} a été signé avec l'ESN {esn_id}."
-            send_notification(user_id=client_id, message=message_client, categorie="Signature de Contrat")
+            send_notification(user_id=esn_id, dest_id=esn_id, message=message_client, categorie="Client", event="Contrat", event_id=contrat_id)
 
             # Notification pour l'ESN
             message_esn = f"Le contrat {contrat_id} a été signé avec le client {client_id}."
-            send_notification(user_id=esn_id, message=message_esn, categorie="Signature de Contrat")
+            send_notification(user_id=client_id, dest_id=client_id, message=message_esn, categorie="ESN", event="Contrat", event_id=contrat_id)
 
             return JsonResponse({"status": True, "message": "Notifications envoyées au client et à l'ESN."}, safe=False)
 
