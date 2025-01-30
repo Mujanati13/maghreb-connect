@@ -437,12 +437,12 @@ const OrderAndContractInterface = () => {
               />
             </div>
 
-            {purchaseOrders.filter((po) => po.statut === "pending_esn").length >
+            {purchaseOrders?.filter((po) => po.statut === "pending_esn").length >
               0 && (
               <Alert
                 message="Bons de commande en attente"
                 description={`Vous avez ${
-                  purchaseOrders.filter((po) => po.statut === "pending_esn")
+                  purchaseOrders?.filter((po) => po.statut === "pending_esn")
                     .length
                 } bon(s) de commande en attente de validation.`}
                 type="info"
@@ -454,7 +454,7 @@ const OrderAndContractInterface = () => {
 
           <Table
             columns={purchaseOrderColumns}
-            dataSource={purchaseOrders.filter(
+            dataSource={purchaseOrders?.filter(
               (po) =>
                 po.numero_bdc
                   ?.toLowerCase()
