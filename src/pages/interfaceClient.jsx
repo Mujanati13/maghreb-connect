@@ -30,7 +30,7 @@ import {
   message,
   Badge,
 } from "antd";
-import { getMessaging, onMessage, getToken } from "firebase/messaging";
+// import { getMessaging, onMessage, getToken } from "firebase/messaging";
 // import { firebaseApp } from "../helper/firebase/config";
 import { Endponit } from "../helper/enpoint";
 
@@ -45,7 +45,7 @@ import PartenariatInterface from "../components/cl-interface/partenariat-list";
 import ConsultantManagement from "../components/cl-interface/list-consultant";
 import { isClientLoggedIn, logoutEsn } from "../helper/db";
 import { useNavigate } from "react-router-dom";
-import { messaging } from "../helper/firebase/config";
+// import { messaging } from "../helper/firebase/config";
 
 const NotificationInterface = ({
   notifications,
@@ -236,10 +236,10 @@ const ClientProfile = () => {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         // Get the FCM token
-        const currentToken = await getToken(messaging, {
-          vapidKey:
-            "BNr1YPHHD-jYLHyQcJUduQyVZA7BWGIx1q6e8m-bU442LV7Hu28P80AJyJNL998WF563PHdD97BLtZNpYJW-sSw", // Replace with your VAPID key
-        });
+        // const currentToken = await getToken(messaging, {
+        //   vapidKey:
+        //     "BNr1YPHHD-jYLHyQcJUduQyVZA7BWGIx1q6e8m-bU442LV7Hu28P80AJyJNL998WF563PHdD97BLtZNpYJW-sSw", // Replace with your VAPID key
+        // });
 
         if (currentToken) {
           console.log("FCM Token:", currentToken);
@@ -277,21 +277,21 @@ const ClientProfile = () => {
     }
   };
 
-  onMessage(messaging, (payload) => {
-    console.log("Message received:", payload);
+  // onMessage(messaging, (payload) => {
+  //   console.log("Message received:", payload);
 
-    const newNotification = {
-      id: Date.now(),
-      type: "system",
-      title: payload.notification?.title || "New Notification",
-      content: payload.notification?.body || "You have a new notification",
-      timestamp: new Date().toISOString(),
-      read: false,
-    };
+  //   const newNotification = {
+  //     id: Date.now(),
+  //     type: "system",
+  //     title: payload.notification?.title || "New Notification",
+  //     content: payload.notification?.body || "You have a new notification",
+  //     timestamp: new Date().toISOString(),
+  //     read: false,
+  //   };
 
-    setNotifications((prev) => [newNotification, ...prev]);
-    setUnreadNotificationsCount((prev) => prev + 1);
-  });
+  //   setNotifications((prev) => [newNotification, ...prev]);
+  //   setUnreadNotificationsCount((prev) => prev + 1);
+  // });
 
   useEffect(() => {
     const auth = isClientLoggedIn();
@@ -324,21 +324,21 @@ const ClientProfile = () => {
     checkPendingNotifications(); // Check for pending notifications on component mount
 
     // Handle foreground messages
-    const unsubscribe = onMessage(messaging, (payload) => {
-      console.log("Message received:", payload);
+    // const unsubscribe = onMessage(messaging, (payload) => {
+    //   console.log("Message received:", payload);
 
-      const newNotification = {
-        id: Date.now(),
-        type: "system",
-        title: payload.notification?.title || "New Notification",
-        content: payload.notification?.body || "You have a new notification",
-        timestamp: new Date().toISOString(),
-        read: false,
-      };
+    //   const newNotification = {
+    //     id: Date.now(),
+    //     type: "system",
+    //     title: payload.notification?.title || "New Notification",
+    //     content: payload.notification?.body || "You have a new notification",
+    //     timestamp: new Date().toISOString(),
+    //     read: false,
+    //   };
 
-      setNotifications((prev) => [newNotification, ...prev]);
-      setUnreadNotificationsCount((prev) => prev + 1);
-    });
+    //   setNotifications((prev) => [newNotification, ...prev]);
+    //   setUnreadNotificationsCount((prev) => prev + 1);
+    // });
 
     return () => {
       unsubscribe();
