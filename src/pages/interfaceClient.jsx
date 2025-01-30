@@ -340,9 +340,9 @@ const ClientProfile = () => {
     //   setUnreadNotificationsCount((prev) => prev + 1);
     // });
 
-    return () => {
-      unsubscribe();
-    };
+    // return () => {
+    //   unsubscribe();
+    // };
   }, [navigate, update]);
 
   const handleNotificationsUpdate = (updatedNotifications) => {
