@@ -245,35 +245,35 @@ const InterfaceEn = () => {
         //     "BNr1YPHHD-jYLHyQcJUduQyVZA7BWGIx1q6e8m-bU442LV7Hu28P80AJyJNL998WF563PHdD97BLtZNpYJW-sSw", // Replace with your VAPID key
         // });
 
-        if (currentToken) {
-          console.log("FCM Token:", currentToken);
+        // if (currentToken) {
+        //   console.log("FCM Token:", currentToken);
 
-          // Send the token to your backend server
-          await fetch(
-            Endponit() +
-              "/api/update-token/?id=" +
-              localStorage.getItem("id") +
-              "&token=" +
-              currentToken +
-              "&type=esn",
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                id: localStorage.getItem("id"), // Replace with the user's ID
-                token: currentToken,
-                type: "esn",
-                Esn: "esn",
-              }),
-            }
-          );
+        //   // Send the token to your backend server
+        //   await fetch(
+        //     Endponit() +
+        //       "/api/update-token/?id=" +
+        //       localStorage.getItem("id") +
+        //       "&token=" +
+        //       currentToken +
+        //       "&type=esn",
+        //     {
+        //       method: "PUT",
+        //       headers: {
+        //         "Content-Type": "application/json",
+        //       },
+        //       body: JSON.stringify({
+        //         id: localStorage.getItem("id"), // Replace with the user's ID
+        //         token: currentToken,
+        //         type: "esn",
+        //         Esn: "esn",
+        //       }),
+        //     }
+        //   );
 
-          console.log("FCM token sent to the server.");
-        } else {
-          console.log("No registration token available.");
-        }
+        //   console.log("FCM token sent to the server.");
+        // } else {
+        //   console.log("No registration token available.");
+        // }
       } else {
         console.log("Permission denied for notifications.");
       }
@@ -309,7 +309,7 @@ const InterfaceEn = () => {
     // });
     retrieveFCMToken();
     return () => {
-      unsubscribe();
+      // unsubscribe();
     };
   }, [navigate]);
 

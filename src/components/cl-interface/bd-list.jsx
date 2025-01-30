@@ -91,9 +91,9 @@ const OrderAndContractInterface = () => {
       const response = await axios.get(
         `${Endponit()}/api/contrat_by_idClient/?clientId=${esnId}`
       );
-      console.log('====================================');
+      console.log("====================================");
       console.log(response.data);
-      console.log('====================================');
+      console.log("====================================");
       setContracts(response.data.data);
     } catch (error) {
       message.error("Échec de la récupération des contrats");
@@ -232,9 +232,10 @@ const OrderAndContractInterface = () => {
     }
   };
 
-  const handleAccept = async (id) => {
+  const handleAccept = async (id, bdc) => {
     try {
       await axios.put(`${Endponit()}/api/Bondecommande/${id}`, {
+        ...bdc,
         statut: "accepted_esn",
       });
       message.success("Bon de commande accepté avec succès");
@@ -244,9 +245,10 @@ const OrderAndContractInterface = () => {
     }
   };
 
-  const handleReject = async (id) => {
+  const handleReject = async (id, bdc) => {
     try {
       await axios.put(`${Endponit()}/api/Bondecommande/${id}`, {
+        ...bdc,
         statut: "rejected_esn",
       });
       message.success("Bon de commande refusé");
@@ -266,7 +268,7 @@ const OrderAndContractInterface = () => {
       okType: "primary",
       cancelText: "Annuler",
       onOk() {
-        handleAccept(record.id_bdc);
+        handleAccept(record.id_bdc, record);
       },
     });
   };
@@ -280,7 +282,7 @@ const OrderAndContractInterface = () => {
       okType: "danger",
       cancelText: "Annuler",
       onOk() {
-        handleReject(record.id_bdc);
+        handleReject(record.id_bdc, record);
       },
     });
   };

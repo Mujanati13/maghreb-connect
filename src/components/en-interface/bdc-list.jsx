@@ -11,12 +11,13 @@ import {
   Form,
   DatePicker,
   message,
-  Select,
+  Tag,
   Divider,
   Typography,
   Steps,
   Space,
-  Tooltip
+  Tooltip,
+  Select
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -27,7 +28,8 @@ import {
   SendOutlined,
   DollarOutlined,
   FileTextOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -36,19 +38,40 @@ import { Endponit } from '../../helper/enpoint';
 
 const { TextArea } = Input;
 const { Step } = Steps;
+const { Option } = Select;
 
 const BonDeCommandeInterface = () => {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [candidates, setCandidates] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentPurchaseOrder, setCurrentPurchaseOrder] = useState(null);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState({});
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
 
   useEffect(() => {
     fetchPurchaseOrders();
+    fetchCandidates();
   }, []);
+
+  const fetchCandidates = async () => {
+    setCandidatesLoading(true);
+    try {
+      const clientId = localStorage.getItem('id');
+      const response = await axios.get(`${Endponit()}/api/get-candidatures-by-esn/?esn_id=${clientId}`);
+      // Filter only selected candidates
+      const selectedCandidates = response.data.data.filter(candidate => 
+        candidate.statut === 'Sélectionnée'
+      );
+      setCandidates(response.data.data);
+    } catch (error) {
+      message.error('Échec de la récupération des candidatures');
+    } finally {
+      setCandidatesLoading(false);
+    }
+  };
 
   const fetchPurchaseOrders = async () => {
     setLoading(true);
@@ -63,6 +86,18 @@ const BonDeCommandeInterface = () => {
     }
   };
 
+  // When candidate is selected, calculate total amount based on TJM
+  const handleCandidateSelect = (candidateId) => {
+    const selectedCandidate = candidates.find(c => c.id_cd === candidateId);
+    if (selectedCandidate) {
+      // Assuming 20 working days per month as default
+      const monthlyAmount = selectedCandidate.tjm * 20;
+      form.setFieldsValue({
+        montant_total: monthlyAmount
+      });
+    }
+  };
+
   const getStatusLabel = (status) => {
     const statusMap = {
       'pending_esn': 'En attente de validation ESN',
@@ -72,77 +107,13 @@ const BonDeCommandeInterface = () => {
     return statusMap[status] || status;
   };
 
-  const generatePDF = (record) => {
-    const doc = new jsPDF();
-    
-    // Add header
-    doc.setFontSize(20);
-    doc.text('Bon de Commande', 105, 20, { align: 'center' });
-    
-    // Add company info
-    doc.setFontSize(12);
-    doc.text('Numéro BDC:', 20, 40);
-    doc.text(record.numero_bdc, 80, 40);
-    
-    doc.text('Date de création:', 20, 50);
-    doc.text(format(new Date(record.date_creation), 'dd MMMM yyyy', { locale: fr }), 80, 50);
-    
-    doc.text('Statut:', 20, 60);
-    doc.text(getStatusLabel(record.statut), 80, 60);
-    
-    doc.text('Montant total:', 20, 70);
-    doc.text(`${record.montant_total.toFixed(2)} €`, 80, 70);
-    
-    // Add description
-    if (record.description) {
-      doc.text('Description:', 20, 90);
-      const splitDescription = doc.splitTextToSize(record.description, 170);
-      doc.text(splitDescription, 20, 100);
-    }
-
-    // Add footer with page numbers
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(10);
-      doc.text(
-        `Page ${i} sur ${pageCount}`,
-        doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 10,
-        { align: 'center' }
-      );
-    }
-
-    return doc;
-  };
-
-  const handleDownload = async (record) => {
-    setDownloadLoading(prev => ({ ...prev, [record.id_bdc]: true }));
-    try {
-      const doc = generatePDF(record);
-      doc.save(`BDC_${record.numero_bdc}.pdf`);
-      message.success('Bon de commande téléchargé avec succès');
-    } catch (error) {
-      message.error('Échec du téléchargement du bon de commande');
-      console.error('Download error:', error);
-    } finally {
-      setDownloadLoading(prev => ({ ...prev, [record.id_bdc]: false }));
-    }
-  };
-
-  const statusOptions = [
-    { value: 'pending_esn', label: 'En attente de validation ESN' },
-    { value: 'accepted_esn', label: 'Accepté ESN' },
-    { value: 'rejected_esn', label: 'Rejeté ESN' }
-  ];
-
   const getStatusColor = (status) => {
     const colors = {
       pending_esn: 'warning',
       accepted_esn: 'success',
       rejected_esn: 'error'
     };
-    return colors[status] || 'default';
+    return colors[status];
   };
 
   const columns = [
@@ -174,13 +145,9 @@ const BonDeCommandeInterface = () => {
       dataIndex: 'statut',
       key: 'statut',
       render: (status) => (
-        <Select
-          value={status}
-          style={{ width: 200 }}
-          options={statusOptions}
-          disabled
-          status={getStatusColor(status)}
-        />
+        <Tag color={getStatusColor(status)}>
+          {getStatusLabel(status)}
+        </Tag>
       )
     },
     {
@@ -195,12 +162,14 @@ const BonDeCommandeInterface = () => {
               loading={downloadLoading[record.id_bdc]}
             />
           </Tooltip>
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
-            onClick={() => handleEdit(record)}
-            title="Modifier"
-          />
+          {record.statut !== 'accepted_esn' && (
+            <Button 
+              type="primary" 
+              icon={<EditOutlined />} 
+              onClick={() => handleEdit(record)}
+              title="Modifier"
+            />
+          )}
           <Button 
             type="primary"
             icon={<SendOutlined />}
@@ -219,19 +188,6 @@ const BonDeCommandeInterface = () => {
       )
     }
   ];
-
-  const handleSendToESN = async (record) => {
-    try {
-      await axios.put(`${Endponit()}/api/Bondecommande/${record.id_bdc}`, {
-        ...record,
-        statut: 'pending_esn'
-      });
-      message.success('Bon de commande envoyé à l\'ESN pour validation');
-      fetchPurchaseOrders();
-    } catch (error) {
-      message.error('Échec de l\'envoi du bon de commande');
-    }
-  };
 
   const handleAdd = () => {
     form.resetFields();
@@ -264,12 +220,14 @@ const BonDeCommandeInterface = () => {
       const formattedValues = {
         ...values,
         date_creation: values.date_creation.toISOString(),
-        candidature_id: 1,
-        client_id: clientId
+        client_id: clientId,
       };
 
       if (currentPurchaseOrder) {
-        await axios.put(`${Endponit()}/api/Bondecommande/`, {...formattedValues, id_bdc:currentPurchaseOrder.id_bdc});
+        await axios.put(`${Endponit()}/api/Bondecommande/`, {
+          ...formattedValues,
+          id_bdc: currentPurchaseOrder.id_bdc
+        });
         message.success('Bon de commande mis à jour avec succès');
       } else {
         await axios.post(`${Endponit()}/api/Bondecommande/`, {
@@ -293,7 +251,7 @@ const BonDeCommandeInterface = () => {
           <Step title="Validation ESN" icon={<SendOutlined />} />
           <Step title="Finalisation" icon={<FileTextOutlined />} />
         </Steps>
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-4">
           <Input
             placeholder="Rechercher des bons de commande"
             value={searchText}
@@ -301,12 +259,19 @@ const BonDeCommandeInterface = () => {
             prefix={<SearchOutlined />}
             className="w-64"
           />
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+          >
+            Nouveau bon de commande
+          </Button>
         </div>
       </div>
 
       <Table
         columns={columns}
-        dataSource={purchaseOrders&&purchaseOrders.filter((po) =>
+        dataSource={purchaseOrders?.filter((po) =>
           po.numero_bdc?.toLowerCase().includes(searchText.toLowerCase()) ||
           po.description?.toLowerCase().includes(searchText.toLowerCase())
         )}
@@ -336,6 +301,29 @@ const BonDeCommandeInterface = () => {
           layout="vertical"
           onFinish={handleSubmit}
         >
+          {!currentPurchaseOrder && (
+            <Form.Item
+              label="Sélectionner une candidature"
+              name="candidature_id"
+              rules={[{ required: true, message: 'Veuillez sélectionner une candidature' }]}
+            >
+              <Select
+                loading={candidatesLoading}
+                onChange={handleCandidateSelect}
+                placeholder="Sélectionner une candidature"
+              >
+                {candidates.map(candidate => (
+                  <Option key={candidate.id_cd} value={candidate.id_cd}>
+                    <Space>
+                      <UserOutlined />
+                      {`${candidate.responsable_compte} - TJM: ${candidate.tjm}€ - Disponible le: ${format(new Date(candidate.date_disponibilite), 'dd/MM/yyyy')}`}
+                    </Space>
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <Form.Item
               label="Numéro du bon de commande"
