@@ -1867,7 +1867,28 @@ def apprlOffre_by_idClient(request):
         for S in appelOffre_serializer.data:
             data.append(S)
         return JsonResponse({"total": len(data),"data": data}, safe=False)
-    
+
+@csrf_exempt
+def get_candidatures_by_esn(request):
+    if request.method == 'GET':
+        esn_id = request.GET.get("esn_id")
+        
+        if not esn_id:
+            return JsonResponse({"status": False, "message": "esn_id manquant"}, safe=False)
+
+        # Filtrer les candidatures associées à l'ESN
+        candidatures = Candidature.objects.filter(esn_id=esn_id)
+
+        if not candidatures.exists():
+            return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour cet ESN"}, safe=False)
+
+        # Sérialiser les données des candidatures
+        candidature_serializer = CandidatureSerializer(candidatures, many=True)
+
+        return JsonResponse({"status": True, "data": candidature_serializer.data}, safe=False)
+
+    return JsonResponse({"status": False, "message": "Invalid request method"}, safe=False)
+
 @csrf_exempt
 def notification_by_type(request):
     if request.method == 'GET':

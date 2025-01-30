@@ -113,7 +113,8 @@ urlpatterns = [
     path('getNotifications/', views.notification_by_type),
     re_path(r'^getNotifications/([0-9]+)$', views.notification_by_type),
     
-    
+    path('get-candidatures-by-esn/', views.get_candidatures_by_esn, name='get-candidatures-by-esn'),
+
     path('getDocumentClient/', views.DocumentClient),
     re_path(r'^getDocumentClient/([0-9]+)$', views.DocumentClient),
     path('clients_par_esn/', views.clients_par_esn),
