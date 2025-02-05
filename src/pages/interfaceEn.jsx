@@ -461,7 +461,11 @@ const InterfaceEn = () => {
     const search = searchText.toLowerCase();
     const flatItems = flattenMenuItems(menuItems);
     return flatItems
-      .filter((item) => item.label.toLowerCase().includes(search))
+      .filter((item) => {
+        if (!item?.label) return false;
+        const label = String(item.label);
+        return label.toLowerCase().includes(search);
+      })
       .map((item) => ({
         value: item.key,
         label: (

@@ -98,7 +98,7 @@ const CandidatureInterface = () => {
         candidature_id: candidate.id_cd,
         numero_bdc: `BDC-${Date.now()}`,
         montant_total: candidate.tjm * workingDays,
-        statut: "accepted_esn",
+        statut: "pending_esn",
         description: `Bon de commande pour ${selectedProject.titre} - Candidat: ${candidate.responsable_compte}
         Durée: ${workingDays} jours
         TJM: ${candidate.tjm}€`,

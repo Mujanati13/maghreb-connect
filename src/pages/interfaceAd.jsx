@@ -12,6 +12,7 @@ import {
 import { Avatar, Divider, Menu, Tag } from "antd";
 import { useNavigate } from "react-router-dom";
 import { ClientList } from "../components/ad-interface/list-cl";
+import ContractStats from "../components/ad-interface/list-contract";
 import ClientDocument from "../components/cl-interface/document";
 import CollaboratorList from "../components/ad-interface/list-ens";
 import { isAdminLoggedIn } from "../helper/db";
@@ -31,6 +32,11 @@ const items = [
     label: "Liste Clients",
     key: "collaborateur",
     icon: <UsergroupAddOutlined />,
+  },
+  {
+    label: "Liste Contrats",
+    key: "Contrats",
+    // icon: <UsergroupAddOutlined />,
   },
   // Previous commented-out menu items remain the same
 ];
@@ -71,6 +77,8 @@ const InterfaceAd = () => {
         return <ClientList />;
       case "documents":
         return <ClientDocument />;
+        case "Contrats":
+          return <ContractStats />;
       default:
         return null;
     }

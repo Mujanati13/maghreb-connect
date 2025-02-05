@@ -10,13 +10,10 @@ import {
   Typography,
   Space,
   Tooltip,
-  Badge,
   Descriptions,
   Alert,
   Form,
   DatePicker,
-  InputNumber,
-  Tabs,
 } from "antd";
 import {
   SearchOutlined,
@@ -28,9 +25,7 @@ import {
   CloseOutlined,
   FileTextOutlined,
   DownloadOutlined,
-  ContactsOutlined,
-  SaveOutlined,
-  CalendarOutlined,
+  FileAddOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { format } from "date-fns";
@@ -39,32 +34,23 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { Endponit } from "../../helper/enpoint";
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { confirm } = Modal;
-const { TextArea } = Input;
-const { TabPane } = Tabs;
 
-const OrderAndContractInterface = () => {
-  // States for Purchase Orders
+const OrderInterface = () => {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false);
+  const [isContractReviewModalVisible, setIsContractReviewModalVisible] =
+    useState(false);
   const [selectedPO, setSelectedPO] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloadLoading, setDownloadLoading] = useState({});
 
-  // States for Contracts
-  const [contracts, setContracts] = useState([]);
-  const [isContractModalVisible, setIsContractModalVisible] = useState(false);
-  const [contractForm] = Form.useForm();
-  const [contractLoading, setContractLoading] = useState(false);
-
   useEffect(() => {
     fetchPurchaseOrders();
-    fetchContracts();
   }, []);
 
-  // Purchase Orders Functions
   const fetchPurchaseOrders = async () => {
     setLoading(true);
     try {
@@ -84,32 +70,21 @@ const OrderAndContractInterface = () => {
     }
   };
 
-  // Contracts Functions
-  const fetchContracts = async () => {
-    try {
-      const esnId = localStorage.getItem("id");
-      const response = await axios.get(
-        `${Endponit()}/api/contrat_by_idClient/?clientId=${esnId}`
-      );
-      console.log("====================================");
-      console.log(response.data);
-      console.log("====================================");
-      setContracts(response.data.data);
-    } catch (error) {
-      message.error("Échec de la récupération des contrats");
-    }
-  };
+  const [dates, setDates] = useState({
+    date_debut: null,
+    date_fin: null,
+  });
 
-  const handleCreateContract = async (values) => {
-    setContractLoading(true);
+  const handleCreateContract = async () => {
     try {
       const formattedValues = {
-        ...values,
         candidature_id: selectedPO?.candidature_id,
-        date_signature: values.date_signature?.format("YYYY-MM-DD"),
-        date_debut: values.date_debut?.format("YYYY-MM-DD"),
-        date_fin: values.date_fin?.format("YYYY-MM-DD"),
+        date_signature: format(new Date(), "yyyy-MM-dd"),
+        date_debut: dates.date_debut?.format("YYYY-MM-DD"),
+        date_fin: dates.date_fin?.format("YYYY-MM-DD"),
         statut: "active",
+        montant: selectedPO?.montant_total,
+        numero_contrat: `CONTRAT_${selectedPO?.numero_bdc}`,
       };
 
       const response = await axios.post(
@@ -119,8 +94,16 @@ const OrderAndContractInterface = () => {
 
       if (response.data && response.data.id_contrat) {
         const clientId = localStorage.getItem("id");
+        // const response = await axios.post(
+        //   `${Endponit()}/api/Contrat/`,
+        //   formattedValues
+        // );
 
-        // Send notification
+        await axios.put(`${Endponit()}/api/Bondecommande/`, {
+          ...selectedPO,
+          has_contract: response.data.id_contrat,
+        });
+
         await axios.post(`${Endponit()}/api/notify_signature_contrat/`, {
           client_id: clientId,
           esn_id: response.data.esn_id,
@@ -128,65 +111,117 @@ const OrderAndContractInterface = () => {
         });
 
         message.success("Contrat créé avec succès");
-        setIsContractModalVisible(false);
-        contractForm.resetFields();
-        fetchContracts();
+        setIsContractReviewModalVisible(false);
+        fetchPurchaseOrders();
       }
     } catch (error) {
       message.error("Échec de la création du contrat");
-    } finally {
-      setContractLoading(false);
     }
   };
 
-  // PDF Generation
-  const generatePDF = (record) => {
-    const doc = new jsPDF();
+  const downloadContract = async (contractId) => {
+    setDownloadLoading((prev) => ({
+      ...prev,
+      [`contract_${contractId}`]: true,
+    }));
 
-    doc.setFontSize(20);
-    doc.text("Bon de Commande", 105, 20, { align: "center" });
-
-    doc.setFontSize(12);
-    doc.text(`Numéro BDC: ${record.numero_bdc}`, 20, 40);
-    doc.text(
-      `Date de création: ${format(
-        new Date(record.date_creation),
-        "dd MMMM yyyy",
-        { locale: fr }
-      )}`,
-      20,
-      50
-    );
-    doc.text(`Montant total: ${record.montant_total.toFixed(2)} €`, 20, 60);
-    doc.text(`Statut: ${getStatusLabel(record.statut)}`, 20, 70);
-
-    if (record.description) {
-      doc.text("Description:", 20, 90);
-      const splitDescription = doc.splitTextToSize(record.description, 170);
-      doc.text(splitDescription, 20, 100);
-    }
-
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(10);
-      doc.text(
-        `Page ${i} sur ${pageCount}`,
-        doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 10,
-        { align: "center" }
+    try {
+      const response = await axios.get(
+        `${Endponit()}/api/download_contract/${contractId}`,
+        { responseType: "json" } // Changed to json
       );
+
+      const contractData = response.data.data;
+      const doc = new jsPDF();
+
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("CONTRAT DE PRESTATION DE SERVICES", 105, 20, {
+        align: "center",
+      });
+
+      // Contract number and date
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text(`N° ${contractData.numero_contrat}`, 20, 40);
+      doc.text(`Date: ${contractData.date_signature}`, 150, 40);
+
+      // Parties
+      doc.setFont("helvetica", "bold");
+      doc.text("ENTRE LES SOUSSIGNÉS:", 20, 60);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        [
+          "La société " + contractData.esn,
+          "Ci-après dénommée « Le Prestataire »",
+          "",
+          "ET",
+          "",
+          "La société " + contractData.client,
+          "Ci-après dénommée « Le Client »",
+        ],
+        20,
+        70
+      );
+
+      // Contract details
+      doc.setFont("helvetica", "bold");
+      doc.text("IL A ÉTÉ CONVENU CE QUI SUIT:", 20, 120);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        [
+          "Article 1 - Durée du contrat",
+          `Date de début: ${contractData.date_debut}`,
+          `Date de fin: ${contractData.date_fin}`,
+          "",
+          "Article 2 - Conditions financières",
+          `Montant total de la prestation: ${contractData.montant} €`,
+          "",
+          "Article 3 - Conditions particulières",
+          contractData.conditions,
+        ],
+        20,
+        130
+      );
+
+      // Signatures
+      doc.setFont("helvetica", "bold");
+      doc.text("SIGNATURES DES PARTIES", 105, 220, { align: "center" });
+      doc.setFont("helvetica", "normal");
+
+      // Left signature block
+      doc.text("Pour le Prestataire", 50, 240, { align: "center" });
+      doc.rect(20, 250, 70, 30);
+      doc.text("Nom et qualité du signataire:", 20, 290);
+      doc.text("Date:", 20, 300);
+
+      // Right signature block
+      doc.text("Pour le Client", 160, 240, { align: "center" });
+      doc.rect(130, 250, 70, 30);
+      doc.text("Nom et qualité du signataire:", 130, 290);
+      doc.text("Date:", 130, 300);
+
+      // Footer
+      doc.setFontSize(8);
+      doc.text(`Page 1/1`, 105, 290, { align: "center" });
+      doc.save(`Contract_${contractId}.pdf`);
+      message.success("Contrat téléchargé avec succès");
+    } catch (error) {
+      console.error("Download error:", error);
+      message.error("Échec du téléchargement du contrat");
+    } finally {
+      setDownloadLoading((prev) => ({
+        ...prev,
+        [`contract_${contractId}`]: false,
+      }));
     }
-
-    return doc;
   };
-
   // Status Helpers
   const getStatusLabel = (status) => {
     const statusMap = {
-      pending_esn: "En attente ESN",
-      accepted_esn: "Accepté ESN",
-      rejected_esn: "Refusé ESN",
+      pending_esn: "En attente",
+      accepted_esn: "Soumis",
+      rejected_esn: "Refusé",
     };
     return statusMap[status] || status;
   };
@@ -196,17 +231,17 @@ const OrderAndContractInterface = () => {
       pending_esn: {
         color: "processing",
         icon: <ClockCircleOutlined />,
-        text: "En attente ESN",
+        text: "En cours",
       },
       accepted_esn: {
         color: "success",
         icon: <CheckCircleOutlined />,
-        text: "Accepté ESN",
+        text: "Soumis",
       },
       rejected_esn: {
         color: "error",
         icon: <CloseCircleOutlined />,
-        text: "Refusé ESN",
+        text: "Refusé",
       },
     };
     const config = statusConfig[status] || statusConfig["pending_esn"];
@@ -216,20 +251,6 @@ const OrderAndContractInterface = () => {
         {config.text}
       </Tag>
     );
-  };
-
-  // Action Handlers
-  const handleDownload = async (record) => {
-    setDownloadLoading((prev) => ({ ...prev, [record.id_bdc]: true }));
-    try {
-      const doc = generatePDF(record);
-      doc.save(`BDC_${record.numero_bdc}.pdf`);
-      message.success("Bon de commande téléchargé avec succès");
-    } catch (error) {
-      message.error("Échec du téléchargement du bon de commande");
-    } finally {
-      setDownloadLoading((prev) => ({ ...prev, [record.id_bdc]: false }));
-    }
   };
 
   const handleAccept = async (id, bdc) => {
@@ -258,7 +279,6 @@ const OrderAndContractInterface = () => {
     }
   };
 
-  // Confirmation Dialogs
   const showAcceptConfirm = (record) => {
     confirm({
       title: "Accepter le bon de commande",
@@ -287,7 +307,60 @@ const OrderAndContractInterface = () => {
     });
   };
 
-  // Table Columns
+  const generatePDF = (record) => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text("Bon de Commande", 105, 20, { align: "center" });
+    doc.setFontSize(12);
+    doc.text(`Numéro BDC: ${record.numero_bdc}`, 20, 40);
+    doc.text(
+      `Date de création: ${format(
+        new Date(record.date_creation),
+        "dd MMMM yyyy",
+        {
+          locale: fr,
+        }
+      )}`,
+      20,
+      50
+    );
+    doc.text(`Montant total: ${record.montant_total.toFixed(2)} €`, 20, 60);
+    doc.text(`Statut: ${getStatusLabel(record.statut)}`, 20, 70);
+
+    if (record.description) {
+      doc.text("Description:", 20, 90);
+      const splitDescription = doc.splitTextToSize(record.description, 170);
+      doc.text(splitDescription, 20, 100);
+    }
+
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(10);
+      doc.text(
+        `Page ${i} sur ${pageCount}`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 10,
+        { align: "center" }
+      );
+    }
+
+    return doc;
+  };
+
+  const handleDownload = async (record) => {
+    setDownloadLoading((prev) => ({ ...prev, [record.id_bdc]: true }));
+    try {
+      const doc = generatePDF(record);
+      doc.save(`BDC_${record.numero_bdc}.pdf`);
+      message.success("Bon de commande téléchargé avec succès");
+    } catch (error) {
+      message.error("Échec du téléchargement du bon de commande");
+    } finally {
+      setDownloadLoading((prev) => ({ ...prev, [record.id_bdc]: false }));
+    }
+  };
+
   const purchaseOrderColumns = [
     {
       title: "Numéro BDC",
@@ -335,7 +408,7 @@ const OrderAndContractInterface = () => {
               }}
             />
           </Tooltip>
-          <Tooltip title="Télécharger">
+          <Tooltip title="Télécharger BDC PDF">
             <Button
               icon={<DownloadOutlined />}
               onClick={() => handleDownload(record)}
@@ -361,138 +434,79 @@ const OrderAndContractInterface = () => {
               </Tooltip>
             </>
           )}
-          <Tooltip title="Créer un contrat">
-            <Button
-              type="primary"
-              icon={<ContactsOutlined />}
-              onClick={() => {
-                setSelectedPO(record);
-                setIsContractModalVisible(true);
-              }}
-              className="bg-blue-500"
-            />
-          </Tooltip>
+          {record.statut === "accepted_esn" && !record.has_contract && (
+            <Tooltip title="Créer un contrat">
+              <Button
+                type="primary"
+                onClick={() => {
+                  setSelectedPO(record);
+                  setIsContractReviewModalVisible(true);
+                }}
+                icon={<FileAddOutlined />}
+              >
+                Créer un contrat
+              </Button>
+            </Tooltip>
+          )}
+          {record.has_contract && (
+            <Tooltip title="Télécharger le contrat">
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() => downloadContract(record.has_contract)}
+                loading={downloadLoading[`contract_${record.has_contract}`]}
+              >
+                Télécharger le contrat
+              </Button>
+            </Tooltip>
+          )}
         </Space>
       ),
     },
   ];
 
-  const contractColumns = [
-    {
-      title: "Numéro de contrat",
-      dataIndex: "numero_contrat",
-      key: "numero_contrat",
-    },
-    {
-      title: "Date de signature",
-      dataIndex: "date_signature",
-      key: "date_signature",
-      render: (date) => format(new Date(date), "dd MMMM yyyy", { locale: fr }),
-    },
-    {
-      title: "Date de début",
-      dataIndex: "date_debut",
-      key: "date_debut",
-      render: (date) => format(new Date(date), "dd MMMM yyyy", { locale: fr }),
-    },
-    {
-      title: "Date de fin",
-      dataIndex: "date_fin",
-      key: "date_fin",
-      render: (date) => format(new Date(date), "dd MMMM yyyy", { locale: fr }),
-    },
-    {
-      title: "Montant",
-      dataIndex: "montant",
-      key: "montant",
-      render: (amount) => `${amount.toFixed(2)} €`,
-    },
-    {
-      title: "Statut",
-      dataIndex: "statut",
-      key: "statut",
-    },
-  ];
-
   return (
     <Card className="shadow-sm">
-      <Tabs defaultActiveKey="1">
-        <TabPane
-          tab={
-            <span>
-              {/* <FileTextOutlined /> */}
-              Bons de commande
-            </span>
-          }
-          key="1"
-        >
-          <div className="mb-0">
-            <div className="mt-4 mb-2">
-              <Input
-                placeholder="Rechercher par numéro ou description..."
-                prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="max-w-md"
-              />
-            </div>
-
-            {purchaseOrders?.filter((po) => po.statut === "pending_esn").length >
-              0 && (
-              <Alert
-                message="Bons de commande en attente"
-                description={`Vous avez ${
-                  purchaseOrders?.filter((po) => po.statut === "pending_esn")
-                    .length
-                } bon(s) de commande en attente de validation.`}
-                type="info"
-                showIcon
-                className="mb-4"
-              />
-            )}
-          </div>
-
-          <Table
-            columns={purchaseOrderColumns}
-            dataSource={purchaseOrders?.filter(
-              (po) =>
-                po.numero_bdc
-                  ?.toLowerCase()
-                  .includes(searchText.toLowerCase()) ||
-                po.description?.toLowerCase().includes(searchText.toLowerCase())
-            )}
-            rowKey="id_bdc"
-            loading={loading}
-            pagination={{
-              pageSize: 4,
-              showSizeChanger: true,
-              pageSizeOptions: ["10", "20", "50"],
-            }}
+      <div className="mb-4">
+        <div className="mt-4 mb-2">
+          <Input
+            placeholder="Rechercher par numéro ou description..."
+            prefix={<SearchOutlined />}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="max-w-md"
           />
-        </TabPane>
+        </div>
 
-        <TabPane
-          tab={
-            <span>
-              {/* <ContactsOutlined /> */}
-              Contrats
-            </span>
-          }
-          key="2"
-        >
-          <Table
-            columns={contractColumns}
-            dataSource={contracts || []} // Fallback to an empty array
-            rowKey="id_contrat"
-            loading={loading}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              pageSizeOptions: ["10", "20", "50"],
-            }}
+        {purchaseOrders?.filter((po) => po.statut === "pending_esn").length >
+          0 && (
+          <Alert
+            message="Bons de commande en attente"
+            description={`Vous avez ${
+              purchaseOrders?.filter((po) => po.statut === "pending_esn").length
+            } bon(s) de commande en attente de validation.`}
+            type="info"
+            showIcon
+            className="mb-4"
           />
-        </TabPane>
-      </Tabs>
+        )}
+      </div>
+
+      <Table
+        columns={purchaseOrderColumns}
+        dataSource={purchaseOrders?.filter(
+          (po) =>
+            po.numero_bdc?.toLowerCase().includes(searchText.toLowerCase()) ||
+            po.description?.toLowerCase().includes(searchText.toLowerCase())
+        )}
+        rowKey="id_bdc"
+        loading={loading}
+        size="small"
+        pagination={{
+          pageSize: 4,
+          showSizeChanger: true,
+          pageSizeOptions: ["10", "20", "50"],
+        }}
+      />
 
       {/* Purchase Order Details Modal */}
       <Modal
@@ -530,6 +544,7 @@ const OrderAndContractInterface = () => {
               >
                 Accepter
               </Button>
+              ,
               <Button
                 key="reject"
                 danger
@@ -571,162 +586,108 @@ const OrderAndContractInterface = () => {
         )}
       </Modal>
 
-      {/* Contract Creation Modal */}
+      {/* Contract Review Modal */}
       <Modal
         title={
           <Space>
-            <ContactsOutlined />
-            <Title level={4} style={{ margin: 0 }}>
-              Création d'un nouveau contrat
-            </Title>
+            <FileTextOutlined />
+            Revue du Contrat
           </Space>
         }
-        open={isContractModalVisible}
-        onCancel={() => {
-          setIsContractModalVisible(false);
-          contractForm.resetFields();
-        }}
-        footer={null}
-        width={800}
-      >
-        <Form
-          form={contractForm}
-          layout="vertical"
-          onFinish={handleCreateContract}
-          className="mt-4"
-        >
-          <Form.Item
-            name="numero_contrat"
-            label="Numéro du contrat"
-            rules={[
-              {
-                required: true,
-                message: "Veuillez saisir le numéro du contrat",
-              },
-            ]}
+        open={isContractReviewModalVisible}
+        onCancel={() => setIsContractReviewModalVisible(false)}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => setIsContractReviewModalVisible(false)}
           >
-            <Input
-              prefix={<ContactsOutlined />}
-              placeholder="ex: CONT-2024-001"
-              value={"CONT-" + new Date().getFullYear() + "-"}
-            />
-          </Form.Item>
-
+            Annuler
+          </Button>,
+          <Button
+            key="create"
+            type="primary"
+            onClick={handleCreateContract}
+            className="bg-blue-500"
+          >
+            Créer le Contrat
+          </Button>,
+        ]}
+        width={700}
+      >
+        <div className="font-medium mt-4">Date de contrat</div>
+        <div className="flex items-center space-x-5 ">
           <Form.Item
-            name="date_signature"
-            label="Date de signature"
-            rules={[
-              {
-                required: true,
-                message: "Veuillez sélectionner la date de signature",
-              },
-            ]}
+            label="Date de début"
+            name="date_debut"
+            rules={[{ required: true }]}
           >
             <DatePicker
-              style={{ width: "100%" }}
-              format="DD/MM/YYYY"
-              placeholder="Sélectionnez la date de signature"
-            />
-          </Form.Item>
-
-          <Space className="w-full gap-4">
-            <Form.Item
-              name="date_debut"
-              label="Date de début"
-              className="flex-1"
-              rules={[
-                {
-                  required: true,
-                  message: "Veuillez sélectionner la date de début",
-                },
-              ]}
-            >
-              <DatePicker
-                style={{ width: "100%" }}
-                format="DD/MM/YYYY"
-                placeholder="Date de début"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="date_fin"
-              label="Date de fin"
-              className="flex-1"
-              rules={[
-                {
-                  required: true,
-                  message: "Veuillez sélectionner la date de fin",
-                },
-              ]}
-            >
-              <DatePicker
-                style={{ width: "100%" }}
-                format="DD/MM/YYYY"
-                placeholder="Date de fin"
-              />
-            </Form.Item>
-          </Space>
-
-          <Form.Item
-            name="montant"
-            label="Montant"
-            rules={[
-              {
-                required: true,
-                message: "Veuillez saisir le montant",
-              },
-            ]}
-          >
-            <InputNumber
-              className="w-full"
-              min={0}
-              step={0.01}
-              formatter={(value) => `${value} €`}
-              parser={(value) => value.replace(" €", "")}
+              format="YYYY-MM-DD"
+              onChange={(date) =>
+                setDates((prev) => ({ ...prev, date_debut: date }))
+              }
             />
           </Form.Item>
 
           <Form.Item
-            name="conditions"
-            label="Conditions"
-            rules={[
-              {
-                required: true,
-                message: "Veuillez saisir les conditions du contrat",
-              },
-            ]}
+            label="Date de fin"
+            name="date_fin"
+            rules={[{ required: true }]}
           >
-            <TextArea
-              rows={4}
-              placeholder="Saisissez les conditions du contrat..."
+            <DatePicker
+              format="YYYY-MM-DD"
+              onChange={(date) =>
+                setDates((prev) => ({ ...prev, date_fin: date }))
+              }
             />
           </Form.Item>
+        </div>
 
-          <Form.Item className="mb-0 flex justify-end">
-            <Space>
-              <Button
-                onClick={() => {
-                  setIsContractModalVisible(false);
-                  contractForm.resetFields();
-                }}
-              >
-                Annuler
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                loading={contractLoading}
-                className="bg-blue-500"
-              >
-                Créer le contrat
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+        {selectedPO && (
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="Numéro BDC" span={2}>
+              {selectedPO.numero_bdc}
+            </Descriptions.Item>
+            <Descriptions.Item label="Date de signature">
+              {format(new Date(), "dd MMMM yyyy", { locale: fr })}
+            </Descriptions.Item>
+            <Descriptions.Item label="Montant">
+              <Text strong className="text-green-600">
+                {selectedPO.montant_total.toFixed(2)} €
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Date de début" span={2}>
+              {format(
+                new Date(selectedPO.date_debut || new Date()),
+                "dd MMMM yyyy",
+                {
+                  locale: fr,
+                }
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Date de fin" span={2}>
+              {format(
+                new Date(selectedPO.date_fin || new Date()),
+                "dd MMMM yyyy",
+                {
+                  locale: fr,
+                }
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Description du BDC" span={2}>
+              {selectedPO.description}
+            </Descriptions.Item>
+            <Descriptions.Item label="Conditions du Contrat" span={2}>
+              <Text type="secondary">
+                Les conditions standard du contrat seront appliquées
+                conformément aux termes du bon de commande accepté.
+              </Text>
+            </Descriptions.Item>
+          </Descriptions>
+        )}
       </Modal>
     </Card>
   );
 };
 
-export default OrderAndContractInterface;
+export default OrderInterface;

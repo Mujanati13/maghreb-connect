@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from "react";
 import {
   Card,
   Button,
@@ -16,6 +15,9 @@ import {
   List,
   message,
   Tabs,
+  Upload,
+  Modal,
+  Spin,
 } from "antd";
 import {
   FileTextOutlined,
@@ -31,7 +33,10 @@ import {
   EyeOutlined,
   EnvironmentOutlined,
   BarsOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { Endponit } from "../../helper/enpoint";
 
 const { Title, Text, Paragraph } = Typography;
@@ -42,65 +47,95 @@ const ContractList = () => {
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedContract, setExpandedContract] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [currentContractId, setCurrentContractId] = useState(null);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [signatureLoading, setSignatureLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
     fetchContracts();
   }, []);
 
+  const transformContract = (contract) => ({
+    id: contract.id_contrat,
+    candidature_id: contract.candidature_id,
+    esn_trace: contract.esn_trace,
+    client_trace: contract.client_trace,
+    status: getStatusMapping(contract.statut),
+    projectDetails: {
+      title: `Contrat ${contract.numero_contrat}`,
+      startDate: new Date(contract.date_debut).toLocaleDateString("fr-FR"),
+      endDate: new Date(contract.date_fin).toLocaleDateString("fr-FR"),
+      duration: calculateDuration(contract.date_debut, contract.date_fin),
+      budget: `${contract.montant.toLocaleString()} €`,
+      location: "France",
+      team: "Équipe projet",
+    },
+    esnSigned:
+      contract.statut === "processing" || contract.statut === "Terminé",
+    conditions: contract.conditions,
+    deliverables: [
+      {
+        key: "1",
+        item: "Début de mission",
+        deadline: new Date(contract.date_debut).toLocaleDateString("fr-FR"),
+        status: "En cours",
+      },
+      {
+        key: "2",
+        item: "Fin de mission",
+        deadline: new Date(contract.date_fin).toLocaleDateString("fr-FR"),
+        status: "En attente",
+      },
+    ],
+    contractFile: contract.contract_file || null,
+    numero_contrat: contract.numero_contrat,
+    date_signature: contract.date_signature,
+    date_debut: contract.date_debut,
+    date_fin: contract.date_fin,
+    montant: contract.montant,
+    esn: contract.esn,
+    client: contract.client,
+  });
+
   const fetchContracts = async () => {
     try {
-      const response = await fetch(
-        Endponit()+"/api/contrat_by_idClient/?clientId=" +
-          localStorage.getItem("id")
+      const clientId = localStorage.getItem("id");
+      if (!clientId) {
+        throw new Error("Client ID not found");
+      }
+
+      const response = await axios.get(
+        `${Endponit()}/api/contrat_by_idClient/?clientId=${clientId}`
       );
-      const result = await response.json();
 
-      // Transform API data to match our component's data structure
-      const transformedContracts = result.data.map((contract) => ({
-        id: contract.id_contrat,
-        status: getStatusMapping(contract.statut),
-        projectDetails: {
-          title: `Contrat ${contract.numero_contrat}`,
-          startDate: new Date(contract.date_debut).toLocaleDateString("fr-FR"),
-          endDate: new Date(contract.date_fin).toLocaleDateString("fr-FR"),
-          duration: calculateDuration(contract.date_debut, contract.date_fin),
-          budget: `${contract.montant.toLocaleString()} €`,
-          location: "France", // Default value as not provided in API
-          team: "Équipe projet", // Default value as not provided in API
-        },
-        esnSigned: contract.date_signature ? true : false,
-        conditions: contract.conditions,
-        deliverables: [
-          {
-            key: "1",
-            item: "Début de mission",
-            deadline: new Date(contract.date_debut).toLocaleDateString("fr-FR"),
-            status: "En cours",
-          },
-          {
-            key: "2",
-            item: "Fin de mission",
-            deadline: new Date(contract.date_fin).toLocaleDateString("fr-FR"),
-            status: "En attente",
-          },
-        ],
-      }));
+      if (!response.data || !response.data.data) {
+        throw new Error("Invalid response format");
+      }
 
+      const transformedContracts = response.data.data.map(transformContract);
       setContracts(transformedContracts);
-      setLoading(false);
     } catch (error) {
       console.error("Error fetching contracts:", error);
       message.error("Erreur lors du chargement des contrats");
+    } finally {
       setLoading(false);
     }
   };
 
   const calculateDuration = (startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return `${diffDays} jours`;
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return `${diffDays} jours`;
+    } catch (error) {
+      console.error("Error calculating duration:", error);
+      return "Durée indéterminée";
+    }
   };
 
   const getStatusMapping = (apiStatus) => {
@@ -113,51 +148,120 @@ const ContractList = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case "pending":
-        return "warning";
-      case "processing":
-        return "processing";
-      case "success":
-        return "success";
-      default:
-        return "default";
-    }
+    const colorMap = {
+      pending: "warning",
+      processing: "processing",
+      success: "success",
+      default: "default",
+    };
+    return colorMap[status] || "default";
   };
 
   const getStatusText = (status) => {
-    switch (status) {
-      case "pending":
-        return "En attente";
-      case "processing":
-        return "En cours";
-      case "success":
-        return "Terminé";
-      default:
-        return status;
+    const textMap = {
+      pending: "En attente",
+      processing: "En cours",
+      success: "Terminé",
+    };
+    return textMap[status] || status;
+  };
+
+  const handleUpload = async (file) => {
+    if (file.type !== "application/pdf") {
+      message.error("Veuillez télécharger uniquement des fichiers PDF");
+      return false;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB limit
+      message.error("Le fichier ne doit pas dépasser 5MB");
+      return false;
+    }
+
+    setUploadedFile(file);
+    return false; // Prevent automatic upload
+  };
+
+  const handleSignature = (contractId) => {
+    setCurrentContractId(contractId);
+    setIsModalVisible(true);
+  };
+
+  const updateContractStatus = async (contractId, status, path) => {
+    const contract = contracts.find((c) => c.id === contractId);
+    if (!contract) return;
+
+    try {
+      await axios.put(`${Endponit()}/api/Contrat/${contractId}`, {
+        id_contrat: contractId,
+        candidature_id: contract.candidature_id,
+        date_signature: contract.date_signature,
+        numero_contrat: contract.numero_contrat,
+        date_debut: contract.date_debut,
+        date_fin: contract.date_fin,
+        montant: contract.montant,
+        conditions: contract.conditions,
+        esn: contract.esn,
+        client: contract.client,
+        statut: "processing",
+        client_trace: path,
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error updating contract status:", error);
+      return false;
     }
   };
 
-  const handleSignature = async (contractId) => {
+  const handleSignatureSubmit = async () => {
+    if (!uploadedFile) {
+      message.error("Veuillez télécharger le contrat signé");
+      return;
+    }
+
+    setSignatureLoading(true);
+
     try {
-      // Here you would typically make an API call to update the contract signature
-      // For now, we'll just update the local state
-      setContracts((prevContracts) =>
-        prevContracts.map((contract) => {
-          if (contract.id === contractId) {
-            const newContract = {
-              ...contract,
-              esnSigned: true,
-              status: "processing",
-            };
-            message.success("Signature effectuée avec succès");
-            return newContract;
-          }
-          return contract;
-        })
+      const formData = new FormData();
+      formData.append("uploadedFile", uploadedFile);
+      formData.append("path", "./upload/");
+      formData.append("contract_id", currentContractId);
+
+      const path = await axios.post(`${Endponit()}/api/saveDoc/`, formData);
+
+      const statusUpdated = await updateContractStatus(
+        currentContractId,
+        "processing",
+        path.data.path
       );
+
+      if (!statusUpdated) {
+        throw new Error("Failed to update contract status");
+      }
+
+      // Update local state
+      setContracts((prevContracts) =>
+        prevContracts.map((contract) =>
+          contract.id === currentContractId
+            ? {
+                ...contract,
+                esnSigned: true,
+                status: "processing",
+                contractFile: uploadedFile.name,
+              }
+            : contract
+        )
+      );
+
+      message.success("Contrat signé téléchargé avec succès");
+      setIsModalVisible(false);
+      setUploadedFile(null);
     } catch (error) {
-      message.error("Erreur lors de la signature du contrat");
+      console.error("Error uploading signed contract:", error);
+      message.error("Erreur lors du téléchargement du contrat signé");
+    } finally {
+      setSignatureLoading(false);
     }
   };
 
@@ -295,23 +399,36 @@ const ContractList = () => {
                 <Space direction="vertical">
                   <Text strong>Représentant le Client</Text>
                   <Text type="secondary">Autorité signataire désignée</Text>
+                  {contract.client_trace && (
+                    <div>
+                      <Tag icon={<FilePdfOutlined />} color="success">
+                        Contrat signé disponible
+                      </Tag>
+                      <a
+                        target="_blank"
+                        href={Endponit() + "/media/" + contract.client_trace}
+                      >
+                        Télécharger
+                      </a>
+                    </div>
+                  )}
                 </Space>
               </Col>
               <Col>
                 <Button
                   type="primary"
                   icon={
-                    contract.esnSigned ? (
+                    contract.client_trace ? (
                       <CheckCircleOutlined />
                     ) : (
                       <UploadOutlined />
                     )
                   }
                   onClick={() => handleSignature(contract.id)}
-                  disabled={contract.esnSigned}
+                  disabled={contract.client_trace}
                   size="large"
                 >
-                  {contract.esnSigned ? "Signé" : "Signer"}
+                  {contract.client_trace ? "Signé" : "Signer"}
                 </Button>
               </Col>
             </Row>
@@ -347,13 +464,27 @@ const ContractList = () => {
               <Col span={8} style={{ textAlign: "center" }}>
                 <Space direction="vertical">
                   <Badge
-                    status={getStatusColor(contract.status)}
-                    text={getStatusText(contract.status)}
+                    status={getStatusColor((contract?.esn_trace && contract?.client_trace) ? true : false)}
+                    text={getStatusText(
+                      contract?.esn_trace && contract?.client_trace
+                        ? "Complété"
+                        : "En cours"
+                    )}
                   />
                   <Progress
-                    percent={contract.esnSigned ? 100 : 0}
-                    size="small"
-                    status={contract.esnSigned ? "success" : "active"}
+                    percent={
+                      contract?.esn_trace && contract?.client_trace
+                        ? 100
+                        : contract?.esn_trace
+                        ? 50
+                        : 0
+                    }
+                    size="large"
+                    status={
+                      contract.esn_trace & contract.client_trace
+                        ? "success"
+                        : "active"
+                    }
                   />
                 </Space>
               </Col>
@@ -381,6 +512,104 @@ const ContractList = () => {
           </Card>
         )}
       />
+
+      <Modal
+        title="Télécharger le contrat signé"
+        open={isModalVisible}
+        onCancel={() => {
+          setIsModalVisible(false);
+          setUploadedFile(null);
+        }}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              setIsModalVisible(false);
+              setUploadedFile(null);
+            }}
+          >
+            Annuler
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={signatureLoading}
+            onClick={handleSignatureSubmit}
+            disabled={!uploadedFile}
+          >
+            Confirmer
+          </Button>,
+        ]}
+      >
+        <Upload
+          beforeUpload={handleUpload}
+          accept=".pdf"
+          maxCount={1}
+          showUploadList={true}
+        >
+          <Button icon={<UploadOutlined />}>Sélectionner le PDF</Button>
+        </Upload>
+        <Text type="secondary" style={{ display: "block", marginTop: 8 }}>
+          Veuillez télécharger le contrat signé au format PDF
+        </Text>
+      </Modal>
+
+      {/* Error Handling Modal */}
+      <Modal
+        title="Erreur"
+        open={!!error}
+        onOk={() => setError(null)}
+        onCancel={() => setError(null)}
+        footer={[
+          <Button key="ok" type="primary" onClick={() => setError(null)}>
+            OK
+          </Button>,
+        ]}
+      >
+        <Text type="danger">{error}</Text>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal
+        title="Succès"
+        open={!!successMessage}
+        onOk={() => setSuccessMessage(null)}
+        onCancel={() => setSuccessMessage(null)}
+        footer={[
+          <Button
+            key="ok"
+            type="primary"
+            onClick={() => setSuccessMessage(null)}
+          >
+            OK
+          </Button>,
+        ]}
+      >
+        <Text type="success">{successMessage}</Text>
+      </Modal>
+
+      {/* Loading Overlay */}
+      {loading && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(255, 255, 255, 0.7)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <Space direction="vertical" align="center">
+            <Spin size="large" />
+            <Text>Chargement des contrats...</Text>
+          </Space>
+        </div>
+      )}
     </div>
   );
 };

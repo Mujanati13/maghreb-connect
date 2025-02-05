@@ -124,23 +124,23 @@ const AppelDOffreInterface = () => {
         client_id: currentOffer.id_client,
       });
 
-      const tokenClient = res_data.data.token;
-      if (tokenClient != null) {
-        try {
-          await axios.post("http://51.38.99.75:3006/send-notification", {
-            deviceToken: tokenClient,
-            messagePayload: {
-              title: "une nouvelle candidature",
-              body: "Vous avez reçu une nouvelle candidature",
-            },
-          });
-        } catch (error) {
-          console.error(
-            `Failed to send notification to token ${token}:`,
-            error
-          );
-        }
-      }
+      // const tokenClient = res_data.data.token;
+      // if (tokenClient != null) {
+      //   try {
+      //     await axios.post("http://51.38.99.75:3006/send-notification", {
+      //       deviceToken: tokenClient,
+      //       messagePayload: {
+      //         title: "une nouvelle candidature",
+      //         body: "Vous avez reçu une nouvelle candidature",
+      //       },
+      //     });
+      //   } catch (error) {
+      //     console.error(
+      //       `Failed to send notification to token ${token}:`,
+      //       error
+      //     );
+      //   }
+      // }
 
       message.success("Votre candidature a été soumise avec succès !");
 
