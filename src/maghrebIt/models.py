@@ -137,7 +137,7 @@ class AppelOffre(models.Model):
     date_limite = models.DateField(null=True, blank=True)  # Date de validation
     date_debut = models.DateField(null=True, blank=True)  # Statut du document
     statut = models.CharField(max_length=20)
-
+    jours = models.IntegerField(null=True, blank=True)
 
 
     class Meta:
@@ -157,6 +157,7 @@ class Candidature(models.Model):
     tjm = models.DecimalField(max_digits=10, decimal_places=2)  # Tarif journalier proposé par l'ESN
     date_disponibilite = models.DateField()  # Date de disponibilité pour commencer le projet
     commentaire = models.TextField(blank=True, null=True)  # Commentaire supplémentaire
+    nom_cn = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = 'candidature'  # Nom de la table dans la base de données
@@ -183,7 +184,12 @@ class Bondecommande(models.Model):
     montant_total = models.FloatField()
     statut = models.CharField(max_length=20, blank=True, null=True) 
     description = models.TextField(blank=True, null=True)
-   
+    has_contract = models.TextField(blank=True, null=True)
+    TJM = models.FloatField()
+    date_debut = models.DateField(null=True, blank=True)
+    date_fin = models.DateField(null=True, blank=True)
+    jours = models.IntegerField(null=True, blank=True)
+    benefit = models.TextField(blank=True, null=True)
     class Meta:
         db_table = 'bondecommande'  # Nom de la table dans la base de données
 
@@ -197,8 +203,8 @@ class Contrat(models.Model):
     montant = models.FloatField()
     statut = models.CharField(max_length=20, blank=True, null=True) 
     conditions = models.TextField( blank=True, null=True) 
-   
-    
+    esn_trace = models.TextField( blank=True, null=True)    
+    client_trace = models.TextField( blank=True, null=True)    
     class Meta:
         db_table = 'contrat'  # Nom de la table dans la base de données
         

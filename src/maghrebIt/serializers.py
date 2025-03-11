@@ -109,14 +109,14 @@ class AdminSerializer(serializers.ModelSerializer):
 class AppelOffreSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppelOffre
-        fields = ['id', 'client_id', 'titre','description', 'profil', 'tjm_min','tjm_max', 'date_publication', 'date_limite','date_debut', 'statut']
+        fields = ['id', 'client_id', 'titre','description', 'profil', 'tjm_min','tjm_max', 'date_publication', 'date_limite','date_debut', 'statut', 'jours']
        
 
 
 class CandidatureSerializer(serializers.ModelSerializer):
     class Meta:
         model = Candidature
-        fields = ['id_cd', 'AO_id', 'esn_id','responsable_compte', 'id_consultant', 'date_candidature','statut', 'tjm', 'date_disponibilite','commentaire']
+        fields = ['id_cd', 'AO_id', 'esn_id','responsable_compte', 'id_consultant', 'date_candidature','statut', 'tjm', 'date_disponibilite','commentaire' , 'nom_cn']
        
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -127,12 +127,12 @@ class NotificationSerializer(serializers.ModelSerializer):
 class BondecommandeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bondecommande
-        fields = ['id_bdc', 'candidature_id', 'numero_bdc','date_creation', 'montant_total', 'statut', 'description']
+        fields = ['id_bdc', 'candidature_id', 'numero_bdc','date_creation', 'montant_total', 'statut', 'description' , 'has_contract' ,  'TJM' ,'date_debut' , 'date_fin' , 'jours' , 'benefit']
         
 class ContratSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contrat
-        fields = ['id_contrat', 'candidature_id', 'numero_contrat','date_signature', 'date_debut', 'date_fin', 'montant','statut', 'conditions']
+        fields = ['id_contrat', 'candidature_id', 'numero_contrat','date_signature', 'date_debut', 'date_fin', 'montant','statut', 'conditions' ,'esn_trace', 'client_trace']
         
 
 class PartenariatSerializer(serializers.ModelSerializer):

@@ -83,6 +83,7 @@ urlpatterns = [
     re_path(r'^Contrat/([0-9]+)$', views.Contrat_view),
     # Route pour gérer un contrat spécifique par son ID.
 
+    path('get-combined-info/<int:bon_commande_id>/', views.get_combined_info, name='get_combined_info'),
     # Gestion des candidatures
     path('candidature/', views.candidature_view),
     # Route pour gérer les candidatures (exemple : récupération ou création de candidatures).
@@ -114,6 +115,7 @@ urlpatterns = [
     re_path(r'^getNotifications/([0-9]+)$', views.notification_by_type),
     
     path('get-candidatures-by-esn/', views.get_candidatures_by_esn, name='get-candidatures-by-esn'),
+    path('get_candidatures_by_client/', views.get_candidatures_by_client, name='get-candidatures-by-esn'),
 
     path('getDocumentClient/', views.DocumentClient),
     re_path(r'^getDocumentClient/([0-9]+)$', views.DocumentClient),
@@ -152,6 +154,9 @@ urlpatterns = [
     
     path('getDocumentESN/', views.DocumentESNs),
     re_path(r'^getDocumentESN/([0-9]+)$', views.DocumentESNs),
+
+    path('check-esn-status/', views.check_esn_status),
+
     
     path('get_bon_de_commande_by_client/', views.get_bon_de_commande_by_client),
     re_path(r'^get_bon_de_commande_by_client/([0-9]+)$', views.get_bon_de_commande_by_client),
@@ -166,6 +171,7 @@ urlpatterns = [
     path('notify_validation_bon_de_commande/', views.notify_validation_bon_de_commande),
     re_path(r'^notify_validation_bon_de_commande/([0-9]+)$', views.notify_validation_bon_de_commande),
     
+    path('get_collaborateur_by_id/<int:collaborateur_id>/', views.get_collaborateur_by_id, name='get_collaborateur_by_id'),
     path('notify_bon_de_commande/', views.notify_bon_de_commande),
     re_path(r'^notify_bon_de_commande/([0-9]+)$', views.notify_bon_de_commande),
     
@@ -180,6 +186,8 @@ urlpatterns = [
     
     path('contrat_by_idClient/', views.contrat_by_idClient),
     re_path(r'^contrat_by_idClient/([0-9]+)$', views.contrat_by_idClient),
+    
+    path('download_contract/<int:contract_id>/', views.download_contract, name='download_contract'),
     
     path('contrat_by_idEsn/', views.contrat_by_idEsn),
     re_path(r'^contrat_by_idEsn/([0-9]+)$', views.contrat_by_idEsn),

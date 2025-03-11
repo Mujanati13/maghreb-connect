@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404
 from .models import Candidature
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.hashers import check_password
+from django.http import FileResponse
+from django.conf import settings
 
 from django.core.files.storage import default_storage
 import random
@@ -1156,6 +1158,7 @@ def appelOffre_view(request, id=0):
             # Vérifie si les données sérialisées sont valides.
 
             col_serializer.save()
+
             # Sauvegarde l'appel d'offre dans la base de données.
             esn_tokens = list(ESN.objects.values_list('token', flat=True))
 
@@ -1648,18 +1651,15 @@ def Contrat_view(request, id=0):
     if request.method == 'GET':
         # Gère la récupération des contrats (opération READ).
 
-        colls = Contrat.objects.filter()
         # Récupère tous les contrats depuis la base de données.
+        colls = Contrat.objects.filter().order_by('-id_contrat')
+        # Récupère tous les contrats depuis la base de données en ordre décroissant.
 
         Collaborateur_serializer = ContratSerializer(colls, many=True)
         # Sérialise les contrats récupérés pour les convertir en JSON.
 
-        data = []
-        # Initialise une liste pour stocker les données des contrats.
+        data = list(Collaborateur_serializer.data)
 
-        for col in Collaborateur_serializer.data:
-            # Parcourt les contrats sérialisés.
-            data.append(col)
             # Ajoute chaque contrat à la liste `data`.
 
         return JsonResponse({"total": len(data), "data": data}, safe=False)
@@ -1881,6 +1881,63 @@ def get_candidatures_by_esn(request):
 
         if not candidatures.exists():
             return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour cet ESN"}, safe=False)
+
+        # Sérialiser les données des candidatures
+        candidature_serializer = CandidatureSerializer(candidatures, many=True)
+
+        return JsonResponse({"status": True, "data": candidature_serializer.data}, safe=False)
+
+    return JsonResponse({"status": False, "message": "Invalid request method"}, safe=False)
+
+
+@csrf_exempt
+def get_collaborateur_by_id(request, collaborateur_id):
+    if request.method == 'GET':
+        try:
+            # Get collaborateur by ID
+            collaborateur = Collaborateur.objects.get(ID_collab=collaborateur_id)
+            
+            # Serialize the data
+            collaborateur_serializer = CollaborateurSerializer(collaborateur)
+
+            return JsonResponse({
+                "status": True,
+                "data": collaborateur_serializer.data
+            }, safe=False)
+
+        except Collaborateur.DoesNotExist:
+            return JsonResponse({
+                "status": False,
+                "message": "Collaborateur not found"
+            }, safe=False)
+        except Exception as e:
+            return JsonResponse({
+                "status": False,
+                "message": str(e)
+            }, safe=False)
+
+    return JsonResponse({
+        "status": False,
+        "message": "Invalid request method"
+    }, safe=False)
+
+@csrf_exempt
+def get_candidatures_by_client(request):
+    if request.method == 'GET':
+        client_id = request.GET.get("client_id")
+        
+        if not client_id:
+            return JsonResponse({"status": False, "message": "client_id manquant"}, safe=False)
+
+        # Récupérer les appels d'offre associés au client
+        appels_offre = AppelOffre.objects.filter(client_id=client_id)
+        if not appels_offre.exists():
+            return JsonResponse({"status": False, "message": "Aucun appel d'offre trouvé pour ce client"}, safe=False)
+
+        # Récupérer les candidatures liées à ces appels d'offre
+        candidatures = Candidature.objects.filter(AO_id__in=appels_offre.values_list('id', flat=True))
+        if not candidatures.exists():
+            return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour ce client"}, safe=False)
 
         # Sérialiser les données des candidatures
         candidature_serializer = CandidatureSerializer(candidatures, many=True)
@@ -2333,6 +2390,7 @@ def get_contract(request):
                 return JsonResponse({"status": False, "message": "Aucun contrat trouvé pour cette combinaison client et ESN"}, safe=False)
 
             # Sérialiser les contrats
+            contrats = Contrat.objects.filter(candidature_id__in=candidatures.values_list('id_cd', flat=True)).order_by('-id_contrat')
             contrats_serializer = ContratSerializer(contrats, many=True)
             return JsonResponse({"total": len(contrats_serializer.data), "data": contrats_serializer.data}, safe=False)
 
@@ -2340,46 +2398,128 @@ def get_contract(request):
             # Gestion des erreurs
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
 
+@csrf_exempt
+def get_combined_info(request, bon_commande_id):
+    if request.method == 'GET':
+        try:
+            # Get bon de commande
+            bon_commande = Bondecommande.objects.get(id_bdc=bon_commande_id)
+            bon_commande_data = BondecommandeSerializer(bon_commande).data
+
+            # Get related candidature
+            candidature = Candidature.objects.get(id_cd=bon_commande.candidature_id)
+            candidature_data = CandidatureSerializer(candidature).data
+
+            # Get related appel offre
+            appel_offre = AppelOffre.objects.get(id=candidature.AO_id)
+            appel_offre_data = AppelOffreSerializer(appel_offre).data
+
+            # Combine all data
+            combined_data = {
+                "bon_commande": bon_commande_data,
+                "candidature": candidature_data,
+                "appel_offre": appel_offre_data
+            }
+
+            return JsonResponse({
+                "status": True,
+                "data": combined_data
+            }, safe=False)
+
+        except Bondecommande.DoesNotExist:
+            return JsonResponse({
+                "status": False,
+                "message": "Bon de commande not found"
+            }, safe=False)
+        except Exception as e:
+            return JsonResponse({
+                "status": False,
+                "message": str(e)
+            }, safe=False)
+
+    return JsonResponse({
+        "status": False,
+        "message": "Invalid request method"
+    }, safe=False)
+
+
+@csrf_exempt
+def check_esn_status(request):
+    if request.method == 'GET':
+        try:
+            # Get ESN ID from request parameters
+            esn_id = request.GET.get('esn_id')
+            
+            # Validate the parameter
+            if not esn_id:
+                return JsonResponse({
+                    "status": False, 
+                    "message": "esn_id parameter is required"
+                }, safe=False)
+                
+            # Check if ESN exists
+            try:
+                esn = ESN.objects.get(ID_ESN=esn_id)
+                            # Simple activity check - if ESN has any candidatures, it's considered active
+                is_active = esn.Statut.lower() == "actif"
+                print(esn.Statut.lower())
+                return JsonResponse({
+                    "status": True,
+                    "is_active": is_active
+                }, safe=False)
+
+            except ESN.DoesNotExist:
+                return JsonResponse({
+                    "status": False,
+                    "message": "ESN not found"
+                }, safe=False)
+            
+            
+        except Exception as e:
+            return JsonResponse({
+                "status": False,
+                "message": str(e)
+            }, safe=False)
+    
+    return JsonResponse({
+        "status": False,
+        "message": "Invalid request method"
+    }, safe=False)
 
 @csrf_exempt
 def get_bon_de_commande_by_client(request):
     if request.method == 'GET':
         try:
-            # Récupération du client_id depuis les paramètres de la requête
             client_id = request.GET.get('client_id')
 
-            # Validation du paramètre
             if not client_id:
                 return JsonResponse({"status": False, "message": "client_id requis"}, safe=False)
 
-            # Rechercher les appels d'offres liés au client
             appels_offres = AppelOffre.objects.filter(client_id=client_id)
             if not appels_offres.exists():
                 return JsonResponse({"status": False, "message": "Aucun appel d'offre trouvé pour ce client"}, safe=False)
 
-            # Récupérer les IDs des appels d'offres
             appels_offres_ids = appels_offres.values_list('id', flat=True)
 
-            # Trouver les candidatures associées aux appels d'offres
             candidatures = Candidature.objects.filter(AO_id__in=appels_offres_ids)
             if not candidatures.exists():
                 return JsonResponse({"status": False, "message": "Aucune candidature trouvée pour ce client"}, safe=False)
 
-            # Récupérer les IDs des candidatures
             candidatures_ids = candidatures.values_list('id_cd', flat=True)
 
-            # Trouver les bons de commande associés
-            bons_de_commande = Bondecommande.objects.filter(candidature_id__in=candidatures_ids)
+            # Add order_by to reverse the order
+            bons_de_commande = Bondecommande.objects.filter(
+                candidature_id__in=candidatures_ids
+            ).order_by('-id_bdc')
+            
             if not bons_de_commande.exists():
                 return JsonResponse({"status": False, "message": "Aucun bon de commande trouvé pour ce client"}, safe=False)
 
-            # Sérialiser les bons de commande
             serializer = BondecommandeSerializer(bons_de_commande, many=True)
             return JsonResponse({"total": len(serializer.data), "data": serializer.data}, safe=False)
 
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
-
 @csrf_exempt
 def get_bon_de_commande_by_esn(request):
     if request.method == 'GET':
@@ -2573,18 +2713,14 @@ def contrat_by_idClient(request):
             # Récupérer toutes les candidatures liées aux appels d'offres
             candidatures = Candidature.objects.filter(AO_id__in=appel_ids)
 
-            # Récupérer les IDs des candidatures
-            candidature_ids = candidatures.values_list('id_cd', flat=True)
-
             # Récupérer tous les contrats liés aux candidatures
-            contrats = Contrat.objects.filter(candidature_id__in=candidature_ids)
-
-            # Sérialiser les contrats
+            contrats = Contrat.objects.filter().order_by('-id_contrat')
             contrat_serializer = ContratSerializer(contrats, many=True)
+            data = contrat_serializer.data
 
-            return JsonResponse({"total": len(contrat_serializer.data), "data": contrat_serializer.data}, safe=False)
+            return JsonResponse({"status": True, "data": data}, safe=False)
         except Exception as e:
-            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+                    return JsonResponse({"status": False, "message": str(e)}, safe=False)
 
     
 @csrf_exempt
@@ -2595,23 +2731,60 @@ def contrat_by_idEsn(request):
             if not esnId:
                 return JsonResponse({"status": False, "message": "esnId requis"}, safe=False)
 
-            # Récupérer toutes les candidatures liées à l'ESN
+                        # Récupérer toutes les candidatures liées à l'ESN
             candidatures = Candidature.objects.filter(esn_id=esnId)
 
             # Récupérer les IDs des candidatures
             candidature_ids = candidatures.values_list('id_cd', flat=True)
 
-            # Récupérer tous les contrats liés aux candidatures
-            contrats = Contrat.objects.filter(candidature_id__in=candidature_ids)
+            # Récupérer tous les contrats liés aux candidatures en ordre décroissant
+            contrats = Contrat.objects.filter(candidature_id__in=candidature_ids).order_by('-id_contrat')
 
             # Sérialiser les contrats
             contrat_serializer = ContratSerializer(contrats, many=True)
 
-            return JsonResponse({"total": len(contrat_serializer.data), "data": contrat_serializer.data}, safe=False)
+            return JsonResponse({"status": True, "data": contrat_serializer.data}, safe=False) 
         except Exception as e:
             return JsonResponse({"status": False, "message": str(e)}, safe=False)
-        
-        
+
+@csrf_exempt 
+def download_contract(request, contract_id):
+    if request.method == 'GET':
+        try:
+            # Get contract and related data
+            contract = Contrat.objects.get(id_contrat=contract_id)
+            candidature = Candidature.objects.get(id_cd=contract.candidature_id)
+            esn = ESN.objects.get(ID_ESN=candidature.esn_id)
+            appel_offre = AppelOffre.objects.get(id=candidature.AO_id)
+            client = Client.objects.get(ID_clt=appel_offre.client_id)
+
+            # Structure contract information
+            contract_info = {
+                "numero_contrat": contract.numero_contrat,
+                "date_signature": contract.date_signature,
+                "esn": esn.Raison_sociale,
+                "client": client.raison_sociale,
+                "date_debut": contract.date_debut,
+                "date_fin": contract.date_fin,
+                "montant": contract.montant,
+                "statut": contract.statut,
+                "conditions": contract.conditions or ""
+            }
+
+            return JsonResponse({
+                "status": True,
+                "data": contract_info
+            }, safe=False)
+
+        except Contrat.DoesNotExist:
+            return JsonResponse({"status": False, "message": "Contract not found"}, safe=False)
+        except Exception as e:
+            return JsonResponse({"status": False, "message": str(e)}, safe=False)
+
+    return JsonResponse({"status": False, "message": "Invalid request method"}, safe=False)
+
+
+
 @csrf_exempt
 def Esn_by_id(request):
     if request.method == 'GET':
