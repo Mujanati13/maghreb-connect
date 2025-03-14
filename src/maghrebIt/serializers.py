@@ -23,7 +23,8 @@ class ClientSerializer(serializers.ModelSerializer):
             'n_tva', 
             'iban', 
             'bic', 
-            'banque') 
+            'banque',
+            'responsible') 
         
 # serializer doc_clt
 class DocumentSerializer(serializers.ModelSerializer):
@@ -62,7 +63,8 @@ class ESNSerializer(serializers.ModelSerializer):
             'N_TVA', 
             'IBAN', 
             'BIC', 
-            'Banque'
+            'Banque',
+            'responsible'
         ]
 # serializer DocumentESN      
 class DocumentESNSerializer(serializers.ModelSerializer):

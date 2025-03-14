@@ -22,6 +22,7 @@ class Client(models.Model):
     banque = models.CharField(max_length=100, blank=True, null=True, verbose_name="Banque")
     img_path = models.CharField(max_length=100, blank=True, null=True, verbose_name="img_path")
     token = models.TextField(blank=True, null=True, verbose_name="token")
+    responsible = models.CharField(max_length=255, blank=True, null=True, verbose_name="Responsable")
 
     class Meta:
         
@@ -57,7 +58,7 @@ class ESN(models.Model):
     mail_Contact = models.EmailField(max_length=191, unique=True, verbose_name="Email de Contact")  # Réduit à 191 pour la compatibilité avec les index
     password = models.CharField(max_length=255, verbose_name="Mot de Passe", blank=True, null=True)  # À stocker sous forme hachée
     Tel_Contact = models.CharField(max_length=20, blank=True, null=True, verbose_name="Téléphone de Contact")
-    
+    responsible = models.CharField(max_length=255, blank=True, null=True, verbose_name="Responsable")
     # Statut et date de validation
     Statut = models.CharField(max_length=50, blank=True, null=True, verbose_name="Statut")
     Date_validation = models.DateField(blank=True, null=True, verbose_name="Date de Validation")
