@@ -745,7 +745,7 @@ const CollaboratorList = () => {
         <Tooltip
           title={
             isEnabled
-              ? "Marquer comme 'à signer'"
+              ? "Validation de l'ESN"
               : "Le profil doit être complet avec documents"
           }
         >

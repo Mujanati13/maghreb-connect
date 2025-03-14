@@ -585,7 +585,7 @@ const ClientProfile = () => {
       <Modal
         title={
           <div className="flex items-center text-amber-600">
-            <WarningOutlined className="mr-2" /> Compte Inactif
+            <WarningOutlined className="mr-2" /> Compte prestataire Inactif
           </div>
         }
         open={isModalVisible}
@@ -643,7 +643,7 @@ const ClientProfile = () => {
               />
             </AutoComplete>
             <Tag color={esnStatus ? "green" : "orange"}>
-              {!esnStatus ? "Compte inactif" : "Compte actif"}
+              {!esnStatus ? "Compte Client inactif" : "Compte actif"}
             </Tag>
             <LogoutOutlined
               onClick={() => {

@@ -41,7 +41,7 @@ import {
   NumberOutlined,
   FileProtectOutlined,
   FilePdfOutlined,
-  PrinterOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import { Endponit, token } from "../../helper/enpoint";
@@ -58,21 +58,26 @@ const axiosConfig = {
   },
 };
 
-// Add this constant near the top of your file, after imports
 const pulseAnimationStyle = `
   @keyframes pulse {
     0% {
-      box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.7);
+      box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.7);
       transform: scale(1);
     }
-    70% {
-      box-shadow: 0 0 0 10px rgba(24, 144, 255, 0);
+    50% {
+      box-shadow: 0 0 0 10px rgba(255, 215, 0, 0.4);
       transform: scale(1.05);
     }
     100% {
-      box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+      box-shadow: 0 0 0 0 rgba(255, 140, 0, 0);
       transform: scale(1);
     }
+  }
+
+  .orange-pulse-animation {
+    animation: pulse 1.5s infinite;
+    background: linear-gradient(45deg, #ff8c00, #ffd700);
+    border-color: #ff8c00;
   }
 `;
 
@@ -196,112 +201,391 @@ const ESNProfilePageFrancais = () => {
     }
   };
 
-  // Generate PDF with ESN information
+  // Generate PDF with ESN information and contract
+  // Generate PDF with ESN information and contract
   const generatePDF = () => {
     if (!profileData) return;
 
     try {
       const doc = new jsPDF();
-
+      // ====== PAGE 1: TITLE AND PARTIES ======
       // Add title
-      doc.setFontSize(20);
+      doc.setFontSize(22);
       doc.setTextColor(0, 51, 102);
-      doc.text("Fiche d'Enregistrement ESN", 105, 20, { align: "center" });
+      doc.text("CONTRAT D'ADHÉSION", 105, 20, { align: "center" });
+      doc.setFontSize(18);
+      doc.text("MAGHREBITCONNECT", 105, 30, { align: "center" });
 
       // Add date
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text(`Généré le: ${dayjs().format("DD/MM/YYYY")}`, 105, 30, {
+      doc.text(`Date: ${dayjs().format("DD/MM/YYYY")}`, 105, 40, {
         align: "center",
       });
 
-      // Add ESN logo placeholder
-      doc.setDrawColor(200, 200, 200);
-      doc.setFillColor(240, 240, 240);
-      doc.roundedRect(75, 40, 60, 30, 3, 3, "FD");
-      doc.setFontSize(12);
-      doc.setTextColor(150, 150, 150);
-      doc.text("Logo ESN", 105, 55, { align: "center" });
-
-      // Add company information
+      // Add parties information - Full width
       doc.setFontSize(14);
       doc.setTextColor(0, 0, 0);
-      doc.text("Informations de l'Entreprise", 20, 90);
+      doc.text("ENTRE LES PARTIES SOUSSIGNÉES:", 20, 60);
+
       doc.setFontSize(11);
+      doc.text("MAGHREBITCONNECT", 20, 75);
+      doc.setFontSize(10);
+      doc.text(
+        "Société par actions simplifiée, au capital de 100.000 Dirhams,",
+        20,
+        82
+      );
+      doc.text(
+        "immatriculée au Registre du Commerce de Casablanca sous le numéro RC123456,",
+        20,
+        89
+      );
+      doc.text(
+        "dont le siège social est situé 123 Boulevard Mohammed V, à Casablanca (20000),",
+        20,
+        96
+      );
+      doc.text(
+        "Représentée par Monsieur Ahmed Alaoui, en qualité de Directeur Général,",
+        20,
+        103
+      );
+      doc.text("Ci-après désignée «MaghrebitConnect»", 20, 110);
+      doc.setFont(undefined, "bold");
+      doc.text("D'UNE PART", 20, 117);
+      doc.setFont(undefined, "normal");
 
-      // Company details
-      const companyInfo = [
-        ["Raison Sociale", profileData.Raison_sociale || ""],
-        ["Numéro SIRET", profileData.SIRET || ""],
-        ["Numéro de TVA", profileData.N_TVA || ""],
-        ["RCE", profileData.RCE || ""],
-        ["Pays", profileData.Pays || ""],
-      ];
+      doc.text("ET", 105, 125, { align: "center" });
 
-      doc.autoTable({
-        startY: 95,
-        head: [["Champ", "Valeur"]],
-        body: companyInfo,
-        theme: "striped",
-        headStyles: { fillColor: [41, 128, 185] },
-      });
-
-      // Contact information
-      doc.setFontSize(14);
-      doc.text("Coordonnées de Contact", 20, doc.lastAutoTable.finalY + 20);
-
-      const contactInfo = [
-        [
-          "Adresse",
-          `${profileData.Adresse || ""}, ${profileData.CP || ""} ${
-            profileData.Ville || ""
-          }`,
-        ],
-        ["Province/Région", profileData.Province || ""],
-        ["E-mail", profileData.mail_Contact || ""],
-        ["Téléphone", profileData.Tel_Contact || ""],
-      ];
-
-      doc.autoTable({
-        startY: doc.lastAutoTable.finalY + 25,
-        head: [["Champ", "Valeur"]],
-        body: contactInfo,
-        theme: "striped",
-        headStyles: { fillColor: [41, 128, 185] },
-      });
-
-      // Banking information
-      doc.setFontSize(14);
-      doc.text("Informations Bancaires", 20, doc.lastAutoTable.finalY + 20);
-
-      const bankInfo = [
-        ["Banque", profileData.Banque || ""],
-        ["IBAN", profileData.IBAN || ""],
-        ["Code BIC", profileData.BIC || ""],
-      ];
-
-      doc.autoTable({
-        startY: doc.lastAutoTable.finalY + 25,
-        head: [["Champ", "Valeur"]],
-        body: bankInfo,
-        theme: "striped",
-        headStyles: { fillColor: [41, 128, 185] },
-      });
-
-      // Add footer with status
+      doc.setFontSize(11);
+      doc.text(`${profileData.Raison_sociale || "[Raison sociale]"}`, 20, 140);
+      doc.setFontSize(10);
+      doc.text(
+        `immatriculée au Registre du Commerce et des sociétés sous le numéro`,
+        20,
+        147
+      );
+      doc.text(
+        `${profileData.SIRET || "[SIRET]"}, dont le siège social est situé à ${
+          profileData.Adresse || "[Adresse]"
+        }, ${profileData.CP || ""} ${profileData.Ville || ""}.`,
+        20,
+        154
+      );
+      doc.text(
+        `Représentée par ${
+          profileData.Responsible || "[Représentant]"
+        }, dûment habilité au titre des présentes,`,
+        20,
+        161
+      );
+      doc.text("Ci-après dénommée, le « Prestataire »", 20, 175);
+      doc.setFont(undefined, "bold");
+      doc.text("D'AUTRE PART", 20, 182);
+      doc.setFont(undefined, "normal"); // Add contract introduction
       doc.setFontSize(12);
-      const status =
-        profileData.Statut === "actif" ? "Actif" : "En attente d'activation";
+      doc.text("IL A ÉTÉ CONVENU CE QUI SUIT:", 105, 200, { align: "center" });
+
+      doc.text("Page 1/5", 105, 282, { align: "center" });
+
+      // ====== PAGE 2: CONTRACT TERMS ======
+      doc.addPage();
+
+      // Header
+      doc.setFillColor(0, 51, 102);
+      doc.rect(0, 0, 210, 15, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.text("CONTRAT D'ADHÉSION MAGHREBITCONNECT", 105, 10, {
+        align: "center",
+      });
       doc.setTextColor(0, 0, 0);
-      doc.text(`Statut actuel: ${status}`, 20, 270);
-      doc.text("© MaghrebitConnect", 105, 280, { align: "center" });
+
+      // Article 1 - Full width
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+      doc.text("Article 1: OBJET DU CONTRAT", 20, 30);
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(10);
+      doc.text(
+        [
+          "1.1 Le présent contrat a pour objet de définir les conditions dans lesquelles l'ESN peut utiliser la",
+          "plateforme MaghrebitConnect pour la recherche et le recrutement de talents IT.",
+          "",
+          "1.2 MaghrebitConnect est une plateforme digitale permettant la mise en relation entre entreprises",
+          "de services numériques et candidats qualifiés dans les métiers de l'informatique et du numérique.",
+          "",
+          "1.3 En acceptant ce contrat, l'ESN reconnaît avoir pris connaissance des fonctionnalités de la",
+          "plateforme et les estime conformes à ses besoins.",
+        ],
+        20,
+        40
+      );
+
+      // Article 2 - Full width
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+      doc.text("Article 2: SERVICES FOURNIS", 20, 90);
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(10);
+      doc.text(
+        [
+          "2.1 MaghrebitConnect s'engage à fournir à l'ESN les services suivants:",
+          "",
+          "• Publication d'offres d'emploi sur la plateforme",
+          "• Accès à une base de données de profils IT qualifiés",
+          "• Outils de filtrage et de sélection des candidats",
+          "• Gestion des candidatures et du processus de recrutement",
+          "• Interface de communication avec les candidats",
+          "• Tableau de bord de suivi des recrutements",
+          "",
+          "2.2 Support technique",
+          "",
+          "MaghrebitConnect met à disposition un support technique accessible aux horaires suivants:",
+          "Du lundi au vendredi, de 9h à 18h (heure marocaine), hors jours fériés.",
+          "Le support est joignable par email à support@maghrebitconnect.com",
+        ],
+        20,
+        100
+      );
+
+      // Article 3 - Full width
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+      doc.text("Article 3: DURÉE ET CONDITIONS", 20, 190);
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(10);
+      doc.text(
+        [
+          "3.1 Le présent contrat est conclu pour une durée indéterminée à compter de son acceptation.",
+          "",
+          "3.2 L'ESN peut à tout moment cesser d'utiliser la plateforme. Toutefois, les missions en cours",
+          "devront être honorées selon les conditions établies initialement.",
+          "",
+          "3.3 MaghrebitConnect se réserve le droit de modifier les conditions générales d'utilisation",
+          "moyennant un préavis de 30 jours.",
+        ],
+        20,
+        200
+      );
+
+      doc.text("Page 2/5", 105, 282, { align: "center" });
+
+      // ====== PAGE 3: PRICING ======
+      doc.addPage();
+
+      // Header
+      doc.setFillColor(0, 51, 102);
+      doc.rect(0, 0, 210, 15, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.text("CONTRAT D'ADHÉSION MAGHREBITCONNECT", 105, 10, {
+        align: "center",
+      });
+      doc.setTextColor(0, 0, 0);
+
+      // Article 4 - Full width with pricing as text, not table
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+      doc.text("Article 4: TARIFICATION", 20, 30);
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(10);
+      doc.text(
+        [
+          "4.1 Grille tarifaire",
+          "",
+          "Les tarifs appliqués varient selon le pays d'établissement de l'ESN. Ils sont exprimés par mois et par",
+          "mission active sur la plateforme. Une mission est considérée comme active dès sa publication et",
+          "jusqu'à sa clôture par l'ESN.",
+          "",
+          "La grille tarifaire ci-dessous s'applique à compter de la signature du présent contrat:",
+          "",
+          "• France: 18€/mois/mission",
+          "• Belgique: 18€/mois/mission",
+          "• Suisse: 30CHF/mois/mission",
+          "• Royaume Uni: 18£/mois/mission",
+          "• Maroc: 180MAD/mois/mission",
+          "• Espagne: 18€/mois/mission",
+          "• Pays-Bas: 18€/mois/mission",
+          "• Italie: 18€/mois/mission",
+          "• Canada: 30CA$/mois/mission",
+          "• Allemagne: 18€/mois/mission",
+          "• Autres pays: 30US$/mois/mission",
+        ],
+        20,
+        40
+      );
+
+      // Article 5 - Full width
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+      doc.text("Article 5: CONDITIONS FINANCIÈRES", 20, 160);
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(10);
+      doc.text(
+        [
+          "5.1 Modalités de facturation",
+          "",
+          "La facturation est établie mensuellement, à terme échu. L'ESN recevra une facture détaillant",
+          "les missions actives pendant le mois et le montant correspondant.",
+          "",
+          "5.2 Modalités de paiement",
+          "",
+          "Les paiements sont dus à 30 jours à compter de la date d'émission de la facture.",
+          "Les paiements peuvent être effectués par virement bancaire ou par carte bancaire.",
+          "",
+          "5.3 Retard de paiement",
+          "",
+          "Tout retard de paiement entraînera de plein droit l'application d'intérêts de retard au taux légal",
+          "en vigueur, sans mise en demeure préalable.",
+        ],
+        20,
+        170
+      );
+
+      doc.text("Page 3/5", 105, 282, { align: "center" });
+
+      // ====== PAGE 4: RESPONSIBILITIES AND DATA PROTECTION ======
+      doc.addPage();
+
+      // Header
+      doc.setFillColor(0, 51, 102);
+      doc.rect(0, 0, 210, 15, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.text("CONTRAT D'ADHÉSION MAGHREBITCONNECT", 105, 10, {
+        align: "center",
+      });
+      doc.setTextColor(0, 0, 0);
+
+      // Article 6 - Full width
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+      doc.text("Article 6: OBLIGATIONS DE L'ESN", 20, 30);
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(10);
+      doc.text(
+        [
+          "Dans le cadre de l'utilisation de la plateforme MaghrebitConnect, l'ESN s'engage à:",
+          "",
+          "6.1 Fournir des informations exactes et à jour concernant son entreprise, notamment:",
+          "• Raison sociale, numéro SIRET, numéro TVA",
+          "• Coordonnées complètes (adresse, téléphone, email)",
+          "• Identité du responsable légal",
+          "",
+          "6.2 Respecter les conditions d'utilisation de la plateforme, notamment:",
+          "• Ne pas détourner la finalité des services proposés",
+          "• Ne pas tenter de contourner le système de facturation",
+          "• Respecter les droits de propriété intellectuelle de MaghrebitConnect",
+          "",
+          "6.3 Ne pas utiliser la plateforme à des fins illégales ou frauduleuses",
+          "",
+          "6.4 Maintenir la confidentialité de ses identifiants de connexion",
+          "",
+          "6.5 S'acquitter des frais liés à l'utilisation des services selon la grille tarifaire",
+        ],
+        20,
+        40
+      );
+
+      // Article 7 - Full width
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+      doc.text("Article 7: PROTECTION DES DONNÉES", 20, 140);
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(10);
+      doc.text(
+        [
+          "7.1 MaghrebitConnect s'engage à respecter les réglementations en vigueur concernant la protection",
+          "des données personnelles et à mettre en œuvre toutes les mesures techniques et organisationnelles",
+          "appropriées pour assurer la sécurité des données.",
+          "",
+          "7.2 L'ESN reconnaît qu'elle traite des données personnelles de candidats et s'engage à:",
+          "• Utiliser ces données uniquement dans le cadre du processus de recrutement",
+          "• Ne pas conserver ces données au-delà de la durée nécessaire au recrutement",
+          "• Respecter les droits des personnes concernées (droit d'accès, de rectification, d'effacement)",
+          "",
+          "7.3 Les parties s'engagent mutuellement à notifier sans délai toute violation de données",
+          "personnelles susceptible d'avoir un impact sur les droits et libertés des personnes concernées.",
+        ],
+        20,
+        150
+      );
+
+      // Article 8 - Full width
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+      doc.text("Article 8: RÉSILIATION", 20, 220);
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(10);
+      doc.text(
+        [
+          "8.1 Chacune des parties peut résilier le contrat moyennant un préavis de 30 jours par lettre",
+          "recommandée avec accusé de réception ou par email avec confirmation de lecture.",
+          "",
+          "8.2 En cas de manquement grave par l'une des parties à l'une de ses obligations, l'autre partie",
+          "pourra résilier le contrat de plein droit, sans préavis ni indemnité, après mise en demeure restée",
+          "sans effet pendant 15 jours.",
+        ],
+        20,
+        230
+      );
+
+      doc.text("Page 4/5", 105, 282, { align: "center" });
+
+      // ====== PAGE 5: COMPANY INFO AND SIGNATURES ======
+      doc.addPage();
+
+      // Header
+      doc.setFillColor(0, 51, 102);
+      doc.rect(0, 0, 210, 15, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.text("CONTRAT D'ADHÉSION MAGHREBITCONNECT", 105, 10, {
+        align: "center",
+      });
+      doc.setTextColor(0, 0, 0);
+
+      // Company information summary - Full width, not in a table
+      doc.setFontSize(13);
+      doc.setFont(undefined, "bold");
+
+      // // Final clause
+      // doc.setFontSize(10);
+      // doc.text(
+      //   [
+      //     "Le présent contrat est établi électroniquement et la signature électronique des parties lui confère",
+      //     "pleine validité juridique conformément aux dispositions légales en vigueur.",
+      //   ],
+      //   20,
+      //   140
+      // );
+
+      // Replace the electronic acceptance text (around line 620-630)
+      doc.setFontSize(12);
+      doc.text(
+        [
+          `Signé le ${dayjs().format("DD/MM/YYYY")} à ${dayjs().format(
+            "HH:mm:ss"
+          )} par ${profileData.responsible || "le responsable"}.`,
+        ],
+        105,
+        255,
+        { align: "center" }
+      );
+
+      doc.text("Page 5/5", 105, 282, { align: "center" });
 
       // Save the PDF
-      doc.save(`ESN_${profileData.Raison_sociale}_Fiche.pdf`);
+      doc.save(`Contrat_ESN_${profileData.Raison_sociale}.pdf`);
       setPdfGenerated(true);
+
+      // Show success message
+      message.success("Contrat téléchargé avec succès!");
     } catch (error) {
       console.error("Error generating PDF:", error);
-      message.error("Erreur lors de la génération du PDF");
+      message.error("Erreur lors de la génération du contrat");
     }
   };
 
@@ -595,6 +879,15 @@ const ESNProfilePageFrancais = () => {
                       <Input prefix={<BarcodeOutlined />} />
                     </Form.Item>
                   </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item name="responsible" label="Responsable">
+                      <Input
+                        prefix={<UserOutlined />}
+                        placeholder="Nom du responsable"
+                        className="rounded-lg"
+                      />
+                    </Form.Item>
+                  </Col>
                   <Col span={24} md={12}>
                     <Form.Item name="RCE" label="RCE">
                       <Input prefix={<IdcardOutlined />} />
@@ -851,10 +1144,10 @@ const ESNProfilePageFrancais = () => {
                       type="primary"
                       icon={<FileProtectOutlined />}
                       onClick={showContractModal}
-                      className="pulse-animation mr-2"
+                      className="orange-pulse-animation mr-2"
                       style={{
-                        boxShadow: "0 0 8px #1890ff",
-                        animation: "pulse 1.5s infinite",
+                        boxShadow: "0 0 8px #ff8c00",
+                        borderColor: "#ff8c00",
                       }}
                     >
                       Accepter le contrat
@@ -905,6 +1198,11 @@ const ESNProfilePageFrancais = () => {
               >
                 <Descriptions.Item label="Raison Sociale">
                   <Text strong>{profileData.Raison_sociale}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="Responsable">
+                  <Text strong>
+                    {profileData.Responsible || "Non spécifié"}
+                  </Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Numéro SIRET">
                   <Text strong>{profileData.SIRET}</Text>

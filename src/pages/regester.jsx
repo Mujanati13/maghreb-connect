@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Form,
   Input,
@@ -22,9 +22,12 @@ import {
   PhoneOutlined,
   EnvironmentOutlined,
   MailOutlined,
+  IdcardOutlined,
+  GlobalOutlined,
+  HomeOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import axios from "axios"; // Make sure to install axios
+import axios from "axios";
 import { Endponit } from "../helper/enpoint";
 
 const { Title, Text, Link } = Typography;
@@ -65,8 +68,66 @@ const SignupPage = () => {
   const navigate = useNavigate();
   const [isTermsModalVisible, setIsTermsModalVisible] = useState(false);
   const [isPrivacyModalVisible, setIsPrivacyModalVisible] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(false);
 
   const termsPdfUrl = "../../public/MAGHREB CONNECT IT SOCIÉTÉ.pdf";
+
+  // Fetch countries from API
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        setCountriesLoading(true);
+        const response = await axios.get(
+          "http://51.38.99.75:3100/api/countries"
+        );
+        if (response.data.success) {
+          setCountries(response.data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch countries:", error);
+        notification.error({
+          message: "Erreur",
+          description: "Impossible de charger la liste des pays.",
+        });
+      } finally {
+        setCountriesLoading(false);
+      }
+    };
+
+    fetchCountries();
+  }, []);
+
+  // Fetch cities when country changes
+  const fetchCities = async (country) => {
+    if (!country) return;
+
+    setCitiesLoading(true);
+    try {
+      const response = await axios.get(
+        `http://51.38.99.75:3100/api/cities/${country}`
+      );
+      if (response.data.success) {
+        setCities(response.data.data || []);
+      }
+    } catch (error) {
+      console.error(`Failed to fetch cities for ${country}:`, error);
+      notification.error({
+        message: "Erreur",
+        description: `Impossible de charger les villes pour ${country}.`,
+      });
+      setCities([]);
+    } finally {
+      setCitiesLoading(false);
+    }
+  };
+
+  const handleCountryChange = (value) => {
+    form.setFieldsValue({ ville: undefined }); // Reset city when country changes
+    fetchCities(value);
+  };
 
   const privacyContent = `
     Protection des Données Personnelles
@@ -103,17 +164,23 @@ const SignupPage = () => {
       const registrationData =
         userType === "client"
           ? {
-              firstName: values.prenom,
-              lastName: values.nom,
-              dateOfBirth: values.dateNaissance.format("YYYY-MM-DD"),
-              email: values.email,
-              mail_contact: values.email,
-              phone: values.telephone,
+              raison_sociale: values.raison_sociale,
+              siret: values.siret,
+              rce: values.rce,
+              pays: values.pays,
+              adresse: values.adresse,
+              cp: values.cp,
+              ville: values.ville,
+              province: values.province,
+              mail_contact: values.mail_contact,
               password: values.password,
-              address: values.adresse,
-              city: values.ville,
-              country: values.pays,
-              status: "Draft",
+              tel_contact: values.tel_contact,
+              statut: "Draft", // Default status
+              n_tva: values.n_tva,
+              iban: values.iban,
+              bic: values.bic,
+              banque: values.banque,
+              responsible: values.responsible,
             }
           : {
               Raison_sociale: values.raisonSociale,
@@ -285,58 +352,181 @@ const SignupPage = () => {
         >
           {userType === "client" ? (
             <>
-              <Space style={{ width: "100%" }} size="middle">
-                {/* <Form.Item
-                  name="prenom"
-                  style={{ width: "100%" }}
-                  rules={[
-                    {
-                      required: true,
-                      message: "Veuillez saisir votre prénom!",
-                    },
-                  ]}
-                >
-                  <Input prefix={<UserOutlined />} placeholder="Prénom" />
-                </Form.Item> */}
-
-                <Form.Item
-                  name="nom"
-                  style={{ width: "100%" }}
-                  rules={[
-                    { required: true, message: "Veuillez saisir votre nom!" },
-                  ]}
-                >
-                  <Input
-                    prefix={<UserOutlined />}
-                    placeholder="Raison sociale"
-                  />
-                </Form.Item>
-              </Space>
-
               <Form.Item
-                name="dateNaissance"
+                name="raison_sociale"
                 rules={[
                   {
                     required: true,
-                    message: "Veuillez saisir votre date de naissance!",
+                    message: "Veuillez saisir votre raison sociale!",
                   },
                 ]}
               >
-                <DatePicker
-                  style={{ width: "100%" }}
-                  placeholder="Date de naissance"
-                  format="DD/MM/YYYY"
-                />
+                <Input prefix={<UserOutlined />} placeholder="Raison sociale" />
               </Form.Item>
 
               <Form.Item
-                name="email"
+                name="mail_contact"
                 rules={[
                   { required: true, message: "Veuillez saisir votre email!" },
                   { type: "email", message: "Email invalide!" },
                 ]}
               >
-                <Input prefix={<MailOutlined />} placeholder="Email" />
+                <Input
+                  prefix={<MailOutlined />}
+                  placeholder="Email de contact"
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="tel_contact"
+                rules={[
+                  {
+                    required: true,
+                    message: "Veuillez saisir votre numéro de téléphone!",
+                  },
+                ]}
+              >
+                <Input
+                  prefix={<PhoneOutlined />}
+                  placeholder="Téléphone de contact"
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="siret"
+                rules={[
+                  {
+                    pattern: /^\d{14}$/,
+                    message: "Le SIRET doit contenir 14 chiffres",
+                  },
+                ]}
+              >
+                <Input prefix={<IdcardOutlined />} placeholder="Numéro SIRET" />
+              </Form.Item>
+
+              <Space style={{ width: "100%" }} size="middle">
+                <Form.Item name="rce" style={{ width: "50%" }}>
+                  <Input placeholder="RCE" />
+                </Form.Item>
+
+                <Form.Item name="n_tva" style={{ width: "50%" }}>
+                  <Input placeholder="Numéro de TVA" />
+                </Form.Item>
+              </Space>
+
+              <Space style={{ width: "100%" }} size="middle">
+                <Form.Item
+                  name="password"
+                  style={{ width: "100%" }}
+                  rules={[{ validator: validatePassword }]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined />}
+                    placeholder="Mot de passe"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="confirmPassword"
+                  style={{ width: "100%" }}
+                  dependencies={["password"]}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Veuillez confirmer votre mot de passe!",
+                    },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (!value || getFieldValue("password") === value) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(
+                          "Les mots de passe ne correspondent pas!"
+                        );
+                      },
+                    }),
+                  ]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined />}
+                    placeholder="Confirmer le mot de passe"
+                  />
+                </Form.Item>
+              </Space>
+
+              <Form.Item
+                name="adresse"
+                rules={[
+                  { required: true, message: "Veuillez saisir votre adresse!" },
+                ]}
+              >
+                <Input prefix={<EnvironmentOutlined />} placeholder="Adresse" />
+              </Form.Item>
+
+              <Space style={{ width: "100%" }} size="middle">
+                <Form.Item name="cp" style={{ width: "30%" }}>
+                  <Input placeholder="Code postal" />
+                </Form.Item>
+
+                <Form.Item name="province" style={{ width: "70%" }}>
+                  <Input placeholder="Province" />
+                </Form.Item>
+              </Space>
+
+              <Form.Item
+                name="pays"
+                rules={[
+                  {
+                    required: true,
+                    message: "Veuillez sélectionner votre pays!",
+                  },
+                ]}
+              >
+                <Select
+                  placeholder="Sélectionnez votre pays"
+                  loading={countriesLoading}
+                  showSearch
+                  filterOption={(input, option) =>
+                    option.children
+                      .toLowerCase()
+                      .indexOf(input.toLowerCase()) >= 0
+                  }
+                  onChange={handleCountryChange}
+                >
+                  {countries.map((country) => (
+                    <Option key={country} value={country}>
+                      {country}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                name="ville"
+                rules={[
+                  {
+                    required: true,
+                    message: "Veuillez sélectionner votre ville!",
+                  },
+                ]}
+              >
+                <Select
+                  placeholder="Sélectionnez votre ville"
+                  loading={citiesLoading}
+                  showSearch
+                  filterOption={(input, option) =>
+                    option.children
+                      .toLowerCase()
+                      .indexOf(input.toLowerCase()) >= 0
+                  }
+                  disabled={!form.getFieldValue("pays") || citiesLoading}
+                >
+                  {cities.map((city) => (
+                    <Option key={city} value={city}>
+                      {city}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </>
           ) : (
@@ -368,93 +558,125 @@ const SignupPage = () => {
                   placeholder="Email professionnel"
                 />
               </Form.Item>
+
+              <Form.Item
+                name="telephone"
+                rules={[
+                  {
+                    required: true,
+                    message: "Veuillez saisir votre numéro de téléphone!",
+                  },
+                ]}
+              >
+                <Input prefix={<PhoneOutlined />} placeholder="Téléphone" />
+              </Form.Item>
+
+              <Space style={{ width: "100%" }} size="middle">
+                <Form.Item
+                  name="password"
+                  style={{ width: "100%" }}
+                  rules={[{ validator: validatePassword }]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined />}
+                    placeholder="Mot de passe"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="confirmPassword"
+                  style={{ width: "100%" }}
+                  dependencies={["password"]}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Veuillez confirmer votre mot de passe!",
+                    },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (!value || getFieldValue("password") === value) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(
+                          "Les mots de passe ne correspondent pas!"
+                        );
+                      },
+                    }),
+                  ]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined />}
+                    placeholder="Confirmer le mot de passe"
+                  />
+                </Form.Item>
+              </Space>
+
+              <Form.Item
+                name="adresse"
+                rules={[
+                  { required: true, message: "Veuillez saisir votre adresse!" },
+                ]}
+              >
+                <Input prefix={<EnvironmentOutlined />} placeholder="Adresse" />
+              </Form.Item>
+
+              <Form.Item
+                name="pays"
+                rules={[
+                  {
+                    required: true,
+                    message: "Veuillez sélectionner votre pays!",
+                  },
+                ]}
+              >
+                <Select
+                  placeholder="Sélectionnez votre pays"
+                  loading={countriesLoading}
+                  showSearch
+                  filterOption={(input, option) =>
+                    option.children
+                      .toLowerCase()
+                      .indexOf(input.toLowerCase()) >= 0
+                  }
+                  onChange={handleCountryChange}
+                >
+                  {countries.map((country) => (
+                    <Option key={country} value={country}>
+                      {country}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                name="ville"
+                rules={[
+                  {
+                    required: true,
+                    message: "Veuillez sélectionner votre ville!",
+                  },
+                ]}
+              >
+                <Select
+                  placeholder="Sélectionnez votre ville"
+                  loading={citiesLoading}
+                  showSearch
+                  filterOption={(input, option) =>
+                    option.children
+                      .toLowerCase()
+                      .indexOf(input.toLowerCase()) >= 0
+                  }
+                  disabled={!form.getFieldValue("pays") || citiesLoading}
+                >
+                  {cities.map((city) => (
+                    <Option key={city} value={city}>
+                      {city}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
             </>
           )}
-
-          <Form.Item
-            name="telephone"
-            rules={[
-              {
-                required: true,
-                message: "Veuillez saisir votre numéro de téléphone!",
-              },
-            ]}
-          >
-            <Input prefix={<PhoneOutlined />} placeholder="Téléphone" />
-          </Form.Item>
-
-          <Space style={{ width: "100%" }} size="middle">
-            <Form.Item
-              name="password"
-              style={{ width: "100%" }}
-              rules={[{ validator: validatePassword }]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Mot de passe"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="confirmPassword"
-              style={{ width: "100%" }}
-              dependencies={["password"]}
-              rules={[
-                {
-                  required: true,
-                  message: "Veuillez confirmer votre mot de passe!",
-                },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue("password") === value) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(
-                      "Les mots de passe ne correspondent pas!"
-                    );
-                  },
-                }),
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Confirmer le mot de passe"
-              />
-            </Form.Item>
-          </Space>
-
-          <Form.Item
-            name="adresse"
-            rules={[
-              { required: true, message: "Veuillez saisir votre adresse!" },
-            ]}
-          >
-            <Input prefix={<EnvironmentOutlined />} placeholder="Adresse" />
-          </Form.Item>
-
-          <Space style={{ width: "100%" }} size="middle">
-            <Form.Item
-              name="ville"
-              style={{ width: "100%" }}
-              rules={[{ required: true, message: "Ville requise!" }]}
-            >
-              <Input placeholder="Ville" />
-            </Form.Item>
-          </Space>
-
-          <Form.Item
-            name="pays"
-            rules={[
-              { required: true, message: "Veuillez sélectionner votre pays!" },
-            ]}
-          >
-            <Select placeholder="Sélectionnez votre pays">
-              <Option value="FR">France</Option>
-              <Option value="BE">Belgique</Option>
-              <Option value="CH">Suisse</Option>
-              <Option value="LU">Luxembourg</Option>
-            </Select>
-          </Form.Item>
 
           <Form.Item
             name="acceptConditions"

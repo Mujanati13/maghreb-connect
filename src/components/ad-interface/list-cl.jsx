@@ -593,7 +593,7 @@ export const ClientList = () => {
             icon={<CheckCircleOutlined />}
             disabled={!isEnabled}
           >
-            Marquer comme "À signer"
+            Valider
           </Button>,
         ]}
         width={800}

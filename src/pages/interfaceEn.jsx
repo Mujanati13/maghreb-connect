@@ -670,7 +670,7 @@ const InterfaceEn = () => {
           </div>
           <div className="flex space-x-3 items-center ml-4 flex-shrink-0">
             <Tag color={esnStatus ? "green" : "orange"}>
-              {!esnStatus ?  "Compte inactif" : "Compte actif"}
+              {!esnStatus ?  "Compte prestataire inactif" : "Compte actif"}
             </Tag>
             <LogoutOutlined
               onClick={() => {
